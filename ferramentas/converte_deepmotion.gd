@@ -1,0 +1,43 @@
+extends SceneTree
+## Converte uma animação do DeepMotion (vídeo -> animação) pro formato das outras.
+## Rodar no terminal, dentro da pasta do projeto:
+##   godot --headless --script res://ferramentas/converte_deepmotion.gd
+##
+## O .fbx fica em animacoes/deepmotion/ e já chega no esqueleto comum pelo
+## deepmotion_bone_map.tres (ver animacoes/LEIA-ME.md). Aqui só falta:
+## - virar meia volta: o DeepMotion entrega o atleta de costas pro que o jogo
+##   chama de frente (o quadril começa girado 180°);
+## - salvar como .tres com o nome que o jogo usa.
+## O resto (quadril no lugar, trecho do lance) quem faz é o animador.
+
+const CONVERSOES := {
+	"res://animacoes/deepmotion/cortada.fbx": "res://animacoes/cortada_deepmotion.tres",
+}
+
+
+func _init() -> void:
+	for origem in CONVERSOES:
+		var cena: Node = load(origem).instantiate()
+		var player: AnimationPlayer = cena.get_node("AnimationPlayer")
+		var animacao: Animation = player.get_animation(player.get_animation_list()[0]).duplicate()
+		cena.free()
+		_meia_volta(animacao)
+		var destino: String = CONVERSOES[origem]
+		var erro := ResourceSaver.save(animacao, destino)
+		print("%s -> %s (%.2f s) %s" % [origem, destino, animacao.length, "ok" if erro == OK else "ERRO %d" % erro])
+	quit()
+
+
+## Gira o quadril (e com ele o corpo todo) 180° em volta do eixo vertical.
+func _meia_volta(animacao: Animation) -> void:
+	var giro := Quaternion(Vector3.UP, PI)
+	var rotacao := animacao.find_track(NodePath("%GeneralSkeleton:Hips"), Animation.TYPE_ROTATION_3D)
+	if rotacao >= 0:
+		for chave in animacao.track_get_key_count(rotacao):
+			var q: Quaternion = animacao.track_get_key_value(rotacao, chave)
+			animacao.track_set_key_value(rotacao, chave, giro * q)
+	var posicao := animacao.find_track(NodePath("%GeneralSkeleton:Hips"), Animation.TYPE_POSITION_3D)
+	if posicao >= 0:
+		for chave in animacao.track_get_key_count(posicao):
+			var p: Vector3 = animacao.track_get_key_value(posicao, chave)
+			animacao.track_set_key_value(posicao, chave, giro * p)

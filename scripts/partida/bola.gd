@@ -24,6 +24,13 @@ const LARGURA_REDE := 10.0
 const FOLGA_REDE := 0.4
 
 var em_voo := false
+## Quantas vezes a bola já foi lançada (ou desviada). Serve pra saber se um
+## toque mandou a bola.
+var lancamentos := 0
+## Ímã: puxa a bola pra um ponto (a mão de quem vai cortar) sem mudar o
+## caminho dela. Peso 0 = solta, 1 = no ponto. Ver puxar_para.
+var _ima_ponto := Vector3.ZERO
+var _ima_peso := 0.0
 ## Onde a bola vai tocar o chão (válido enquanto está em voo).
 var ponto_previsto := Vector3.ZERO
 ## Quem cuida do bloqueio: função(ponto_na_rede: Vector3, lado_destino: float) -> bool.
@@ -85,6 +92,19 @@ func segurar_em(ponto: Vector3) -> void:
 	position = ponto
 
 
+## Puxa a bola pra "ponto" (peso 0 a 1) enquanto ela voa. Peso 0 solta.
+func puxar_para(ponto: Vector3, peso: float) -> void:
+	_ima_ponto = ponto
+	_ima_peso = clampf(peso, 0.0, 1.0)
+
+
+## Onde a bola vai estar daqui a "segundos", se nada tocar nela.
+func posicao_daqui_a(segundos: float) -> Vector3:
+	if not em_voo:
+		return position
+	return Trajetoria.posicao_em(_origem, _velocidade_inicial, _tempo + segundos)
+
+
 func velocidade_atual() -> Vector3:
 	return _velocidade_inicial + Vector3(0.0, -Trajetoria.GRAVIDADE * _tempo, 0.0)
 
@@ -96,6 +116,8 @@ func _desviar(ponto: Vector3, nova_velocidade: Vector3) -> void:
 
 
 func _comecar_voo(de: Vector3, velocidade: Vector3) -> void:
+	lancamentos += 1
+	_ima_peso = 0.0
 	_origem = de
 	_velocidade_inicial = velocidade
 	_tempo = 0.0
@@ -147,4 +169,4 @@ func _voar(delta: float) -> void:
 		tocou_chao.emit(position)
 		return
 
-	position = agora
+	position = agora.lerp(_ima_ponto, _ima_peso) if _ima_peso > 0.0 else agora

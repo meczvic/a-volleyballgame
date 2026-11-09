@@ -24,6 +24,7 @@ func _rodar() -> void:
 	_teste_passe_cedo_e_ruim_e_limita_o_levantamento()
 	_teste_levantamento_rapido()
 	_teste_cortada_ruim_sai_fraca()
+	_teste_qualidade_da_cortada_no_botao()
 	_teste_anel_aparece_pra_quem_vai_tocar()
 
 	if falhas == 0:
@@ -112,24 +113,36 @@ func _teste_levantamento_rapido() -> void:
 
 
 func _teste_cortada_ruim_sai_fraca() -> void:
-	var forte = _nova_partida()
-	var atacante := _atleta(forte, 4)
-	atacante.position = forte._no_mundo(0, Vector2(-3.0, 1.2))
-	_bola_no_atleta(forte, atacante, TempoDoToque.ALTURA_IDEAL["cortada"], -3.0)
-	forte._tentar_tocar(0, true)
-	var subida_forte: float = forte.bola.velocidade_atual().y
-	_fechar(forte)
+	# A qualidade da cortada é medida no botão (_comecar_cortada) e usada na batida.
+	var subidas := {}
+	for qualidade in [Q.PERFEITO, Q.RUIM]:
+		var partida = _nova_partida()
+		var atacante := _atleta(partida, 4)
+		atacante.position = partida._no_mundo(0, Vector2(-3.0, 1.2))
+		_bola_no_atleta(partida, atacante, TempoDoToque.ALTURA_IDEAL["cortada"], -3.0)
+		atacante.set_meta("qualidade_da_cortada", qualidade)
+		partida._tentar_tocar(0, true)
+		subidas[qualidade] = partida.bola.velocidade_atual().y
+		_verificar(not atacante.has_meta("qualidade_da_cortada"), "a qualidade da cortada é usada uma vez só")
+		Engine.time_scale = 1.0
+		_fechar(partida)
+	_verificar(subidas[Q.RUIM] > subidas[Q.PERFEITO],
+		"cortada ruim sobe mais (sai fraca): %.1f > %.1f" % [subidas[Q.RUIM], subidas[Q.PERFEITO]])
 
-	var fraca = _nova_partida()
-	atacante = _atleta(fraca, 4)
-	atacante.position = fraca._no_mundo(0, Vector2(-3.0, 1.2))
-	# Bola subindo devagar a 1,8 m: muito cedo pra cortada.
-	_bola_no_atleta(fraca, atacante, 1.8, 0.5)
-	fraca._tentar_tocar(0, true)
-	var subida_fraca: float = fraca.bola.velocidade_atual().y
-	_verificar(subida_fraca > subida_forte, "cortada ruim sobe mais (sai fraca): %.1f > %.1f" % [subida_fraca, subida_forte])
+
+func _teste_qualidade_da_cortada_no_botao() -> void:
+	var partida = _nova_partida()
+	var atacante := _atleta(partida, 4)
+	atacante.position = partida._no_mundo(0, Vector2(-3.0, 1.2))
+	# Bola que vai chegar na altura da cortada daqui a TEMPO_ATE_A_BATIDA: apertar agora é perfeito.
+	var t: float = partida.TEMPO_ATE_A_BATIDA
+	var vy := -3.0
+	var altura: float = TempoDoToque.ALTURA_IDEAL["cortada"] - vy * t + 0.5 * 9.8 * t * t
+	_bola_no_atleta(partida, atacante, altura, vy)
+	partida._comecar_cortada(0)
+	_verificar(atacante.get_meta("qualidade_da_cortada", -1) == Q.PERFEITO, "apertar Ataque na hora certa é perfeito")
 	Engine.time_scale = 1.0
-	_fechar(fraca)
+	_fechar(partida)
 
 
 func _teste_anel_aparece_pra_quem_vai_tocar() -> void:
