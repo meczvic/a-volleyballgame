@@ -87,6 +87,16 @@ const VANTAGEM_PRO_PASSE_DO_LEVANTADOR := 2.5
 ## Pulo: duração (s) e altura máxima (m).
 const DURACAO_DO_PULO := 0.6
 const ALTURA_DO_PULO := 0.95
+## Na cortada, o atleta sai do chão quando aperta Ataque e bate na bola no
+## alto do pulo, com a mão. Esse é o tempo do botão até a batida (s).
+const TEMPO_ATE_A_BATIDA := DURACAO_DO_PULO / 2.0
+## Se a mão chega a essa distância da bola (m), a bola vai pra mão: nos
+## últimos IMA_DA_MAO segundos antes da batida ela é puxada até a mão.
+const ALCANCE_DA_MAO := 1.5
+const IMA_DA_MAO := 0.15
+## Na cortada o atleta pula o que precisa pra mão chegar na bola, dentro disso (m).
+const PULO_MINIMO_DA_CORTADA := 0.5
+const PULO_MAXIMO_DA_CORTADA := 1.2
 ## Altura das mãos de um atleta em pé com os braços pra cima.
 const ALTURA_DAS_MAOS := 2.35
 ## Até quantos metros pro lado da mão o bloqueio alcança a bola.
@@ -174,6 +184,9 @@ var caixa_da_mensagem: PanelContainer
 ## Espera depois de cada ponto. É um nó (e não um "await") pra parar junto
 ## quando o jogo pausa e sumir junto quando a cena fecha.
 var temporizador_do_ponto: Timer
+## Cortada de cada time que já saiu do chão e ainda vai bater na bola
+## (vazio = nenhuma). Ver _comecar_cortada.
+var cortadas: Array = [{}, {}]
 
 
 func _ready() -> void:
@@ -234,7 +247,9 @@ func _physics_process(delta: float) -> void:
 	for time in 2:
 		var controlado := controlados[time]
 		var sacando: bool = estado == Estado.SAQUE and time == placar.quem_saca
-		if not sacando:
+		if not cortadas[time].is_empty():
+			_atualizar_cortada(time, delta)
+		elif not sacando:
 			_mover(controlado, time, _direcao_no_mundo(time), delta)
 			if estado == Estado.SAQUE:
 				_manter_na_ordem(time, controlado)
@@ -345,10 +360,12 @@ func _mover_ia(atleta: Node3D, alvo: Vector3, delta: float) -> void:
 
 # --- Pulo e bloqueio ---
 
-func _pular(atleta: Node3D) -> void:
+## "altura" muda a altura do pulo (a cortada pula até a mão alcançar a bola).
+func _pular(atleta: Node3D, altura: float = ALTURA_DO_PULO) -> void:
 	if _esta_pulando(atleta):
 		return
 	atleta.set_meta("tempo_do_pulo", 0.0)
+	atleta.set_meta("altura_do_pulo", altura)
 
 
 func _esta_pulando(atleta: Node3D) -> bool:
@@ -364,7 +381,8 @@ func _atualizar_pulo(atleta: Node3D, delta: float) -> void:
 		atleta.set_meta("tempo_do_pulo", -1.0)
 		return
 	var fracao := tempo / DURACAO_DO_PULO
-	atleta.position.y = 4.0 * ALTURA_DO_PULO * fracao * (1.0 - fracao)
+	var altura: float = atleta.get_meta("altura_do_pulo", ALTURA_DO_PULO)
+	atleta.position.y = 4.0 * altura * fracao * (1.0 - fracao)
 	atleta.set_meta("tempo_do_pulo", tempo)
 
 
@@ -440,7 +458,7 @@ func _ao_receber_comando(jogador: int, tipo: String) -> void:
 			if tipo == "passe":
 				_tentar_tocar(time, false)
 			elif tipo == "ataque":
-				_tentar_tocar(time, true)
+				_comecar_cortada(time)
 			elif tipo == "bloqueio":
 				_bloquear(time)
 			elif tipo == "mergulho":
@@ -524,9 +542,91 @@ func _levantar(time: int) -> void:
 	_mostrar_mensagem("Levantamento: %s" % ATAQUES[escolhido]["nome"])
 
 
+## Ataque apertado: se a bola vai estar ao alcance no alto do pulo, o atleta
+## sai do chão agora e bate nela daqui a TEMPO_ATE_A_BATIDA (_atualizar_cortada).
+## As regras (faltas, toques) são conferidas na batida, por _tentar_tocar.
+func _comecar_cortada(time: int) -> void:
+	var atleta := controlados[time]
+	if not cortadas[time].is_empty() or _esta_pulando(atleta) or not bola.em_voo:
+		return
+	var prevista: Vector3 = bola.posicao_daqui_a(TEMPO_ATE_A_BATIDA)
+	var no_chao := Vector2(prevista.x - atleta.position.x, prevista.z - atleta.position.z)
+	if no_chao.length() > ALCANCE or prevista.y < ALTURA_MINIMA_CORTADA or prevista.y > ALTURA_MAXIMA_CORTADA:
+		return
+	# Na regra do ataque do fundo vale de onde o atleta saiu do chão.
+	atleta.set_meta("saiu_do_chao_em", atleta.position)
+	# Pula o bastante pra mão (na pose da batida) chegar na altura da bola.
+	var mao_acima_dos_pes := ALTURA_DAS_MAOS
+	if atleta.has_meta("animador"):
+		mao_acima_dos_pes = atleta.get_meta("animador").altura_da_mao_na_batida()
+	_pular(atleta, clampf(prevista.y - mao_acima_dos_pes, PULO_MINIMO_DA_CORTADA, PULO_MAXIMO_DA_CORTADA))
+	_animar(atleta, "cortada")
+	cortadas[time] = {
+		"atleta": atleta, "tempo": 0.0,
+		"de": Vector2(atleta.position.x, atleta.position.z),
+	}
+
+
+func _atualizar_cortada(time: int, delta: float) -> void:
+	var cortada: Dictionary = cortadas[time]
+	var atleta: Node3D = cortada["atleta"]
+	cortada["tempo"] += delta
+	# No ar, o atleta vai pra onde a mão encontra a bola na batida (sem a mão,
+	# pra baixo da bola). Sem chegar mais perto da rede do que pode.
+	var falta: float = maxf(TEMPO_ATE_A_BATIDA - cortada["tempo"], 0.0)
+	var prevista: Vector3 = bola.posicao_daqui_a(falta)
+	var alvo := Vector2(prevista.x, prevista.z)
+	var mao_agora = atleta.get_meta("animador").posicao_da_mao() if atleta.has_meta("animador") else null
+	if mao_agora != null:
+		alvo -= Vector2((mao_agora as Vector3).x - atleta.position.x, (mao_agora as Vector3).z - atleta.position.z)
+	alvo.y = _lado(time) * maxf(alvo.y * _lado(time), DISTANCIA_MINIMA_DA_REDE + 0.05)
+	var fracao := smoothstep(0.0, TEMPO_ATE_A_BATIDA, cortada["tempo"])
+	var ponto: Vector2 = (cortada["de"] as Vector2).lerp(alvo, fracao)
+	atleta.position.x = ponto.x
+	atleta.position.z = ponto.y
+	if estado != Estado.RALLY or not bola.em_voo or controlados[time] != atleta:
+		cortadas[time] = {}
+		bola.puxar_para(Vector3.ZERO, 0.0)
+		atleta.remove_meta("saiu_do_chao_em")
+		return
+	if cortada["tempo"] < TEMPO_ATE_A_BATIDA:
+		# Chegando na batida, a bola vai encostando na mão.
+		var mao = _mao_perto_da_bola(atleta, TEMPO_ATE_A_BATIDA - cortada["tempo"])
+		if mao != null:
+			var peso := smoothstep(TEMPO_ATE_A_BATIDA - IMA_DA_MAO, TEMPO_ATE_A_BATIDA, cortada["tempo"])
+			bola.puxar_para(mao, peso)
+		return
+	cortadas[time] = {}
+	_bater_na_bola(time, atleta)
+	bola.puxar_para(Vector3.ZERO, 0.0)
+	atleta.remove_meta("saiu_do_chao_em")
+
+
+## Posição da mão da cortada, se ela vai estar perto da bola daqui a
+## "segundos" (null se longe ou se o atleta não tem personagem).
+func _mao_perto_da_bola(atleta: Node3D, segundos: float):
+	if not atleta.has_meta("animador"):
+		return null
+	var mao = atleta.get_meta("animador").posicao_da_mao()
+	if mao == null or (mao as Vector3).distance_to(bola.posicao_daqui_a(segundos)) > ALCANCE_DA_MAO:
+		return null
+	return mao
+
+
+## Batida da cortada, no alto do pulo: a bola vai pra mão (se a mão chegou
+## perto) e sai de lá. Se a cortada não valer, a bola segue o caminho dela.
+func _bater_na_bola(time: int, atleta: Node3D) -> void:
+	var antes: Vector3 = bola.position
+	var lancamentos: int = bola.lancamentos
+	var mao = _mao_perto_da_bola(atleta, 0.0)
+	if mao != null:
+		bola.position = mao
+	_tentar_tocar(time, true)
+	if bola.lancamentos == lancamentos:
+		bola.position = antes
+
+
 func _cortar(time: int) -> void:
-	_pular(controlados[time])
-	_animar(controlados[time], "cortada")
 	# A direção mira pra esquerda ou direita da quadra adversária.
 	var direcao := _direcao_no_mundo(time)
 	var mira_x := clampf(direcao.x * 3.0 + randf_range(-0.8, 0.8), -LARGURA / 2.0 + 0.5, LARGURA / 2.0 - 0.5)
@@ -604,9 +704,11 @@ func _falta_no_toque(time: int, atacando: bool) -> String:
 		return ""
 	if absf(atleta.position.z) < DISTANCIA_MINIMA_DA_REDE:
 		return "toque na rede"
+	# Na cortada, a zona vale de onde o atleta saiu do chão (_comecar_cortada).
+	var saiu_de: Vector3 = atleta.get_meta("saiu_do_chao_em", atleta.position)
 	# Ataque com a bola inteira acima da rede, de dentro da zona de ataque:
 	var acima_da_rede: bool = bola.position.y - Bola.RAIO > ALTURA_REDE
-	var na_zona_de_ataque := absf(atleta.position.z) < LINHA_DE_ATAQUE
+	var na_zona_de_ataque := absf(saiu_de.z) < LINHA_DE_ATAQUE
 	if acima_da_rede and na_zona_de_ataque:
 		if saque_em_jogo:
 			return "ataque no saque"

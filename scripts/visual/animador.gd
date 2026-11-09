@@ -28,16 +28,21 @@ const EM_LOOP := ["parado", "correr", "lateral_esquerda", "lateral_direita", "co
 ## opcionalmente a velocidade (1 = normal). O resto é preparo ou volta.
 ## Medido num modelo do VRoid. O jogo faz o pulo em 0,6 s, com o alto em 0,3 s:
 ## - bloqueio: o alto do pulo da animação (0,85 s) cai no alto do pulo do jogo;
-## - cortada (do DeepMotion): começa já no ar com o braço armado (1,1 s), a
-##   batida (1,5 s) cai no alto do pulo e a queda (2,0 s) perto do fim do pulo.
+## - cortada (do DeepMotion): começa no ar com o braço armado (1,25 s); a mão
+##   da batida (MAO_DA_CORTADA) passa pela bola em 1,62 s (BATIDA_DA_CORTADA), que a 1,23x cai em
+##   0,3 s, o alto do pulo, quando a partida solta a bola da mão; a queda (2,0 s)
+##   fica no fim do pulo.
 const TRECHOS := {
 	"manchete": [0.2, 1.2],
 	"levantamento": [0.2, 1.0],
-	"cortada": [1.1, 2.0, 1.3],
+	"cortada": [1.25, 2.0, 1.23],
 	"bloqueio": [0.55, 1.6],
 	"saque": [1.0, 2.0],
 	"mergulho": [0.3, 2.8],
 }
+## Mão que bate na bola na cortada, e em que segundo da animação ela bate.
+const MAO_DA_CORTADA := "LeftHand"
+const BATIDA_DA_CORTADA := 1.62
 ## Lances em que o jogo já faz o atleta subir: aí a animação não sobe junto.
 const PULAM_NO_JOGO := ["cortada", "bloqueio"]
 
@@ -57,6 +62,7 @@ var _player: AnimationPlayer
 var _ultima_posicao := Vector3.ZERO
 var _tempo_do_lance := 0.0
 var _em_loop := ""
+var _altura_da_mao := -1.0
 
 
 ## Liga o animador ao personagem (o nó do .vrm). Devolve false se o personagem
@@ -96,6 +102,46 @@ func tocar(lance: String) -> void:
 	_tempo_do_lance = (trecho[1] - trecho[0]) / velocidade
 	_em_loop = ""
 	_personagem.rotation.y = giro_da_rede
+
+
+## Onde está agora a mão que bate na cortada (no mundo), ou null se o
+## personagem não tem esse osso.
+func posicao_da_mao():
+	var esqueleto := _esqueleto()
+	if esqueleto == null:
+		return null
+	var osso := esqueleto.find_bone(MAO_DA_CORTADA)
+	if osso < 0:
+		return null
+	return esqueleto.global_transform * esqueleto.get_bone_global_pose(osso).origin
+
+
+## Altura da mão da cortada acima dos pés, na pose da batida. Medida uma vez
+## (põe o personagem na pose por um instante; chame logo antes de tocar um lance).
+func altura_da_mao_na_batida() -> float:
+	if _altura_da_mao >= 0.0:
+		return _altura_da_mao
+	var atleta := get_parent() as Node3D
+	if _player == null or atleta == null or not atleta.is_inside_tree():
+		return 2.35
+	_player.play(BIBLIOTECA + "/cortada")
+	_player.seek(BATIDA_DA_CORTADA, true)
+	_player.advance(0.0)
+	var mao = posicao_da_mao()
+	_em_loop = ""
+	if mao == null:
+		return 2.35
+	_altura_da_mao = (mao as Vector3).y - atleta.global_position.y
+	return _altura_da_mao
+
+
+func _esqueleto() -> Skeleton3D:
+	if _personagem == null:
+		return null
+	var esqueleto := _personagem.get_node_or_null("%GeneralSkeleton") as Skeleton3D
+	if esqueleto == null:
+		esqueleto = _personagem.get_node_or_null("GeneralSkeleton") as Skeleton3D
+	return esqueleto
 
 
 ## Volta pro movimento normal (fim de uma comemoração, novo saque).

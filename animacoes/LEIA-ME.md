@@ -59,6 +59,11 @@ meia volta (o DeepMotion entrega o atleta de costas) e salva o `.tres` usado no 
 
     godot --headless --script res://ferramentas/converte_deepmotion.gd
 
+Na partida, o atleta sai do chão no botão Ataque e bate no alto do pulo
+(`TEMPO_ATE_A_BATIDA`), na pose de `BATIDA_DA_CORTADA` (1,62 s). O pulo tem a altura
+que a mão daquele personagem precisa pra chegar na bola, o atleta vai pra baixo dela
+no ar e, no fim, a bola encosta na mão (`IMA_DA_MAO`) e sai de lá.
+
 O quadril da cortada sobe ~1,4 m no vídeo e não volta (erro comum de captura por
 vídeo); como na cortada o pulo é do jogo, o animador trava essa altura e não aparece.
 
