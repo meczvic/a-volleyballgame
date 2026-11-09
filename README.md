@@ -6,7 +6,7 @@ Por enquanto o projeto tem: menu principal, seleção de times e estádio, a par
 
 ## Como abrir
 
-1. Instale o **Godot 4.3 ou mais novo**, versão padrão (não a ".NET"): https://godotengine.org/download
+1. Instale o **Godot 4.7.2 ou mais novo**, versão padrão (não a ".NET"): https://godotengine.org/download
 2. Clone este repositório.
 3. Abra o Godot, clique em **Importar**, escolha o arquivo `project.godot` desta pasta.
 4. Aperte **F5** (ou o botão de play no canto superior direito) pra rodar. O jogo abre no menu principal.
@@ -85,7 +85,7 @@ godot --headless --script res://testes/teste_dados.gd
 
 Cada um deve terminar com uma linha começando com `OK:`.
 
-Todos os testes passam no Godot 4.3, e a partida, os menus e a seleção de times rodam sem erros (testado em 09/11/2026).
+Todos os testes passam no Godot 4.7.2 (antes, 4.3), e a partida, os menus e a seleção de times rodam sem erros (testado em 09/11/2026).
 
 ## Próximos passos
 

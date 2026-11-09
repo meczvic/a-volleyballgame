@@ -9,3 +9,6 @@
 *.vrm binary
 *.fbx binary
 *.res binary
+*.dll binary
+*.so binary
+*.dylib binary
