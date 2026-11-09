@@ -19,7 +19,11 @@ serve pros 42 atletas.
 | `comemoracao_palmas.fbx` | Clapping | Palmas, em loop |
 | `comemoracao_vitoria.fbx` | Victory | Fim de jogo (mexe pouco) |
 
-Ainda faltam **levantamento** e **cortada**. O Mixamo não tem nada de vôlei, então todas
+| `cortada.tres` | (montada) | Pulo do bloqueio + braço do saque batendo no alto do pulo |
+| `levantamento.tres` | (montada) | Pernas paradas + tronco e braços do bloqueio subindo acima da cabeça |
+
+As duas montadas saem de `ferramentas/animacoes_combinadas.gd` (rodar de novo se mudar
+`bloqueio.fbx`, `saque.fbx` ou `parado.fbx`). O Mixamo não tem nada de vôlei, então todas
 essas são adaptadas de outros esportes. Vão precisar de corte (usar só o trecho certo)
 e ajuste à mão no Godot quando entrarem no jogo.
 

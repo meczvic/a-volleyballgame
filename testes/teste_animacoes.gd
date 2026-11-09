@@ -18,6 +18,9 @@ func _init() -> void:
 		if arquivo.get_extension() == "fbx":
 			_teste_animacao(PASTA + "/" + arquivo)
 			total += 1
+		elif arquivo.get_extension() == "tres" and arquivo != "mixamo_bone_map.tres":
+			_teste_ossos(PASTA + "/" + arquivo, load(PASTA + "/" + arquivo))
+			total += 1
 	_verificar(total > 0, "tem pelo menos 1 animação em animacoes/")
 
 	if falhas == 0:
@@ -44,10 +47,18 @@ func _teste_animacao(caminho: String) -> void:
 	var player := raiz.get_node_or_null("AnimationPlayer") as AnimationPlayer
 	_verificar(player != null and player.has_animation("mixamo_com"), "%s: tem a animação mixamo_com" % caminho)
 	if player and player.has_animation("mixamo_com"):
-		var animacao := player.get_animation("mixamo_com")
-		var ossos := {}
-		for t in animacao.get_track_count():
-			ossos[animacao.track_get_path(t).get_concatenated_subnames()] = true
-		for osso in OSSOS_OBRIGATORIOS:
-			_verificar(ossos.has(osso), "%s: anima o osso %s" % [caminho, osso])
+		_teste_ossos(caminho, player.get_animation("mixamo_com"))
 	raiz.free()
+
+
+## Animações montadas por ferramentas/animacoes_combinadas.gd também usam o esqueleto comum.
+func _teste_ossos(caminho: String, animacao: Animation) -> void:
+	_verificar(animacao != null, "%s abre como animação" % caminho)
+	if animacao == null:
+		return
+	var ossos := {}
+	for t in animacao.get_track_count():
+		ossos[animacao.track_get_path(t).get_concatenated_subnames()] = true
+		_verificar(str(animacao.track_get_path(t)).begins_with("%GeneralSkeleton:"), "%s: trilha no GeneralSkeleton" % caminho)
+	for osso in OSSOS_OBRIGATORIOS:
+		_verificar(ossos.has(osso), "%s: anima o osso %s" % [caminho, osso])
