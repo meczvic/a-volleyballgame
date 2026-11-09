@@ -28,8 +28,7 @@ A ordem da lista é a posição inicial no rodízio (1 a 6).
 | Inarizaki | **A conferir:** Kita 1, Aran 4, Atsumu 7, Akagi 9, Suna 10, Osamu 11 (de memória; a fonte acima não tem Inarizaki e o wiki de fãs não abriu daqui) | Conferir no [wiki de fãs](https://haikyuu.fandom.com/wiki/Inarizaki_High) antes de fazer as camisas |
 | Brasil | Inventados | — |
 
-Alturas ainda não estão no elenco: cada ficha visual (`producao/fichas/`) traz a altura do perfil oficial,
-conferida quando a ficha é feita.
+Cada atleta tem uma ficha visual em `producao/fichas/`. As alturas dos personagens de Haikyuu nas fichas vêm de memória do perfil oficial e estão marcadas pra conferir antes de modelar.
 
 ## Time Brasil (original)
 
