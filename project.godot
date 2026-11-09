@@ -12,12 +12,13 @@ config_version=5
 
 config/name="Jogo de Vôlei"
 config/description="Vôlei de quadra 6 contra 6, anime cel-shaded, para 2 jogadores."
-run/main_scene="res://cenas/main.tscn"
+run/main_scene="res://cenas/menu_principal.tscn"
 config/features=PackedStringArray("4.3", "Forward Plus")
 
 [autoload]
 
 Teclas="*res://scripts/entrada/teclas.gd"
+Configuracao="*res://scripts/menus/configuracao.gd"
 
 [display]
 

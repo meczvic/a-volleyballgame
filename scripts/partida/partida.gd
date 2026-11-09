@@ -14,7 +14,10 @@ extends Node3D
 ## - Bloqueio: os 3 da rede pulam. A direção desloca o bloqueio.
 ##   Acertar o tempo do pulo devolve a cortada.
 ## - 4 toques seguidos do mesmo time é falta.
+## - Esc ou Start pausa (continuar, recomeçar, trocar times, menu).
 ##
+## Os times e o estádio vêm da seleção de times (autoload Configuracao).
+## Rodando esta cena direto (F6), vale o padrão: Karasuno x Nekoma no Ginásio Japonês.
 ## Os atletas são cápsulas provisórias.
 
 const Placar := preload("res://scripts/regras/placar.gd")
@@ -25,6 +28,9 @@ const EntradaLocal := preload("res://scripts/entrada/entrada_local.gd")
 const Bola := preload("res://scripts/partida/bola.gd")
 const MarcadorQueda := preload("res://scripts/partida/marcador_queda.gd")
 const VisualAnime := preload("res://scripts/visual/visual_anime.gd")
+const Dados := preload("res://scripts/comum/dados.gd")
+const MenuDePausa := preload("res://scripts/menus/menu_de_pausa.gd")
+const Estilo := preload("res://scripts/menus/estilo.gd")
 
 enum Estado { SAQUE, RALLY, PONTO, FIM }
 
@@ -32,6 +38,9 @@ enum Estado { SAQUE, RALLY, PONTO, FIM }
 const COMPRIMENTO := 18.0
 const LARGURA := 9.0
 const ALTURA_REDE := 2.43
+## Chão em volta da quadra, até as placas.
+const COMPRIMENTO_ZONA_LIVRE := COMPRIMENTO + 10.0
+const LARGURA_ZONA_LIVRE := LARGURA + 8.0
 
 ## Velocidade do atleta controlado e dos outros (m/s).
 const VELOCIDADE := 6.0
@@ -98,6 +107,8 @@ var estado := Estado.SAQUE
 var ultimo_toque := -1
 
 var times_em_jogo: Array = []
+## Estádio escolhido (cores da quadra, do fundo e da luz). Veja dados/estadios.json.
+var estadio: Dictionary = {}
 ## atletas[0] = time do Jogador 1, atletas[1] = time do Jogador 2.
 var atletas: Array = [[], []]
 var controlados: Array[Node3D] = [null, null]
@@ -110,16 +121,20 @@ var marcas_de_ataque: Array[Node3D] = [null, null]
 
 var bola
 var marcador
+var menu
 var rotulo_placar: Label
 var rotulo_mensagem: Label
+## Espera depois de cada ponto. É um nó (e não um "await") pra parar junto
+## quando o jogo pausa e sumir junto quando a cena fecha.
+var temporizador_do_ponto: Timer
 
 
 func _ready() -> void:
-	var times := _carregar_times()
-	times_em_jogo = [times[0], times[3]]  # Karasuno x Nekoma
+	_carregar_escolhas()
 
 	_criar_ambiente()
 	_criar_quadra()
+	_criar_placas()
 	_criar_rede()
 	for time in 2:
 		_criar_atletas(time)
@@ -148,6 +163,18 @@ func _ready() -> void:
 		entrada.comando.connect(_ao_receber_comando)
 		add_child(entrada)
 		entradas.append(entrada)
+
+	temporizador_do_ponto = Timer.new()
+	temporizador_do_ponto.name = "TemporizadorDoPonto"
+	temporizador_do_ponto.one_shot = true
+	temporizador_do_ponto.wait_time = PAUSA_DEPOIS_DO_PONTO
+	temporizador_do_ponto.timeout.connect(_depois_do_ponto)
+	add_child(temporizador_do_ponto)
+
+	menu = MenuDePausa.new()
+	menu.name = "MenuDePausa"
+	add_child(menu)
+	menu.pausa_pedida.connect(func() -> void: menu.abrir_pausa(_resumo_do_placar()))
 
 	_conectar_placar()
 	_preparar_saque()
@@ -295,9 +322,6 @@ func _ao_bola_ser_bloqueada() -> void:
 func _ao_receber_comando(jogador: int, tipo: String) -> void:
 	var time := jogador - 1
 	match estado:
-		Estado.FIM:
-			if tipo == "passe" or tipo == "ataque":
-				_reiniciar_partida()
 		Estado.SAQUE:
 			if time == placar.quem_saca and (tipo == "ataque" or tipo == "saque_flutuante"):
 				_sacar(time, tipo == "saque_flutuante")
@@ -425,12 +449,20 @@ func _encerrar_rally(vencedor: int, motivo: String) -> void:
 	marcador.esconder()
 	_mostrar_marcas_de_ataque(-1)
 	rotulo_mensagem.text = "Ponto %s! (%s)" % [times_em_jogo[vencedor]["nome"], motivo]
+	# Se foi o último ponto, o placar chama _ao_encerrar_partida aqui dentro.
 	placar.marcar_ponto(vencedor)
+	temporizador_do_ponto.start()
 
-	if placar.encerrada:
-		return
-	await get_tree().create_timer(PAUSA_DEPOIS_DO_PONTO).timeout
-	if estado == Estado.PONTO:
+
+## Depois da pausa do ponto: próximo saque, ou a tela de fim de jogo.
+func _depois_do_ponto() -> void:
+	if estado == Estado.FIM:
+		var vencedor: int = placar.vencedor
+		menu.abrir_fim_de_jogo(
+			"%s VENCEU!" % str(times_em_jogo[vencedor]["nome"]).to_upper(),
+			"%d sets a %d" % [placar.sets[vencedor], placar.sets[1 - vencedor]]
+		)
+	elif estado == Estado.PONTO:
 		_preparar_saque()
 
 
@@ -458,14 +490,7 @@ func _ao_encerrar_partida(vencedor: int) -> void:
 	estado = Estado.FIM
 	marcador.esconder()
 	_mostrar_marcas_de_ataque(-1)
-	rotulo_mensagem.text = "Fim de jogo! %s venceu. Aperte Passe pra jogar de novo." % times_em_jogo[vencedor]["nome"]
-
-
-func _reiniciar_partida() -> void:
-	placar = Placar.new()
-	rodizios = [Rodizio.new(), Rodizio.new()]
-	_conectar_placar()
-	_preparar_saque()
+	rotulo_mensagem.text = "Fim de jogo! %s venceu." % times_em_jogo[vencedor]["nome"]
 
 
 func _conectar_placar() -> void:
@@ -480,6 +505,14 @@ func _atualizar_placar() -> void:
 	var b: Dictionary = times_em_jogo[1]
 	rotulo_placar.text = "%s  %d  x  %d  %s\nSet %d   (sets %d - %d)" % [
 		a["nome"], placar.pontos[0], placar.pontos[1], b["nome"],
+		placar.set_atual, placar.sets[0], placar.sets[1],
+	]
+
+
+## Uma linha com o placar, pro menu de pausa.
+func _resumo_do_placar() -> String:
+	return "%s %d x %d %s  ·  Set %d  ·  Sets %d x %d" % [
+		times_em_jogo[0]["nome"], placar.pontos[0], placar.pontos[1], times_em_jogo[1]["nome"],
 		placar.set_atual, placar.sets[0], placar.sets[1],
 	]
 
@@ -546,10 +579,31 @@ func _mostrar_marcas_de_ataque(time: int) -> void:
 		marcas_de_ataque[i].visible = i == time
 
 
-func _carregar_times() -> Array:
-	var texto := FileAccess.get_file_as_string("res://dados/times.json")
-	var dados = JSON.parse_string(texto)
-	return dados["times"]
+## Lê os times e o estádio escolhidos nos menus.
+func _carregar_escolhas() -> void:
+	var times := Dados.times()
+	times_em_jogo = [
+		Dados.por_id(times, str(Configuracao.times[0])),
+		Dados.por_id(times, str(Configuracao.times[1])),
+	]
+	# Mesmo time dos dois lados: o Jogador 2 joga com o uniforme reserva.
+	if times_em_jogo[0]["id"] == times_em_jogo[1]["id"]:
+		times_em_jogo[1] = _com_uniforme_reserva(times_em_jogo[1])
+	estadio = Dados.por_id(Dados.estadios(), Configuracao.estadio)
+
+
+## Uniforme reserva: a 3ª cor vira a principal, e a principal vira o detalhe.
+func _com_uniforme_reserva(time: Dictionary) -> Dictionary:
+	var reserva := time.duplicate(true)
+	var cores: Array = reserva["cores"]
+	if cores.size() >= 3:
+		reserva["cores"] = [cores[2], cores[0], cores[1]]
+	return reserva
+
+
+## Cor do estádio (veja dados/estadios.json), ou "padrao" se faltar.
+func _cor_do_estadio(chave: String, padrao: Color) -> Color:
+	return Dados.cor(estadio.get("cores", {}), chave, padrao)
 
 
 # --- Construção da cena (provisória) ---
@@ -557,9 +611,9 @@ func _carregar_times() -> Array:
 func _criar_ambiente() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color("#1B2A3A")
+	env.background_color = _cor_do_estadio("fundo", Color("#1B2A3A"))
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(1.0, 0.95, 0.9)
+	env.ambient_light_color = _cor_do_estadio("luz", Color(1.0, 0.95, 0.9))
 	# A sombra "chapada" do visual anime fica melhor com mais luz ambiente.
 	env.ambient_light_energy = 0.8 if visual_anime else 0.6
 	var mundo := WorldEnvironment.new()
@@ -573,17 +627,31 @@ func _criar_ambiente() -> void:
 
 
 func _criar_quadra() -> void:
-	# Zona livre (azul) e quadra (madeira).
-	_caixa(Vector3(LARGURA + 8.0, 0.1, COMPRIMENTO + 10.0), Vector3(0, -0.05, 0), Color("#2D6A9A"))
-	_caixa(Vector3(LARGURA, 0.1, COMPRIMENTO), Vector3(0, -0.04, 0), Color("#E39A55"))
+	# Zona livre em volta e a quadra, nas cores do estádio.
+	_caixa(Vector3(LARGURA_ZONA_LIVRE, 0.1, COMPRIMENTO_ZONA_LIVRE), Vector3(0, -0.05, 0),
+		_cor_do_estadio("zona_livre", Color("#2D6A9A")))
+	_caixa(Vector3(LARGURA, 0.1, COMPRIMENTO), Vector3(0, -0.04, 0),
+		_cor_do_estadio("quadra", Color("#E39A55")))
 
 	# Linhas: laterais, fundos, centro e linhas de ataque (3 m da rede).
-	var branco := Color.WHITE
+	var cor_das_linhas := _cor_do_estadio("linhas", Color.WHITE)
 	var y := 0.015
 	for x in [-LARGURA / 2.0, LARGURA / 2.0]:
-		_caixa(Vector3(0.05, 0.01, COMPRIMENTO), Vector3(x, y, 0), branco)
+		_caixa(Vector3(0.05, 0.01, COMPRIMENTO), Vector3(x, y, 0), cor_das_linhas)
 	for z in [-COMPRIMENTO / 2.0, -3.0, 0.0, 3.0, COMPRIMENTO / 2.0]:
-		_caixa(Vector3(LARGURA, 0.01, 0.05), Vector3(0, y, z), branco)
+		_caixa(Vector3(LARGURA, 0.01, 0.05), Vector3(0, y, z), cor_das_linhas)
+
+
+## Placas de propaganda em volta da zona livre, na cor do estádio.
+func _criar_placas() -> void:
+	var cor := _cor_do_estadio("placas", Color("#8E2B2B"))
+	var altura := 1.0
+	var espessura := 0.3
+	var x := LARGURA_ZONA_LIVRE / 2.0 + espessura / 2.0
+	var z := COMPRIMENTO_ZONA_LIVRE / 2.0 + espessura / 2.0
+	for lado in [-1.0, 1.0]:
+		_caixa(Vector3(espessura, altura, COMPRIMENTO_ZONA_LIVRE), Vector3(x * lado, altura / 2.0, 0.0), cor)
+		_caixa(Vector3(LARGURA_ZONA_LIVRE + espessura * 2.0, altura, espessura), Vector3(0.0, altura / 2.0, z * lado), cor)
 
 
 func _criar_rede() -> void:
@@ -605,12 +673,12 @@ func _criar_rede() -> void:
 
 func _criar_atletas(time: int) -> void:
 	var dados_time: Dictionary = times_em_jogo[time]
-	var cor_uniforme := Color.html(str(dados_time["cores"][0]))
-	var cor_detalhe := Color.html(str(dados_time["cores"][1]))
+	var cor_uniforme := Color.from_string(str(dados_time["cores"][0]), Color.GRAY)
+	var cor_detalhe := Color.from_string(str(dados_time["cores"][1]), Color.WHITE)
 
 	for i in 6:
 		var atleta := Node3D.new()
-		atleta.name = "%s_%d" % [dados_time["id"], i + 1]
+		atleta.name = "Time%d_%s_%d" % [time + 1, dados_time["id"], i + 1]
 		atleta.position = _no_mundo(time, FORMACAO[rodizios[time].posicao_de(i)])
 		atleta.set_meta("tempo_do_pulo", -1.0)
 
@@ -749,23 +817,30 @@ func _criar_interface() -> void:
 		divisoria.offset_right = 2.0
 		camada.add_child(divisoria)
 
-	rotulo_placar = Label.new()
-	rotulo_placar.position = Vector2(24, 20)
-	rotulo_placar.add_theme_font_size_override("font_size", 26)
+	rotulo_placar = _rotulo_da_interface(28, true)
+	rotulo_placar.position = Vector2(24, 18)
 	camada.add_child(rotulo_placar)
 
-	rotulo_mensagem = Label.new()
+	rotulo_mensagem = _rotulo_da_interface(32, true)
 	rotulo_mensagem.position = Vector2(400, 90)
-	rotulo_mensagem.size = Vector2(800, 40)
+	rotulo_mensagem.size = Vector2(800, 44)
 	rotulo_mensagem.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	rotulo_mensagem.add_theme_font_size_override("font_size", 28)
 	camada.add_child(rotulo_mensagem)
 
-	var ajuda := Label.new()
-	ajuda.text = "Jogador 1: WASD move, J passe, K saque/cortada, L bloqueio  |  Jogador 2: setas move, 1 passe, 2 saque/cortada, 3 bloqueio (numérico)  |  Controle: A passe, X saque/cortada, Y bloqueio"
-	ajuda.position = Vector2(24, 850)
-	ajuda.add_theme_font_size_override("font_size", 15)
+	var ajuda := _rotulo_da_interface(17, false)
+	ajuda.text = "J1: WASD move · J passe · K saque/cortada · L bloqueio   |   J2: setas · 1 passe · 2 saque/cortada · 3 bloqueio (numérico)   |   Controle: A passe · X saque/cortada · Y bloqueio   |   Esc ou Start: pausa"
+	ajuda.position = Vector2(24, 866)
 	camada.add_child(ajuda)
+
+
+## Texto da interface com contorno escuro, pra ler bem em cima da quadra.
+func _rotulo_da_interface(tamanho: int, titulo: bool) -> Label:
+	var rotulo := Label.new()
+	rotulo.add_theme_font_override("font", Estilo.FONTE_TITULO if titulo else Estilo.FONTE_TEXTO)
+	rotulo.add_theme_font_size_override("font_size", tamanho)
+	rotulo.add_theme_color_override("font_outline_color", Color(0.05, 0.05, 0.07))
+	rotulo.add_theme_constant_override("outline_size", 6)
+	return rotulo
 
 
 func _caixa(tamanho: Vector3, posicao: Vector3, cor: Color) -> MeshInstance3D:

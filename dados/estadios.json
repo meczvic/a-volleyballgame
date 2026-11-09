@@ -1,0 +1,57 @@
+{
+	"_sobre": "Estádios da seleção de times. Por enquanto mudam as cores da quadra, do fundo, das placas em volta e da luz. O primeiro da lista é o padrão. Uma imagem em arte/estadios/<id>.png aparece como prévia no menu, se existir.",
+	"estadios": [
+		{
+			"id": "ginasio_japones",
+			"nome": "Ginásio Japonês",
+			"descricao": "Colégio japonês (padrão)",
+			"cores": {
+				"fundo": "#3B2A1E",
+				"zona_livre": "#B9814A",
+				"quadra": "#2F6FC4",
+				"linhas": "#FFFFFF",
+				"placas": "#8E2B2B",
+				"luz": "#FFE7C9"
+			}
+		},
+		{
+			"id": "arena_nacional",
+			"nome": "Arena Nacional",
+			"descricao": "Final do campeonato nacional",
+			"cores": {
+				"fundo": "#0C1230",
+				"zona_livre": "#1D2A5E",
+				"quadra": "#2E86D9",
+				"linhas": "#FFFFFF",
+				"placas": "#2A50C8",
+				"luz": "#DCE6FF"
+			}
+		},
+		{
+			"id": "arena_brasileira",
+			"nome": "Arena Brasileira",
+			"descricao": "Jogos nacionais do Brasil",
+			"cores": {
+				"fundo": "#14361F",
+				"zona_livre": "#262E5C",
+				"quadra": "#2B8FE0",
+				"linhas": "#FFFFFF",
+				"placas": "#F2C21B",
+				"luz": "#FFF6DD"
+			}
+		},
+		{
+			"id": "arena_neon",
+			"nome": "Arena Neon",
+			"descricao": "Noite com luzes neon",
+			"cores": {
+				"fundo": "#0A0618",
+				"zona_livre": "#24124A",
+				"quadra": "#1E7FD6",
+				"linhas": "#E8F7FF",
+				"placas": "#C23CFF",
+				"luz": "#D9CCFF"
+			}
+		}
+	]
+}
