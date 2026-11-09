@@ -2,11 +2,11 @@
 
 Vôlei de quadra 6 contra 6 em 3D, estilo anime cel-shaded, para 2 jogadores (no mesmo PC ou online). Feito em Godot 4.
 
-Por enquanto o projeto tem: menu principal, seleção de times e estádio, a partida com 3 toques, bloqueio, rodízio, tela dividida e visual anime, pausa e tela de fim de jogo. Os atletas ainda são cápsulas no lugar dos personagens.
+Por enquanto o projeto tem: menu principal, seleção de times e estádio, a partida com 3 toques, bloqueio, rodízio, tela dividida e visual anime, pausa e tela de fim de jogo. Os atletas ainda são cápsulas no lugar dos personagens; o líbero de cada time já aparece com a cor dele. Quando o `.vrm` de um atleta existir em `personagens/`, o jogo usa ele no lugar da cápsula (veja `producao/LEIA-ME.md`), já animado: corre, para e faz cada lance (veja `animacoes/LEIA-ME.md`).
 
 ## Como abrir
 
-1. Instale o **Godot 4.3 ou mais novo**, versão padrão (não a ".NET"): https://godotengine.org/download
+1. Instale o **Godot 4.7.2 ou mais novo**, versão padrão (não a ".NET"): https://godotengine.org/download
 2. Clone este repositório.
 3. Abra o Godot, clique em **Importar**, escolha o arquivo `project.godot` desta pasta.
 4. Aperte **F5** (ou o botão de play no canto superior direito) pra rodar. O jogo abre no menu principal.
@@ -81,11 +81,13 @@ godot --headless --script res://testes/teste_escolha_ataque.gd
 godot --headless --script res://testes/teste_rodizio.gd
 godot --headless --script res://testes/teste_selecao.gd
 godot --headless --script res://testes/teste_dados.gd
+godot --headless --script res://testes/teste_animacoes.gd
+godot --headless --script res://testes/teste_animador.gd
 ```
 
 Cada um deve terminar com uma linha começando com `OK:`.
 
-Todos os testes passam no Godot 4.3, e a partida, os menus e a seleção de times rodam sem erros (testado em 09/11/2026).
+Todos os testes passam no Godot 4.7.2 (antes, 4.3), e a partida, os menus e a seleção de times rodam sem erros (testado em 09/11/2026).
 
 ## Próximos passos
 

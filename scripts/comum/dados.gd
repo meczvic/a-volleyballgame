@@ -1,11 +1,13 @@
 extends RefCounted
-## Lê os arquivos da pasta "dados/" (times e estádios).
+## Lê os arquivos da pasta "dados/" (times, estádios e elenco).
 ##
 ## Uso: var times := Dados.times()
 ##      var karasuno := Dados.por_id(times, "karasuno")
 
 const ARQUIVO_TIMES := "res://dados/times.json"
 const ARQUIVO_ESTADIOS := "res://dados/estadios.json"
+const ARQUIVO_ELENCO := "res://dados/elenco.json"
+const PASTA_PERSONAGENS := "res://personagens"
 
 
 static func times() -> Array:
@@ -14,6 +16,16 @@ static func times() -> Array:
 
 static func estadios() -> Array:
 	return _ler(ARQUIVO_ESTADIOS).get("estadios", [])
+
+
+## Os 6 atletas do time, na ordem do rodízio inicial (vazio se o time não tiver elenco).
+static func elenco(id_time: String) -> Array:
+	return _ler(ARQUIVO_ELENCO).get("times", {}).get(id_time, [])
+
+
+## Caminho do personagem do VRoid: personagens/<time>/<número com 2 dígitos>_<arquivo>.vrm
+static func caminho_do_personagem(id_time: String, atleta: Dictionary) -> String:
+	return "%s/%s/%02d_%s.vrm" % [PASTA_PERSONAGENS, id_time, int(atleta.get("numero", 0)), str(atleta.get("arquivo", ""))]
 
 
 ## Procura um item pelo "id". Se não achar, devolve o primeiro da lista

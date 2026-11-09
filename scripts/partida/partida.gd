@@ -18,7 +18,8 @@ extends Node3D
 ##
 ## Os times e o estádio vêm da seleção de times (autoload Configuracao).
 ## Rodando esta cena direto (F6), vale o padrão: Karasuno x Nekoma no Ginásio Japonês.
-## Os atletas são cápsulas provisórias.
+## Atleta sem personagem do VRoid aparece como cápsula. Com personagem, ele
+## corre, para e faz cada lance (scripts/visual/animador.gd).
 
 const Placar := preload("res://scripts/regras/placar.gd")
 const Toques := preload("res://scripts/regras/toques.gd")
@@ -31,6 +32,7 @@ const VisualAnime := preload("res://scripts/visual/visual_anime.gd")
 const Dados := preload("res://scripts/comum/dados.gd")
 const MenuDePausa := preload("res://scripts/menus/menu_de_pausa.gd")
 const Estilo := preload("res://scripts/menus/estilo.gd")
+const Animador := preload("res://scripts/visual/animador.gd")
 
 enum Estado { SAQUE, RALLY, PONTO, FIM }
 
@@ -78,6 +80,9 @@ const FORMACAO := {
 const POSICAO_DO_SACADOR := Vector2(2.5, 10.0)
 ## Onde o passe deve chegar: perto da rede, um pouco à direita.
 const PONTO_DO_LEVANTADOR := Vector2(1.0, 1.0)
+## Giro do personagem .vrm pro time do Jogador 1 olhar pra rede (-z).
+## VRM 1.0 olha pra +z, por isso meia volta. Conferir com o primeiro personagem (Hinata).
+const GIRO_DO_PERSONAGEM := PI
 ## Erro máximo do passe, em metros.
 const ERRO_DO_PASSE := 0.6
 
@@ -291,6 +296,7 @@ func _bloquear(time: int) -> void:
 			continue
 		atleta.position.x += deslocamento
 		_pular(atleta)
+		_animar(atleta, "bloqueio")
 
 
 ## Chamado pela bola quando ela cruza a rede por cima da fita.
@@ -326,6 +332,15 @@ func _ao_bola_ser_bloqueada() -> void:
 	_ao_lancar_bola()
 
 
+## Toca um lance no personagem do atleta (a cápsula não tem animação).
+func _animar(atleta: Node3D, lance: String) -> void:
+	if atleta == null:
+		return
+	var animador = atleta.get_meta("animador", null)
+	if animador:
+		animador.tocar(lance)
+
+
 # --- Comandos ---
 
 func _ao_receber_comando(jogador: int, tipo: String) -> void:
@@ -341,9 +356,13 @@ func _ao_receber_comando(jogador: int, tipo: String) -> void:
 				_tentar_tocar(time, true)
 			elif tipo == "bloqueio":
 				_bloquear(time)
+			elif tipo == "mergulho":
+				# Por enquanto só a animação: o mergulho ainda não alcança mais longe.
+				_animar(controlados[time], "mergulho")
 
 
 func _sacar(time: int, flutuante: bool) -> void:
+	_animar(controlados[time], "saque")
 	toques.reiniciar()
 	toques.registrar(time)
 	var destino := _ponto_aleatorio_no_lado(1 - time, 2.0, 8.0)
@@ -384,6 +403,7 @@ func _tentar_tocar(time: int, atacando: bool) -> void:
 
 
 func _passar_pro_levantador(time: int) -> void:
+	_animar(controlados[time], "manchete")
 	var erro := Vector2(randf_range(-ERRO_DO_PASSE, ERRO_DO_PASSE), randf_range(-0.3, ERRO_DO_PASSE))
 	var alvo := _no_mundo(time, PONTO_DO_LEVANTADOR + erro)
 	bola.lancar(alvo, 4.0)
@@ -392,6 +412,7 @@ func _passar_pro_levantador(time: int) -> void:
 
 
 func _levantar(time: int) -> void:
+	_animar(controlados[time], "levantamento")
 	var direcao := _direcao_no_mundo(time)
 	var escolhido := EscolhaAtaque.escolher(alvos_de_ataque[time], direcao, ATAQUE_PADRAO)
 	var alvo: Vector3 = alvos_de_ataque[time][escolhido]
@@ -402,6 +423,7 @@ func _levantar(time: int) -> void:
 
 func _cortar(time: int) -> void:
 	_pular(controlados[time])
+	_animar(controlados[time], "cortada")
 	# A direção mira pra esquerda ou direita da quadra adversária.
 	var direcao := _direcao_no_mundo(time)
 	var mira_x := clampf(direcao.x * 3.0 + randf_range(-0.8, 0.8), -LARGURA / 2.0 + 0.5, LARGURA / 2.0 - 0.5)
@@ -413,6 +435,7 @@ func _cortar(time: int) -> void:
 
 
 func _devolver_de_graca(time: int) -> void:
+	_animar(controlados[time], "manchete")
 	bola.lancar(_ponto_aleatorio_no_lado(1 - time, 2.0, 8.0), 5.0)
 	_ao_lancar_bola()
 
@@ -458,6 +481,8 @@ func _encerrar_rally(vencedor: int, motivo: String) -> void:
 	marcador.esconder()
 	_mostrar_marcas_de_ataque(-1)
 	_mostrar_mensagem("Ponto %s! (%s)" % [times_em_jogo[vencedor]["nome"], motivo])
+	for atleta in atletas[vencedor]:
+		_animar(atleta, "comemoracao_palmas")
 	# Se foi o último ponto, o placar chama _ao_encerrar_partida aqui dentro.
 	placar.marcar_ponto(vencedor)
 	temporizador_do_ponto.start()
@@ -482,6 +507,11 @@ func _preparar_saque() -> void:
 	marcador.esconder()
 	_mostrar_marcas_de_ataque(-1)
 	_colocar_na_formacao()
+	for lado in 2:
+		for atleta in atletas[lado]:
+			var animador = atleta.get_meta("animador", null)
+			if animador:
+				animador.soltar()
 	# Depois de um set, o placar zera aqui (no fim do set ele mostra o resultado).
 	_atualizar_placar()
 
@@ -502,6 +532,8 @@ func _ao_encerrar_partida(vencedor: int) -> void:
 	marcador.esconder()
 	_mostrar_marcas_de_ataque(-1)
 	_mostrar_mensagem("Fim de jogo! %s venceu." % times_em_jogo[vencedor]["nome"])
+	for atleta in atletas[vencedor]:
+		_animar(atleta, "comemoracao_torcida")
 
 
 func _conectar_placar() -> void:
@@ -619,6 +651,7 @@ func _com_uniforme_reserva(time: Dictionary) -> Dictionary:
 	var cores: Array = reserva["cores"]
 	if cores.size() >= 3:
 		reserva["cores"] = [cores[2], cores[0], cores[1]]
+		reserva["cores_libero"] = [cores[1], cores[2]]
 	return reserva
 
 
@@ -694,34 +727,28 @@ func _criar_rede() -> void:
 
 func _criar_atletas(time: int) -> void:
 	var dados_time: Dictionary = times_em_jogo[time]
-	var cor_uniforme := Color.from_string(str(dados_time["cores"][0]), Color.GRAY)
+	var id_time := str(dados_time["id"])
+	var elenco := Dados.elenco(id_time)
 	var cor_detalhe := Color.from_string(str(dados_time["cores"][1]), Color.WHITE)
 
 	for i in 6:
 		var atleta := Node3D.new()
-		atleta.name = "Time%d_%s_%d" % [time + 1, dados_time["id"], i + 1]
+		atleta.name = "Time%d_%s_%d" % [time + 1, id_time, i + 1]
 		atleta.position = _no_mundo(time, FORMACAO[rodizios[time].posicao_de(i)])
 		atleta.set_meta("tempo_do_pulo", -1.0)
+		var dados_atleta: Dictionary = elenco[i] if i < elenco.size() else {}
+		atleta.set_meta("dados", dados_atleta)
 
-		var corpo := MeshInstance3D.new()
-		var capsula := CapsuleMesh.new()
-		capsula.radius = 0.35
-		capsula.height = 1.8
-		corpo.mesh = capsula
-		corpo.material_override = _material_do_atleta(cor_uniforme, 0.03)
-		corpo.position.y = 0.9
-		atleta.add_child(corpo)
-
-		# Faixa no peito com a cor de detalhe do uniforme.
-		var faixa := MeshInstance3D.new()
-		var anel_do_peito := CylinderMesh.new()
-		anel_do_peito.top_radius = 0.36
-		anel_do_peito.bottom_radius = 0.36
-		anel_do_peito.height = 0.12
-		faixa.mesh = anel_do_peito
-		faixa.material_override = _material_do_atleta(cor_detalhe, 0.0)
-		faixa.position.y = 1.15
-		atleta.add_child(faixa)
+		var personagem := _carregar_personagem(id_time, dados_atleta)
+		if personagem:
+			atleta.add_child(personagem)
+			var animador := Animador.new()
+			animador.name = "Animador"
+			atleta.add_child(animador)
+			if animador.preparar(personagem, GIRO_DO_PERSONAGEM if time == 0 else GIRO_DO_PERSONAGEM + PI):
+				atleta.set_meta("animador", animador)
+		else:
+			_criar_capsula(atleta, _cores_do_atleta(dados_time, dados_atleta))
 		add_child(atleta)
 		atletas[time].append(atleta)
 
@@ -738,6 +765,54 @@ func _criar_atletas(time: int) -> void:
 	add_child(anel)
 	aneis[time] = anel
 	controlados[time] = atletas[time][rodizios[time].atleta_na(6)]
+
+
+## Personagem do VRoid (.vrm) do atleta, ou null se o arquivo ainda não existe
+## (ou se o plugin VRM não está instalado). Aí o atleta continua sendo cápsula.
+func _carregar_personagem(id_time: String, dados_atleta: Dictionary) -> Node3D:
+	if dados_atleta.is_empty():
+		return null
+	var caminho := Dados.caminho_do_personagem(id_time, dados_atleta)
+	if not ResourceLoader.exists(caminho):
+		return null
+	var cena = load(caminho)
+	if not cena is PackedScene:
+		push_warning("O arquivo %s não virou uma cena (o plugin VRM está ativo?)." % caminho)
+		return null
+	return cena.instantiate() as Node3D
+
+
+## Cores [camisa, detalhe] do atleta: o líbero usa cores_libero, os outros o uniforme do time.
+func _cores_do_atleta(dados_time: Dictionary, dados_atleta: Dictionary) -> Array:
+	var cores: Array = dados_time["cores"]
+	if dados_atleta.get("libero", false) and dados_time.has("cores_libero"):
+		cores = dados_time["cores_libero"]
+	return [
+		Color.from_string(str(cores[0]), Color.GRAY),
+		Color.from_string(str(cores[1]), Color.WHITE),
+	]
+
+
+## Cápsula de teste (1,8 m) com uma faixa no peito na cor de detalhe.
+func _criar_capsula(atleta: Node3D, cores: Array) -> void:
+	var corpo := MeshInstance3D.new()
+	var capsula := CapsuleMesh.new()
+	capsula.radius = 0.35
+	capsula.height = 1.8
+	corpo.mesh = capsula
+	corpo.material_override = _material_do_atleta(cores[0], 0.03)
+	corpo.position.y = 0.9
+	atleta.add_child(corpo)
+
+	var faixa := MeshInstance3D.new()
+	var anel_do_peito := CylinderMesh.new()
+	anel_do_peito.top_radius = 0.36
+	anel_do_peito.bottom_radius = 0.36
+	anel_do_peito.height = 0.12
+	faixa.mesh = anel_do_peito
+	faixa.material_override = _material_do_atleta(cores[1], 0.0)
+	faixa.position.y = 1.15
+	atleta.add_child(faixa)
 
 
 ## Cria as marcas no chão (círculo + seta + nome) dos 4 ataques do time.

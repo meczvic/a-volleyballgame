@@ -1,0 +1,61 @@
+{
+	"_sobre": "Os 6 atletas de cada time (5 de quadra + 1 líbero). A ordem da lista é a posição inicial no rodízio (1 a 6). O arquivo do personagem fica em personagens/<id do time>/<número com 2 dígitos>_<arquivo>.vrm. Fontes e o que ainda falta conferir: personagens/ELENCO.md. Nomes e aparências ficam só aqui e nas fichas, pra serem trocados por personagens próprios numa versão pública.",
+	"times": {
+		"karasuno": [
+			{ "numero": 9, "nome": "Tobio Kageyama", "arquivo": "kageyama", "posicao": "levantador", "libero": false },
+			{ "numero": 3, "nome": "Asahi Azumane", "arquivo": "azumane", "posicao": "ponteiro", "libero": false },
+			{ "numero": 11, "nome": "Kei Tsukishima", "arquivo": "tsukishima", "posicao": "central", "libero": false },
+			{ "numero": 1, "nome": "Daichi Sawamura", "arquivo": "sawamura", "posicao": "ponteiro", "libero": false },
+			{ "numero": 10, "nome": "Shoyo Hinata", "arquivo": "hinata", "posicao": "central", "libero": false },
+			{ "numero": 4, "nome": "Yu Nishinoya", "arquivo": "nishinoya", "posicao": "líbero", "libero": true }
+		],
+		"nekoma": [
+			{ "numero": 5, "nome": "Kenma Kozume", "arquivo": "kenma", "posicao": "levantador", "libero": false },
+			{ "numero": 4, "nome": "Taketora Yamamoto", "arquivo": "yamamoto", "posicao": "ponteiro", "libero": false },
+			{ "numero": 1, "nome": "Tetsuro Kuroo", "arquivo": "kuroo", "posicao": "central", "libero": false },
+			{ "numero": 2, "nome": "Nobuyuki Kai", "arquivo": "kai", "posicao": "ponteiro", "libero": false },
+			{ "numero": 11, "nome": "Lev Haiba", "arquivo": "lev", "posicao": "central", "libero": false },
+			{ "numero": 3, "nome": "Morisuke Yaku", "arquivo": "yaku", "posicao": "líbero", "libero": true }
+		],
+		"aoba_johsai": [
+			{ "numero": 1, "nome": "Toru Oikawa", "arquivo": "oikawa", "posicao": "levantador", "libero": false },
+			{ "numero": 4, "nome": "Hajime Iwaizumi", "arquivo": "iwaizumi", "posicao": "ponteiro", "libero": false },
+			{ "numero": 2, "nome": "Issei Matsukawa", "arquivo": "matsukawa", "posicao": "central", "libero": false },
+			{ "numero": 3, "nome": "Takahiro Hanamaki", "arquivo": "hanamaki", "posicao": "ponteiro", "libero": false },
+			{ "numero": 12, "nome": "Yutaro Kindaichi", "arquivo": "kindaichi", "posicao": "central", "libero": false },
+			{ "numero": 7, "nome": "Shinji Watari", "arquivo": "watari", "posicao": "líbero", "libero": true }
+		],
+		"shiratorizawa": [
+			{ "numero": 10, "nome": "Kenjiro Shirabu", "arquivo": "shirabu", "posicao": "levantador", "libero": false },
+			{ "numero": 1, "nome": "Wakatoshi Ushijima", "arquivo": "ushijima", "posicao": "oposto", "libero": false },
+			{ "numero": 5, "nome": "Satori Tendo", "arquivo": "tendo", "posicao": "central", "libero": false },
+			{ "numero": 4, "nome": "Reon Ohira", "arquivo": "ohira", "posicao": "ponteiro", "libero": false },
+			{ "numero": 8, "nome": "Tsutomu Goshiki", "arquivo": "goshiki", "posicao": "ponteiro", "libero": false },
+			{ "numero": 14, "nome": "Hayato Yamagata", "arquivo": "yamagata", "posicao": "líbero", "libero": true }
+		],
+		"fukurodani": [
+			{ "numero": 5, "nome": "Keiji Akaashi", "arquivo": "akaashi", "posicao": "levantador", "libero": false },
+			{ "numero": 4, "nome": "Kotaro Bokuto", "arquivo": "bokuto", "posicao": "ponteiro", "libero": false },
+			{ "numero": 2, "nome": "Tatsuki Washio", "arquivo": "washio", "posicao": "central", "libero": false },
+			{ "numero": 7, "nome": "Akinori Konoha", "arquivo": "konoha", "posicao": "oposto", "libero": false },
+			{ "numero": 3, "nome": "Yamato Sarukui", "arquivo": "sarukui", "posicao": "ponteiro", "libero": false },
+			{ "numero": 11, "nome": "Haruki Komi", "arquivo": "komi", "posicao": "líbero", "libero": true }
+		],
+		"inarizaki": [
+			{ "numero": 7, "nome": "Atsumu Miya", "arquivo": "atsumu", "posicao": "levantador", "libero": false },
+			{ "numero": 4, "nome": "Aran Ojiro", "arquivo": "aran", "posicao": "ponteiro", "libero": false },
+			{ "numero": 10, "nome": "Rintaro Suna", "arquivo": "suna", "posicao": "central", "libero": false },
+			{ "numero": 1, "nome": "Shinsuke Kita", "arquivo": "kita", "posicao": "ponteiro", "libero": false },
+			{ "numero": 11, "nome": "Osamu Miya", "arquivo": "osamu", "posicao": "oposto", "libero": false },
+			{ "numero": 9, "nome": "Michinari Akagi", "arquivo": "akagi", "posicao": "líbero", "libero": true }
+		],
+		"brasil": [
+			{ "numero": 7, "nome": "Caio Ventura", "arquivo": "ventura", "posicao": "levantador", "libero": false },
+			{ "numero": 10, "nome": "Davi Rocha", "arquivo": "rocha", "posicao": "ponteiro", "libero": false },
+			{ "numero": 13, "nome": "Lucas Paim", "arquivo": "paim", "posicao": "central", "libero": false },
+			{ "numero": 4, "nome": "Rafael Azevedo", "arquivo": "azevedo", "posicao": "ponteiro", "libero": false },
+			{ "numero": 8, "nome": "Thiago Barreto", "arquivo": "barreto", "posicao": "oposto", "libero": false },
+			{ "numero": 1, "nome": "Enzo Takahashi", "arquivo": "takahashi", "posicao": "líbero", "libero": true }
+		]
+	}
+}
