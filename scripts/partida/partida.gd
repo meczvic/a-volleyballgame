@@ -18,7 +18,8 @@ extends Node3D
 ##
 ## Os times e o estádio vêm da seleção de times (autoload Configuracao).
 ## Rodando esta cena direto (F6), vale o padrão: Karasuno x Nekoma no Ginásio Japonês.
-## Os atletas são cápsulas provisórias.
+## Atleta sem personagem do VRoid aparece como cápsula. Com personagem, ele
+## corre, para e faz cada lance (scripts/visual/animador.gd).
 
 const Placar := preload("res://scripts/regras/placar.gd")
 const Toques := preload("res://scripts/regras/toques.gd")
@@ -31,6 +32,7 @@ const VisualAnime := preload("res://scripts/visual/visual_anime.gd")
 const Dados := preload("res://scripts/comum/dados.gd")
 const MenuDePausa := preload("res://scripts/menus/menu_de_pausa.gd")
 const Estilo := preload("res://scripts/menus/estilo.gd")
+const Animador := preload("res://scripts/visual/animador.gd")
 
 enum Estado { SAQUE, RALLY, PONTO, FIM }
 
@@ -290,6 +292,7 @@ func _bloquear(time: int) -> void:
 			continue
 		atleta.position.x += deslocamento
 		_pular(atleta)
+		_animar(atleta, "bloqueio")
 
 
 ## Chamado pela bola quando ela cruza a rede por cima da fita.
@@ -325,6 +328,15 @@ func _ao_bola_ser_bloqueada() -> void:
 	_ao_lancar_bola()
 
 
+## Toca um lance no personagem do atleta (a cápsula não tem animação).
+func _animar(atleta: Node3D, lance: String) -> void:
+	if atleta == null:
+		return
+	var animador = atleta.get_meta("animador", null)
+	if animador:
+		animador.tocar(lance)
+
+
 # --- Comandos ---
 
 func _ao_receber_comando(jogador: int, tipo: String) -> void:
@@ -340,9 +352,13 @@ func _ao_receber_comando(jogador: int, tipo: String) -> void:
 				_tentar_tocar(time, true)
 			elif tipo == "bloqueio":
 				_bloquear(time)
+			elif tipo == "mergulho":
+				# Por enquanto só a animação: o mergulho ainda não alcança mais longe.
+				_animar(controlados[time], "mergulho")
 
 
 func _sacar(time: int, flutuante: bool) -> void:
+	_animar(controlados[time], "saque")
 	toques.reiniciar()
 	toques.registrar(time)
 	var destino := _ponto_aleatorio_no_lado(1 - time, 2.0, 8.0)
@@ -383,6 +399,7 @@ func _tentar_tocar(time: int, atacando: bool) -> void:
 
 
 func _passar_pro_levantador(time: int) -> void:
+	_animar(controlados[time], "manchete")
 	var erro := Vector2(randf_range(-ERRO_DO_PASSE, ERRO_DO_PASSE), randf_range(-0.3, ERRO_DO_PASSE))
 	var alvo := _no_mundo(time, PONTO_DO_LEVANTADOR + erro)
 	bola.lancar(alvo, 4.0)
@@ -391,6 +408,7 @@ func _passar_pro_levantador(time: int) -> void:
 
 
 func _levantar(time: int) -> void:
+	_animar(controlados[time], "levantamento")
 	var direcao := _direcao_no_mundo(time)
 	var escolhido := EscolhaAtaque.escolher(alvos_de_ataque[time], direcao, ATAQUE_PADRAO)
 	var alvo: Vector3 = alvos_de_ataque[time][escolhido]
@@ -401,6 +419,7 @@ func _levantar(time: int) -> void:
 
 func _cortar(time: int) -> void:
 	_pular(controlados[time])
+	_animar(controlados[time], "cortada")
 	# A direção mira pra esquerda ou direita da quadra adversária.
 	var direcao := _direcao_no_mundo(time)
 	var mira_x := clampf(direcao.x * 3.0 + randf_range(-0.8, 0.8), -LARGURA / 2.0 + 0.5, LARGURA / 2.0 - 0.5)
@@ -412,6 +431,7 @@ func _cortar(time: int) -> void:
 
 
 func _devolver_de_graca(time: int) -> void:
+	_animar(controlados[time], "manchete")
 	bola.lancar(_ponto_aleatorio_no_lado(1 - time, 2.0, 8.0), 5.0)
 	_ao_lancar_bola()
 
@@ -457,6 +477,8 @@ func _encerrar_rally(vencedor: int, motivo: String) -> void:
 	marcador.esconder()
 	_mostrar_marcas_de_ataque(-1)
 	_mostrar_mensagem("Ponto %s! (%s)" % [times_em_jogo[vencedor]["nome"], motivo])
+	for atleta in atletas[vencedor]:
+		_animar(atleta, "comemoracao_palmas")
 	# Se foi o último ponto, o placar chama _ao_encerrar_partida aqui dentro.
 	placar.marcar_ponto(vencedor)
 	temporizador_do_ponto.start()
@@ -481,6 +503,11 @@ func _preparar_saque() -> void:
 	marcador.esconder()
 	_mostrar_marcas_de_ataque(-1)
 	_colocar_na_formacao()
+	for lado in 2:
+		for atleta in atletas[lado]:
+			var animador = atleta.get_meta("animador", null)
+			if animador:
+				animador.soltar()
 	# Depois de um set, o placar zera aqui (no fim do set ele mostra o resultado).
 	_atualizar_placar()
 
@@ -501,6 +528,8 @@ func _ao_encerrar_partida(vencedor: int) -> void:
 	marcador.esconder()
 	_mostrar_marcas_de_ataque(-1)
 	_mostrar_mensagem("Fim de jogo! %s venceu." % times_em_jogo[vencedor]["nome"])
+	for atleta in atletas[vencedor]:
+		_animar(atleta, "comemoracao_torcida")
 
 
 func _conectar_placar() -> void:
@@ -708,8 +737,12 @@ func _criar_atletas(time: int) -> void:
 
 		var personagem := _carregar_personagem(id_time, dados_atleta)
 		if personagem:
-			personagem.rotation.y = GIRO_DO_PERSONAGEM if time == 0 else GIRO_DO_PERSONAGEM + PI
 			atleta.add_child(personagem)
+			var animador := Animador.new()
+			animador.name = "Animador"
+			atleta.add_child(animador)
+			if animador.preparar(personagem, GIRO_DO_PERSONAGEM if time == 0 else GIRO_DO_PERSONAGEM + PI):
+				atleta.set_meta("animador", animador)
 		else:
 			_criar_capsula(atleta, _cores_do_atleta(dados_time, dados_atleta))
 		add_child(atleta)
