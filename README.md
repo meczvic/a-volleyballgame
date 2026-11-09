@@ -2,7 +2,7 @@
 
 Vôlei de quadra 6 contra 6 em 3D, estilo anime cel-shaded, para 2 jogadores (no mesmo PC ou online). Feito em Godot 4.
 
-Por enquanto o projeto tem: menu principal, seleção de times e estádio, a partida com 3 toques, bloqueio, rodízio, tela dividida e visual anime, pausa e tela de fim de jogo. Os atletas ainda são cápsulas no lugar dos personagens; o líbero de cada time já aparece com a cor dele. Quando o `.vrm` de um atleta existir em `personagens/`, o jogo usa ele no lugar da cápsula (veja `producao/LEIA-ME.md`), já animado: corre, para e faz cada lance (veja `animacoes/LEIA-ME.md`).
+Por enquanto o projeto tem: menu principal, seleção de times e estádio, a partida com 3 toques, bloqueio, rodízio, tela dividida e visual anime, pausa e tela de fim de jogo. Os atletas ainda são cápsulas no lugar dos personagens (6 por time, sem líbero). Quando o `.vrm` de um atleta existir em `personagens/`, o jogo usa ele no lugar da cápsula (veja `producao/LEIA-ME.md`), já animado: corre, para e faz cada lance (veja `animacoes/LEIA-ME.md`).
 
 ## Como abrir
 

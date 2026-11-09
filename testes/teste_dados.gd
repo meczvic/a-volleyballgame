@@ -52,10 +52,6 @@ func _teste_times() -> void:
 		for cor in cores:
 			_verificar(Color.html_is_valid(str(cor)), "%s: cor %s válida" % [id, cor])
 		_verificar(Color.html_is_valid(str(time.get("cor_do_menu", ""))), "%s: cor_do_menu válida" % id)
-		var cores_libero: Array = time.get("cores_libero", [])
-		_verificar(cores_libero.size() == 2, "%s: 2 cores de líbero" % id)
-		for cor in cores_libero:
-			_verificar(Color.html_is_valid(str(cor)), "%s: cor de líbero %s válida" % [id, cor])
 
 
 func _teste_estadios() -> void:
@@ -100,7 +96,8 @@ func _teste_padrao_da_configuracao() -> void:
 	configuracao.free()
 
 
-## Cada time tem 6 atletas, 1 líbero, números diferentes e nome de arquivo no padrão.
+## Cada time tem 6 atletas de quadra (1 levantador, 2 ponteiros, 2 centrais, 1 oposto),
+## sem líbero, com números diferentes e nome de arquivo no padrão.
 func _teste_elenco() -> void:
 	var nome_valido := RegEx.create_from_string("^[a-z0-9_]+$")
 	for time in Dados.times():
@@ -108,7 +105,7 @@ func _teste_elenco() -> void:
 		var elenco := Dados.elenco(id)
 		_verificar(elenco.size() == 6, "%s: 6 atletas no elenco" % id)
 		var numeros := {}
-		var liberos := 0
+		var funcoes := {}
 		for atleta in elenco:
 			var numero := int(atleta.get("numero", 0))
 			_verificar(numero >= 1 and numero <= 99, "%s: número %d entre 1 e 99" % [id, numero])
@@ -116,9 +113,11 @@ func _teste_elenco() -> void:
 			numeros[numero] = true
 			_verificar(str(atleta.get("nome", "")) != "", "%s: atleta %d tem nome" % [id, numero])
 			_verificar(nome_valido.search(str(atleta.get("arquivo", ""))) != null, "%s: arquivo do %d sem acento nem espaço" % [id, numero])
-			if atleta.get("libero", false):
-				liberos += 1
-		_verificar(liberos == 1, "%s: 1 líbero (tem %d)" % [id, liberos])
+			_verificar(not atleta.get("libero", false), "%s: %d não é líbero (o jogo não usa líbero)" % [id, numero])
+			var funcao := str(atleta.get("posicao", ""))
+			funcoes[funcao] = int(funcoes.get(funcao, 0)) + 1
+		var esperado := {"levantador": 1, "ponteiro": 2, "central": 2, "oposto": 1}
+		_verificar(funcoes == esperado, "%s: 1 levantador, 2 ponteiros, 2 centrais e 1 oposto (tem %s)" % [id, funcoes])
 	var hinata := {"numero": 10, "arquivo": "hinata"}
 	_verificar(Dados.caminho_do_personagem("karasuno", hinata) == "res://personagens/karasuno/10_hinata.vrm", "caminho do personagem no padrão")
 	_verificar(Dados.caminho_do_personagem("nekoma", {"numero": 5, "arquivo": "kenma"}).ends_with("/05_kenma.vrm"), "número com 2 dígitos")
