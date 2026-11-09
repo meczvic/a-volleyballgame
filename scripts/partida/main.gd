@@ -1,23 +1,25 @@
 extends Node3D
-## Cena de teste: saque, 3 toques (passe, levantamento, cortada) e pontos.
+## Cena de teste: saque, 3 toques, bloqueio, rodízio e IA dos atletas.
 ##
 ## Como jogar:
-## - Quem saca aperta Ataque (K / 2 numérico / X no controle).
+## - Quem saca (o atleta na posição 1 do rodízio) aperta Ataque.
 ## - Um anel amarelo mostra onde a bola vai cair, e o jogo troca sozinho
-##   pro atleta mais perto dele.
+##   pro atleta mais perto dele. Os outros 5 se posicionam sozinhos.
 ## - 1º toque: Passe manda a bola pro levantador.
 ## - 2º toque: Passe levanta. Segure uma direção pra escolher o atacante
 ##   (as setas aparecem no chão). Sem direção, vai pro meio.
-## - 3º toque: Ataque com a bola alta corta (a direção mira na diagonal
-##   ou na paralela). Passe só devolve de graça.
+## - 3º toque: Ataque com a bola alta corta (a direção mira).
+##   Passe só devolve de graça.
 ## - Ataque em qualquer toque, com a bola alta, já manda pro outro lado.
+## - Bloqueio: os 3 da rede pulam. A direção desloca o bloqueio.
+##   Acertar o tempo do pulo devolve a cortada.
 ## - 4 toques seguidos do mesmo time é falta.
 ##
-## Ainda não tem IA dos outros atletas nem bloqueio: vem na próxima parte.
 ## Os atletas são cápsulas provisórias.
 
 const Placar := preload("res://scripts/regras/placar.gd")
 const Toques := preload("res://scripts/regras/toques.gd")
+const Rodizio := preload("res://scripts/regras/rodizio.gd")
 const EscolhaAtaque := preload("res://scripts/regras/escolha_ataque.gd")
 const EntradaLocal := preload("res://scripts/entrada/entrada_local.gd")
 const Bola := preload("res://scripts/partida/bola.gd")
@@ -30,8 +32,9 @@ const COMPRIMENTO := 18.0
 const LARGURA := 9.0
 const ALTURA_REDE := 2.43
 
-## Velocidade do atleta controlado (m/s).
+## Velocidade do atleta controlado e dos outros (m/s).
 const VELOCIDADE := 6.0
+const VELOCIDADE_IA := 5.0
 ## Distância (no chão) em que o atleta alcança a bola.
 const ALCANCE := 1.8
 ## Altura máxima da bola pra passar ou levantar.
@@ -42,14 +45,33 @@ const ALTURA_MAXIMA_CORTADA := 3.5
 ## Tempo mostrando "Ponto!" antes do próximo saque.
 const PAUSA_DEPOIS_DO_PONTO := 1.5
 
-## Onde o passe deve chegar: perto da rede, um pouco à direita.
+## Pulo: duração (s) e altura máxima (m).
+const DURACAO_DO_PULO := 0.6
+const ALTURA_DO_PULO := 0.95
+## Altura das mãos de um atleta em pé com os braços pra cima.
+const ALTURA_DAS_MAOS := 2.35
+## Até quantos metros pro lado da mão o bloqueio alcança a bola.
+const LARGURA_DO_BLOQUEIO := 0.6
+## Só bloqueia quem está até essa distância da rede.
+const DISTANCIA_MAXIMA_DO_BLOQUEIO := 1.2
+## Quanto a direção desloca o bloqueio na hora do pulo (m).
+const DESLOCAMENTO_DO_BLOQUEIO := 0.7
+
 ## Coordenadas "do time": x = lado (negativo = esquerda de quem olha pra rede),
-## z = distância da rede.
+## y = distância da rede.
+## Onde fica cada posição do rodízio na formação básica.
+const FORMACAO := {
+	1: Vector2(3.0, 7.0), 2: Vector2(3.0, 2.0), 3: Vector2(0.0, 2.0),
+	4: Vector2(-3.0, 2.0), 5: Vector2(-3.0, 7.0), 6: Vector2(0.0, 7.0),
+}
+## Onde quem saca fica (atrás da linha de fundo).
+const POSICAO_DO_SACADOR := Vector2(2.5, 10.0)
+## Onde o passe deve chegar: perto da rede, um pouco à direita.
 const PONTO_DO_LEVANTADOR := Vector2(1.0, 1.0)
 ## Erro máximo do passe, em metros.
 const ERRO_DO_PASSE := 0.6
 
-## Pra onde o levantador pode mandar a bola, nas coordenadas do time.
+## Pra onde o levantador pode mandar a bola.
 const ATAQUES := [
 	{ "nome": "Ponta", "posicao": Vector2(-3.5, 1.2) },
 	{ "nome": "Meio", "posicao": Vector2(0.0, 1.2) },
@@ -65,6 +87,7 @@ const ATAQUE_PADRAO := 1
 
 var placar = Placar.new()
 var toques = Toques.new()
+var rodizios: Array = [Rodizio.new(), Rodizio.new()]
 var estado := Estado.SAQUE
 var ultimo_toque := -1
 
@@ -101,7 +124,9 @@ func _ready() -> void:
 	bola = Bola.new()
 	bola.name = "Bola"
 	add_child(bola)
+	bola.verificar_bloqueio = _tem_bloqueio
 	bola.tocou_chao.connect(_ao_bola_tocar_chao)
+	bola.bloqueada.connect(_ao_bola_ser_bloqueada)
 
 	marcador = MarcadorQueda.new()
 	marcador.name = "MarcadorQueda"
@@ -123,11 +148,21 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	for time in 2:
-		var atleta := controlados[time]
+		var controlado := controlados[time]
 		var sacando := estado == Estado.SAQUE and time == placar.quem_saca
 		if not sacando:
-			_mover(atleta, time, entradas[time].direcao, delta)
-		aneis[time].position = Vector3(atleta.position.x, 0.03, atleta.position.z)
+			_mover(controlado, time, entradas[time].direcao, delta)
+
+		# Os outros 5 vão sozinhos pro lugar certo.
+		if estado == Estado.SAQUE or estado == Estado.RALLY:
+			for i in 6:
+				var atleta: Node3D = atletas[time][i]
+				if atleta != controlado:
+					_mover_ia(atleta, _alvo_da_ia(time, i), delta)
+
+		for atleta in atletas[time]:
+			_atualizar_pulo(atleta, delta)
+		aneis[time].position = Vector3(controlado.position.x, 0.03, controlado.position.z)
 
 	# Antes do saque, a bola fica na mão de quem saca.
 	if estado == Estado.SAQUE:
@@ -148,6 +183,106 @@ func _mover(atleta: Node3D, time: int, direcao: Vector2, delta: float) -> void:
 		atleta.position.z = clampf(atleta.position.z, -fundo, -0.4)
 
 
+# --- IA dos atletas sem controle ---
+
+## Lugar (no mundo) pra onde o atleta "indice" do "time" deve ir agora.
+func _alvo_da_ia(time: int, indice: int) -> Vector3:
+	var posicao: int = rodizios[time].posicao_de(indice)
+	var lugar: Vector2 = FORMACAO[posicao]
+	var da_rede := Rodizio.e_da_rede(posicao)
+	var outro := 1 - time
+
+	if estado == Estado.RALLY and da_rede:
+		var adversario_vai_atacar: bool = toques.time_com_a_bola == outro and toques.toques >= 2
+		var nos_com_a_bola: bool = toques.time_com_a_bola == time
+		if adversario_vai_atacar:
+			# Sobe pra rede e acompanha a bola pra bloquear.
+			var bola_x_do_time: float = bola.position.x * _lado(time)
+			lugar = Vector2(lerpf(lugar.x, bola_x_do_time, 0.5), 0.7)
+		elif nos_com_a_bola:
+			# Recua um pouco pra ter espaço de correr pro ataque.
+			lugar.y = 3.0
+
+	return _no_mundo(time, lugar)
+
+
+func _mover_ia(atleta: Node3D, alvo: Vector3, delta: float) -> void:
+	var atual := Vector2(atleta.position.x, atleta.position.z)
+	var novo := atual.move_toward(Vector2(alvo.x, alvo.z), VELOCIDADE_IA * delta)
+	atleta.position.x = novo.x
+	atleta.position.z = novo.y
+
+
+# --- Pulo e bloqueio ---
+
+func _pular(atleta: Node3D) -> void:
+	if _esta_pulando(atleta):
+		return
+	atleta.set_meta("tempo_do_pulo", 0.0)
+
+
+func _esta_pulando(atleta: Node3D) -> bool:
+	return float(atleta.get_meta("tempo_do_pulo", -1.0)) >= 0.0
+
+
+func _atualizar_pulo(atleta: Node3D, delta: float) -> void:
+	if not _esta_pulando(atleta):
+		return
+	var tempo: float = float(atleta.get_meta("tempo_do_pulo")) + delta
+	if tempo >= DURACAO_DO_PULO:
+		atleta.position.y = 0.0
+		atleta.set_meta("tempo_do_pulo", -1.0)
+		return
+	var fracao := tempo / DURACAO_DO_PULO
+	atleta.position.y = 4.0 * ALTURA_DO_PULO * fracao * (1.0 - fracao)
+	atleta.set_meta("tempo_do_pulo", tempo)
+
+
+func _bloquear(time: int) -> void:
+	var deslocamento: float = entradas[time].direcao.x * DESLOCAMENTO_DO_BLOQUEIO
+	for i in 6:
+		if not Rodizio.e_da_rede(rodizios[time].posicao_de(i)):
+			continue
+		var atleta: Node3D = atletas[time][i]
+		if _esta_pulando(atleta):
+			continue
+		atleta.position.x += deslocamento
+		_pular(atleta)
+
+
+## Chamado pela bola quando ela cruza a rede por cima da fita.
+## Bloqueia se um atleta da rede do lado de destino está no ar, perto da
+## bola e com as mãos alto o bastante.
+func _tem_bloqueio(ponto_na_rede: Vector3, lado_destino: float) -> bool:
+	var time := 0 if lado_destino > 0.0 else 1
+	for i in 6:
+		if not Rodizio.e_da_rede(rodizios[time].posicao_de(i)):
+			continue
+		var atleta: Node3D = atletas[time][i]
+		if not _esta_pulando(atleta):
+			continue
+		if absf(atleta.position.z) > DISTANCIA_MAXIMA_DO_BLOQUEIO:
+			continue
+		if absf(atleta.position.x - ponto_na_rede.x) > LARGURA_DO_BLOQUEIO:
+			continue
+		if ponto_na_rede.y <= ALTURA_DAS_MAOS + atleta.position.y + Bola.RAIO:
+			return true
+	return false
+
+
+func _ao_bola_ser_bloqueada() -> void:
+	if estado != Estado.RALLY:
+		return
+	# Quem bloqueou é o time do lado pra onde a bola ia.
+	var time_que_bloqueou := 1 - ultimo_toque
+	# O bloqueio não conta como toque: quem bloqueou ainda tem 3 toques.
+	toques.registrar(time_que_bloqueou)
+	toques.toques = 0
+	ultimo_toque = time_que_bloqueou
+	rotulo_mensagem.text = "Bloqueio!"
+	_ao_lancar_bola()
+
+
 # --- Comandos ---
 
 func _ao_receber_comando(jogador: int, tipo: String) -> void:
@@ -164,6 +299,8 @@ func _ao_receber_comando(jogador: int, tipo: String) -> void:
 				_tentar_tocar(time, false)
 			elif tipo == "ataque":
 				_tentar_tocar(time, true)
+			elif tipo == "bloqueio":
+				_bloquear(time)
 
 
 func _sacar(time: int, flutuante: bool) -> void:
@@ -175,6 +312,7 @@ func _sacar(time: int, flutuante: bool) -> void:
 	bola.lancar(destino, altura)
 	ultimo_toque = time
 	estado = Estado.RALLY
+	rotulo_mensagem.text = ""
 	_ao_lancar_bola()
 
 
@@ -223,6 +361,7 @@ func _levantar(time: int) -> void:
 
 
 func _cortar(time: int) -> void:
+	_pular(controlados[time])
 	# A direção mira pra esquerda ou direita da quadra adversária.
 	var direcao: Vector2 = entradas[time].direcao
 	var mira_x := clampf(direcao.x * 3.0 + randf_range(-0.8, 0.8), -LARGURA / 2.0 + 0.5, LARGURA / 2.0 - 0.5)
@@ -294,15 +433,16 @@ func _preparar_saque() -> void:
 	toques.reiniciar()
 	marcador.esconder()
 	_mostrar_marcas_de_ataque(-1)
-	_voltar_atletas_pra_base()
+	_colocar_na_formacao()
 
+	# Quem saca é o atleta na posição 1, atrás da linha de fundo.
 	var time: int = placar.quem_saca
-	var lado := _lado(time)
-	# Quem saca vai pra trás da linha de fundo; o outro time controla o do meio no fundo.
-	var sacador: Node3D = atletas[time][5]
-	sacador.position = Vector3(2.5 * lado, 0.0, (COMPRIMENTO / 2.0 + 1.0) * lado)
+	var sacador: Node3D = atletas[time][rodizios[time].atleta_na(1)]
+	sacador.position = _no_mundo(time, POSICAO_DO_SACADOR)
 	controlados[time] = sacador
-	controlados[1 - time] = atletas[1 - time][4]
+	# O outro time começa controlando quem está no meio do fundo.
+	var outro := 1 - time
+	controlados[outro] = atletas[outro][rodizios[outro].atleta_na(6)]
 
 	rotulo_mensagem.text = "%s saca: aperte Ataque" % times_em_jogo[time]["nome"]
 
@@ -316,12 +456,14 @@ func _ao_encerrar_partida(vencedor: int) -> void:
 
 func _reiniciar_partida() -> void:
 	placar = Placar.new()
+	rodizios = [Rodizio.new(), Rodizio.new()]
 	_conectar_placar()
 	_preparar_saque()
 
 
 func _conectar_placar() -> void:
 	placar.ponto_marcado.connect(func(_time: int) -> void: _atualizar_placar())
+	placar.rodizio.connect(func(time: int) -> void: rodizios[time].girar())
 	placar.partida_encerrada.connect(_ao_encerrar_partida)
 	_atualizar_placar()
 
@@ -342,7 +484,7 @@ func _lado(time: int) -> float:
 	return 1.0 if time == 0 else -1.0
 
 
-## Converte coordenadas "do time" (x = lado, z = distância da rede) pro mundo.
+## Converte coordenadas "do time" (x = lado, y = distância da rede) pro mundo.
 ## Os dois times olham pra rede, então o time de lá fica espelhado.
 func _no_mundo(time: int, local: Vector2) -> Vector3:
 	var lado := _lado(time)
@@ -369,10 +511,13 @@ func _mais_perto(time: int, ponto: Vector3, excluir: Node3D = null) -> Node3D:
 	return melhor
 
 
-func _voltar_atletas_pra_base() -> void:
+## Coloca todo mundo na posição do rodízio, no chão.
+func _colocar_na_formacao() -> void:
 	for time in 2:
-		for atleta in atletas[time]:
-			atleta.position = atleta.get_meta("base")
+		for i in 6:
+			var atleta: Node3D = atletas[time][i]
+			atleta.position = _no_mundo(time, FORMACAO[rodizios[time].posicao_de(i)])
+			atleta.set_meta("tempo_do_pulo", -1.0)
 
 
 ## Mostra as setas de ataque no chão do "time" (ou esconde todas com -1).
@@ -441,17 +586,12 @@ func _criar_atletas(time: int) -> void:
 	var dados_time: Dictionary = times_em_jogo[time]
 	var cor_uniforme := Color.html(str(dados_time["cores"][0]))
 	var cor_detalhe := Color.html(str(dados_time["cores"][1]))
-	# Posições de base (coordenadas do time): 3 na rede e 3 no fundo.
-	var posicoes := [
-		Vector2(-3, 2.5), Vector2(0, 2.5), Vector2(3, 2.5),
-		Vector2(-3, 6.5), Vector2(0, 6.5), Vector2(3, 6.5),
-	]
 
-	for i in posicoes.size():
+	for i in 6:
 		var atleta := Node3D.new()
 		atleta.name = "%s_%d" % [dados_time["id"], i + 1]
-		atleta.position = _no_mundo(time, posicoes[i])
-		atleta.set_meta("base", atleta.position)
+		atleta.position = _no_mundo(time, FORMACAO[rodizios[time].posicao_de(i)])
+		atleta.set_meta("tempo_do_pulo", -1.0)
 
 		var corpo := MeshInstance3D.new()
 		var capsula := CapsuleMesh.new()
@@ -476,7 +616,7 @@ func _criar_atletas(time: int) -> void:
 	anel.scale = Vector3(1.0, 0.1, 1.0)
 	add_child(anel)
 	aneis[time] = anel
-	controlados[time] = atletas[time][4]
+	controlados[time] = atletas[time][rodizios[time].atleta_na(6)]
 
 
 ## Cria as marcas no chão (círculo + seta + nome) dos 4 ataques do time.
@@ -546,7 +686,7 @@ func _criar_interface() -> void:
 	camada.add_child(rotulo_mensagem)
 
 	var ajuda := Label.new()
-	ajuda.text = "Jogador 1: WASD move, J passe/levanta, K saque/cortada  |  Jogador 2: setas move, 1 passe/levanta, 2 saque/cortada (numérico)  |  Controle: analógico, A passe, X saque/cortada"
+	ajuda.text = "Jogador 1: WASD move, J passe, K saque/cortada, L bloqueio  |  Jogador 2: setas move, 1 passe, 2 saque/cortada, 3 bloqueio (numérico)  |  Controle: A passe, X saque/cortada, Y bloqueio"
 	ajuda.position = Vector2(24, 850)
 	ajuda.add_theme_font_size_override("font_size", 15)
 	camada.add_child(ajuda)

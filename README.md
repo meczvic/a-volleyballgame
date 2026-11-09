@@ -28,15 +28,16 @@ O 1º controle conectado é do Jogador 1, o 2º do Jogador 2.
 
 ### Como jogar a cena de teste
 
-1. Quem saca aperta **Ataque**. A bola vai pro outro lado.
+1. Quem saca (o atleta na posição 1 do rodízio, atrás da linha de fundo) aperta **Ataque**. A bola vai pro outro lado.
 2. Um **anel amarelo** no chão mostra onde a bola vai cair, e o jogo passa o controle pro atleta mais perto dele (o atleta controlado tem um anel da cor do time).
 3. **1º toque:** corra até o anel e aperte **Passe**. A bola vai pro levantador, perto da rede.
 4. **2º toque:** com o levantador, aperte **Passe** segurando uma direção pra escolher o atacante. As setas aparecem no chão (`< Ponta`, `^ Meio`, `> Oposto`, `v Fundo`). Sem direção, vai pro meio.
 5. **3º toque:** com o atacante, aperte **Ataque** com a bola alta pra cortar. Segurar esquerda ou direita mira a cortada. **Passe** no 3º toque só devolve a bola de graça.
 6. **Ataque** com a bola alta funciona em qualquer toque (por exemplo, o levantador pode atacar de surpresa).
-7. Bola no chão dentro da quadra: ponto pra quem mandou a bola. Fora: ponto pra quem não tocou por último. 4 toques seguidos do mesmo time é falta.
+7. **Bloqueio:** quando o adversário levanta, os 3 atletas da rede sobem sozinhos e acompanham a bola. Aperte **Bloqueio** pra eles pularem; segurar esquerda ou direita desloca o bloqueio. Acertar o tempo do pulo devolve a cortada.
+8. Bola no chão dentro da quadra: ponto pra quem mandou a bola. Fora: ponto pra quem não tocou por último. 4 toques seguidos do mesmo time é falta.
 
-Ainda não tem IA dos outros atletas nem bloqueio: isso vem nas próximas partes. Por enquanto a câmera é só do lado do Jogador 1; a tela dividida vem depois.
+Os atletas que você não controla se posicionam sozinhos, e o time gira o **rodízio** quando recupera o saque. Por enquanto a câmera é só do lado do Jogador 1; a tela dividida vem depois.
 
 ## Pastas
 
@@ -58,6 +59,7 @@ godot --headless --script res://testes/teste_placar.gd
 godot --headless --script res://testes/teste_trajetoria.gd
 godot --headless --script res://testes/teste_toques.gd
 godot --headless --script res://testes/teste_escolha_ataque.gd
+godot --headless --script res://testes/teste_rodizio.gd
 ```
 
 Cada um deve terminar com uma linha começando com `OK:`.
@@ -69,7 +71,7 @@ Seguindo as fases do documento de design:
 1. Aprender Godot (trilha de tutoriais no documento).
 2. ~~Bola e quadra: física da bola, marcador de queda.~~ Feito.
 3. ~~Um time controlado: troca automática de atleta, passe, levantamento, cortada.~~ Feito.
-4. IA de posicionamento dos 5 atletas sem controle.
+4. ~~IA de posicionamento dos 5 atletas sem controle.~~ Feito (com bloqueio e rodízio).
 5. Partida completa local (MVP).
 
 Os nomes e times inspirados em Haikyuu são só pra jogar entre amigos. Se um dia o jogo for publicado, eles precisam virar times próprios, por isso ficam todos em `dados/times.json`.
