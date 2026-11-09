@@ -49,7 +49,7 @@ Se os dois escolherem o mesmo time, o Jogador 2 joga com o uniforme reserva.
 7. **Bloqueio:** quando o adversário levanta, os 3 atletas da rede sobem sozinhos e acompanham a bola. Aperte **Bloqueio** pra eles pularem; segurar esquerda ou direita desloca o bloqueio. Acertar o tempo do pulo devolve a cortada.
 8. Bola no chão dentro da quadra: ponto pra quem mandou a bola. Fora: ponto pra quem não tocou por último. 4 toques seguidos do mesmo time é falta.
 
-Os atletas que você não controla se posicionam sozinhos, e o time gira o **rodízio** quando recupera o saque. A tela é **dividida**: o Jogador 1 vê de trás do time dele na metade esquerda, o Jogador 2 na metade direita. "Cima" é sempre na direção da rede pra cada um. Pra voltar pra uma câmera só, abra `cenas/partida.tscn`, selecione o nó `Partida` e desmarque **Tela Dividida** no Inspetor (lá também dá pra ajustar a altura e a distância da câmera, e ligar ou desligar o **Visual Anime**: sombra "chapada" e contorno escuro nos atletas e na bola).
+Os atletas que você não controla se posicionam sozinhos, e o time gira o **rodízio** quando recupera o saque. A tela é **dividida**: o Jogador 1 vê de trás do time dele na metade esquerda, o Jogador 2 na metade direita. "Cima" é sempre na direção da rede pra cada um. Pra voltar pra uma câmera só, abra `cenas/partida.tscn`, selecione o nó `Partida` e desmarque **Tela Dividida** no Inspetor (lá também dá pra ajustar a altura, a distância e o foco da câmera, e ligar ou desligar o **Visual Anime**: sombra "chapada" e contorno escuro nos atletas e na bola).
 
 ## Pastas
 
@@ -84,6 +84,8 @@ godot --headless --script res://testes/teste_dados.gd
 ```
 
 Cada um deve terminar com uma linha começando com `OK:`.
+
+Todos os testes passam no Godot 4.3, e a partida, os menus e a seleção de times rodam sem erros (testado em 09/11/2026).
 
 ## Próximos passos
 

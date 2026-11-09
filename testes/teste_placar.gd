@@ -67,8 +67,11 @@ func _teste_partida_acaba_com_2_sets() -> void:
 	_pontos(placar, 1, 7)
 	_verificar(placar.encerrada, "2 sets seguidos encerram a partida")
 	_verificar(placar.vencedor == 1, "time 1 é o vencedor")
+	# No fim, o placar guarda os pontos do último set (0 x 7) pra mostrar na tela.
+	_verificar(placar.pontos == [0, 7], "o fim guarda os pontos do último set")
 	placar.marcar_ponto(0)
-	_verificar(placar.pontos == [0, 0], "ponto depois do fim é ignorado")
+	_verificar(placar.pontos == [0, 7], "ponto depois do fim é ignorado")
+	_verificar(placar.sets == [0, 2], "set depois do fim não muda")
 
 
 func _teste_rodizio_so_quando_recebe_e_pontua() -> void:

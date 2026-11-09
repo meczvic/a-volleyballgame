@@ -116,11 +116,12 @@ func _criar_titulo() -> void:
 	subtitulo.position = Vector2(116.0, 248.0)
 	add_child(subtitulo)
 
+	# Duas linhas curtas, pra não cruzar o risco laranja inclinado.
 	var dica := Estilo.rotulo(
-		"Navegar: setas, WASD ou direcional   ·   Escolher: Enter, J ou A   ·   Voltar: Esc ou B",
+		"Navegar: setas, WASD ou direcional\nEscolher: Enter, J ou A   ·   Voltar: Esc ou B",
 		19, Estilo.TEXTO_APAGADO
 	)
-	dica.position = Vector2(110.0, 850.0)
+	dica.position = Vector2(110.0, 820.0)
 	add_child(dica)
 
 

@@ -93,7 +93,10 @@ const ATAQUE_PADRAO := 1
 
 ## Ajuste aqui (ou no Inspetor) até achar o ângulo que você gosta.
 @export var altura_camera := 17.0
-@export var distancia_camera := 15.0
+@export var distancia_camera := 17.0
+## Pra onde a câmera aponta: metros antes da rede, do lado do próprio time.
+## Mais alto mostra mais o fundo da sua quadra (onde fica quem saca).
+@export var foco_da_camera := 2.0
 ## Tela dividida: cada jogador vê de trás do próprio time.
 ## Desligado: uma câmera só, do lado do Jogador 1.
 @export var tela_dividida := true
@@ -124,6 +127,8 @@ var marcador
 var menu
 var rotulo_placar: Label
 var rotulo_mensagem: Label
+## Caixa escura atrás da mensagem; some quando não tem mensagem.
+var caixa_da_mensagem: PanelContainer
 ## Espera depois de cada ponto. É um nó (e não um "await") pra parar junto
 ## quando o jogo pausa e sumir junto quando a cena fecha.
 var temporizador_do_ponto: Timer
@@ -183,7 +188,7 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	for time in 2:
 		var controlado := controlados[time]
-		var sacando := estado == Estado.SAQUE and time == placar.quem_saca
+		var sacando: bool = estado == Estado.SAQUE and time == placar.quem_saca
 		if not sacando:
 			_mover(controlado, time, _direcao_no_mundo(time), delta)
 
@@ -313,7 +318,7 @@ func _ao_bola_ser_bloqueada() -> void:
 	toques.registrar(time_que_bloqueou)
 	toques.toques = 0
 	ultimo_toque = time_que_bloqueou
-	rotulo_mensagem.text = "Bloqueio!"
+	_mostrar_mensagem("Bloqueio!")
 	_ao_lancar_bola()
 
 
@@ -343,7 +348,7 @@ func _sacar(time: int, flutuante: bool) -> void:
 	bola.lancar(destino, altura)
 	ultimo_toque = time
 	estado = Estado.RALLY
-	rotulo_mensagem.text = ""
+	_mostrar_mensagem("")
 	_ao_lancar_bola()
 
 
@@ -388,7 +393,7 @@ func _levantar(time: int) -> void:
 	var alvo: Vector3 = alvos_de_ataque[time][escolhido]
 	bola.lancar(alvo, 4.4)
 	_ao_lancar_bola()
-	rotulo_mensagem.text = "Levantamento: %s" % ATAQUES[escolhido]["nome"]
+	_mostrar_mensagem("Levantamento: %s" % ATAQUES[escolhido]["nome"])
 
 
 func _cortar(time: int) -> void:
@@ -448,7 +453,7 @@ func _encerrar_rally(vencedor: int, motivo: String) -> void:
 	estado = Estado.PONTO
 	marcador.esconder()
 	_mostrar_marcas_de_ataque(-1)
-	rotulo_mensagem.text = "Ponto %s! (%s)" % [times_em_jogo[vencedor]["nome"], motivo]
+	_mostrar_mensagem("Ponto %s! (%s)" % [times_em_jogo[vencedor]["nome"], motivo])
 	# Se foi o último ponto, o placar chama _ao_encerrar_partida aqui dentro.
 	placar.marcar_ponto(vencedor)
 	temporizador_do_ponto.start()
@@ -473,6 +478,8 @@ func _preparar_saque() -> void:
 	marcador.esconder()
 	_mostrar_marcas_de_ataque(-1)
 	_colocar_na_formacao()
+	# Depois de um set, o placar zera aqui (no fim do set ele mostra o resultado).
+	_atualizar_placar()
 
 	# Quem saca é o atleta na posição 1, atrás da linha de fundo.
 	var time: int = placar.quem_saca
@@ -483,21 +490,31 @@ func _preparar_saque() -> void:
 	var outro := 1 - time
 	controlados[outro] = atletas[outro][rodizios[outro].atleta_na(6)]
 
-	rotulo_mensagem.text = "%s saca: aperte Ataque" % times_em_jogo[time]["nome"]
+	_mostrar_mensagem("%s saca: aperte Ataque" % times_em_jogo[time]["nome"])
 
 
 func _ao_encerrar_partida(vencedor: int) -> void:
 	estado = Estado.FIM
 	marcador.esconder()
 	_mostrar_marcas_de_ataque(-1)
-	rotulo_mensagem.text = "Fim de jogo! %s venceu." % times_em_jogo[vencedor]["nome"]
+	_mostrar_mensagem("Fim de jogo! %s venceu." % times_em_jogo[vencedor]["nome"])
 
 
 func _conectar_placar() -> void:
 	placar.ponto_marcado.connect(func(_time: int) -> void: _atualizar_placar())
 	placar.rodizio.connect(func(time: int) -> void: rodizios[time].girar())
+	placar.set_encerrado.connect(_ao_encerrar_set)
 	placar.partida_encerrada.connect(_ao_encerrar_partida)
 	_atualizar_placar()
+
+
+## Fim de um set. Se foi o último, _ao_encerrar_partida troca a mensagem logo depois.
+func _ao_encerrar_set(vencedor: int) -> void:
+	_atualizar_placar()
+	_mostrar_mensagem("Set %d: %s venceu! (%d x %d)" % [
+		placar.set_atual, times_em_jogo[vencedor]["nome"],
+		placar.pontos[vencedor], placar.pontos[1 - vencedor],
+	])
 
 
 func _atualizar_placar() -> void:
@@ -794,7 +811,7 @@ func _adicionar_camera(onde: Node, time: int) -> void:
 	onde.add_child(camera)
 	camera.look_at_from_position(
 		Vector3(0.0, altura_camera, distancia_camera * lado),
-		Vector3(0.0, 0.0, -1.0 * lado)
+		Vector3(0.0, 0.0, foco_da_camera * lado)
 	)
 	camera.current = true
 
@@ -817,20 +834,63 @@ func _criar_interface() -> void:
 		divisoria.offset_right = 2.0
 		camada.add_child(divisoria)
 
+	# Placar no canto, numa caixa escura pra ler bem em qualquer estádio.
+	var caixa_do_placar := _caixa_da_interface()
+	caixa_do_placar.position = Vector2(18.0, 16.0)
+	camada.add_child(caixa_do_placar)
 	rotulo_placar = _rotulo_da_interface(28, true)
-	rotulo_placar.position = Vector2(24, 18)
-	camada.add_child(rotulo_placar)
+	caixa_do_placar.add_child(rotulo_placar)
 
+	# Mensagem no meio, em cima. O CenterContainer mantém a caixa centralizada
+	# e do tamanho do texto.
+	var centro := CenterContainer.new()
+	centro.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	centro.position = Vector2(0.0, 86.0)
+	centro.size = Vector2(1600.0, 56.0)
+	camada.add_child(centro)
+	caixa_da_mensagem = _caixa_da_interface()
+	centro.add_child(caixa_da_mensagem)
 	rotulo_mensagem = _rotulo_da_interface(32, true)
-	rotulo_mensagem.position = Vector2(400, 90)
-	rotulo_mensagem.size = Vector2(800, 44)
-	rotulo_mensagem.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	camada.add_child(rotulo_mensagem)
+	caixa_da_mensagem.add_child(rotulo_mensagem)
 
-	var ajuda := _rotulo_da_interface(17, false)
-	ajuda.text = "J1: WASD move · J passe · K saque/cortada · L bloqueio   |   J2: setas · 1 passe · 2 saque/cortada · 3 bloqueio (numérico)   |   Controle: A passe · X saque/cortada · Y bloqueio   |   Esc ou Start: pausa"
-	ajuda.position = Vector2(24, 866)
-	camada.add_child(ajuda)
+	# Comandos de cada jogador embaixo da metade dele (ou só do J1, sem tela dividida).
+	var ajudas := [
+		"J1 (teclado): WASD move · J passe · K saque/cortada · I flutuante · L bloqueio",
+		"J2 (teclado): setas move · 1 passe · 2 saque/cortada · 5 flutuante · 3 bloqueio (numérico)",
+	]
+	for jogador in (2 if tela_dividida else 1):
+		var ajuda := _rotulo_da_interface(16, false)
+		ajuda.text = ajudas[jogador] + "\nControle: A passe · X saque/cortada · RB flutuante · Y bloqueio"
+		ajuda.position = Vector2(20.0 + jogador * 800.0, 848.0)
+		camada.add_child(ajuda)
+
+	# Lembrete da pausa no canto direito, crescendo pra esquerda.
+	var caixa_da_pausa := _caixa_da_interface()
+	caixa_da_pausa.anchor_left = 1.0
+	caixa_da_pausa.anchor_right = 1.0
+	caixa_da_pausa.offset_left = -18.0
+	caixa_da_pausa.offset_right = -18.0
+	caixa_da_pausa.offset_top = 16.0
+	caixa_da_pausa.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	camada.add_child(caixa_da_pausa)
+	var dica_da_pausa := _rotulo_da_interface(18, true)
+	dica_da_pausa.text = "Esc ou Start: pausa"
+	caixa_da_pausa.add_child(dica_da_pausa)
+
+
+## Mostra uma mensagem no meio da tela. Texto vazio esconde a caixa.
+func _mostrar_mensagem(texto: String) -> void:
+	rotulo_mensagem.text = texto
+	caixa_da_mensagem.visible = texto != ""
+
+
+## Caixa escura e inclinada (como as dos menus) atrás dos textos da partida.
+func _caixa_da_interface() -> PanelContainer:
+	var caixa := PanelContainer.new()
+	caixa.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	caixa.add_theme_stylebox_override("panel",
+		Estilo.caixa(Color(0.06, 0.07, 0.09, 0.72), Estilo.INCLINACAO, 22.0, 4.0))
+	return caixa
 
 
 ## Texto da interface com contorno escuro, pra ler bem em cima da quadra.

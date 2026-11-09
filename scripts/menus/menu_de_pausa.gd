@@ -14,6 +14,7 @@ const CENA_SELECAO := "res://cenas/selecao_de_times.tscn"
 
 var _fim_de_jogo := false
 var _raiz: Control
+var _painel: Panel
 var _titulo: Label
 var _detalhe: Label
 var _lista: VBoxContainer
@@ -34,9 +35,9 @@ func _ready() -> void:
 	escurecer.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_raiz.add_child(escurecer)
 
+	# O tamanho do painel acompanha o número de botões (veja _mostrar).
 	var painel := Estilo.painel(Estilo.PAINEL, 0.0, 2, Estilo.PAINEL_CLARO)
-	painel.position = Vector2(500.0, 190.0)
-	painel.size = Vector2(600.0, 520.0)
+	_painel = painel
 	_raiz.add_child(painel)
 
 	var barra := Estilo.painel(Estilo.DESTAQUE, Estilo.INCLINACAO)
@@ -123,6 +124,11 @@ func _mostrar(titulo: String, resumo: String, opcoes: Array) -> void:
 	# Do último, "baixo" volta pro primeiro (e vice-versa).
 	botoes[0].focus_neighbor_top = botoes[0].get_path_to(botoes[-1])
 	botoes[-1].focus_neighbor_bottom = botoes[-1].get_path_to(botoes[0])
+
+	# Painel na altura certa pros botões e no meio da tela.
+	var altura := _lista.position.y + opcoes.size() * (58.0 + 12.0) - 12.0 + 48.0
+	_painel.size = Vector2(600.0, altura)
+	_painel.position = Vector2(500.0, (900.0 - altura) / 2.0)
 
 	_raiz.visible = true
 	get_tree().paused = true
