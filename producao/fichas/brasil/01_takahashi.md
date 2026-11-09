@@ -1,15 +1,15 @@
 # Ficha visual: Enzo Takahashi (Brasil, nº 1)
 
-Posição: líbero (líbero, uniforme de cor diferente).
+Posição: ponteiro (o jogo não tem líbero; antes era o líbero do time).
 
 Referências (abrir do lado ao modelar, não copiar imagens pro repositório):
 Personagem original do jogo: não tem referência externa. Manter o visual desta ficha.
 
 ## Prioridade de reconhecimento (câmera alta, de longe)
 
-1. **Franja preta comprida + camisa de líbero.**
+1. **Franja preta comprida + o mais baixo do time.**
 2. Altura: 1,76 m.
-3. Camisa `#13924A` com detalhe `#F6CF1B`, número 1.
+3. Camisa `#F6CF1B` com detalhe `#13924A`, número 1.
 
 ## Corpo e rosto
 
@@ -32,9 +32,9 @@ Personagem original do jogo: não tem referência externa. Manter o visual desta
 
 | Peça | Cor |
 | --- | --- |
-| Camisa | `#13924A`, detalhe (gola, mangas, barra) `#F6CF1B` |
-| Número | 1 em `#F6CF1B`, frente e costas: `producao/uniformes/brasil/numeros/01.png` |
-| Shorts | `#13924A` com faixa lateral `#F6CF1B` |
+| Camisa | `#F6CF1B`, detalhe (gola, mangas, barra) `#13924A` |
+| Número | 1 em `#13924A`, frente e costas: `producao/uniformes/brasil/numeros/01.png` |
+| Shorts | `#F6CF1B` com faixa lateral `#13924A` |
 | Joelheiras, meias e tênis | Joelheira preta, meia branca curta, tênis branco |
 
 Prévia do time: `producao/uniformes/brasil/previa.png`.

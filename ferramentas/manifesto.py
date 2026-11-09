@@ -51,7 +51,7 @@ def main():
             capturas = [v for v in VISTAS
                         if (RAIZ / "producao" / "capturas" / time["id"] / f"{base}_{v}.png").exists()]
             tamanho = f" ({vrm.stat().st_size / 1e6:.1f} MB)" if vrm.exists() else ""
-            nome = a["nome"] + (" (L)" if a.get("libero") else "")
+            nome = a["nome"]
             ficha_txt = f"[sim](fichas/{time['id']}/{base}.md)" if ficha.exists() else "não"
             linhas.append(
                 f"| {a['numero']} | {nome} | {ficha_txt} | {s.get('modelagem', 'pendente')} | "

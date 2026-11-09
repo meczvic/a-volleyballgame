@@ -1,6 +1,6 @@
 """Gera os números das camisas e uma prévia dos uniformes de cada time.
 
-Uso (na pasta do projeto):  python3 ferramentas/uniformes.py
+Uso (na pasta do projeto):  python3 ferramentas/uniformes.py [id_do_time ...]
 
 Saída em producao/uniformes/<time>/:
   numeros/<nn>.png  número do atleta (fundo transparente, 1024x1024), pra
@@ -13,6 +13,7 @@ Saída em producao/uniformes/<time>/:
 Cores e elenco vêm de dados/times.json e dados/elenco.json.
 """
 import json
+import sys
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
@@ -83,13 +84,13 @@ def previa(time, elenco, fonte):
     rotulo = fonte.font_variant(size=24)
     d.text((24, 16), f"{time['nome']}: uniformes (frente em cima, costas embaixo)", font=titulo, fill=(30, 30, 30, 255))
     for i, atleta in enumerate(elenco):
-        cores = time["cores_libero"] if atleta.get("libero") else time["cores"][:2]
+        cores = time["cores"][:2]
         principal, detalhe = cor(cores[0]), cor(cores[1])
         x = 40 + 55 + i * passo
         for linha, costas in enumerate((False, True)):
             y = 90 + linha * (a + 110)
             camisa(d, x, y, l, a, principal, detalhe, atleta["numero"], costas, fonte)
-        nome = atleta["nome"].split()[-1] + (" (líbero)" if atleta.get("libero") else "")
+        nome = atleta["nome"].split()[-1]
         d.text((x - 30, 90 + 2 * (a + 110) - 40), nome, font=rotulo, fill=(30, 30, 30, 255))
     return img
 
@@ -98,12 +99,15 @@ def main():
     times = json.loads((RAIZ / "dados" / "times.json").read_text(encoding="utf-8"))["times"]
     elencos = json.loads((RAIZ / "dados" / "elenco.json").read_text(encoding="utf-8"))["times"]
     fonte = ImageFont.truetype(str(FONTE), 40)
+    so = set(sys.argv[1:])
     for time in times:
+        if so and time["id"] not in so:
+            continue
         elenco = elencos.get(time["id"], [])
         pasta = SAIDA / time["id"]
         (pasta / "numeros").mkdir(parents=True, exist_ok=True)
         for atleta in elenco:
-            cores = time["cores_libero"] if atleta.get("libero") else time["cores"][:2]
+            cores = time["cores"][:2]
             img = numero_png(atleta["numero"], cor(cores[1]), cor(cores[0]))
             img.save(pasta / "numeros" / f"{atleta['numero']:02d}.png", optimize=True)
         previa(time, elenco, fonte).convert("RGB").save(pasta / "previa.png", optimize=True)

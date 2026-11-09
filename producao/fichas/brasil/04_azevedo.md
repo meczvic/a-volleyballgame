@@ -1,6 +1,6 @@
 # Ficha visual: Rafael Azevedo (Brasil, nº 4)
 
-Posição: ponteiro.
+Posição: central.
 
 Referências (abrir do lado ao modelar, não copiar imagens pro repositório):
 Personagem original do jogo: não tem referência externa. Manter o visual desta ficha.
