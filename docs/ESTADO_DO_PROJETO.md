@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em **09/11/2026**. Este documento resume o que é o jogo, o que já foi feito, o que falta, o que precisa melhorar e os próximos passos. Os detalhes de como jogar e rodar estão no [README](../README.md).
+Atualizado em **09/11/2026**. Este documento resume o que é o jogo, o que já foi feito, o que falta, o que precisa melhorar e os próximos passos. Os detalhes de como jogar e rodar estão no [README](../README.md). A [seção 6](#6-para-devs-e-agentes-de-ia) é o guia técnico para quem for mexer no código (pessoa ou agente de IA).
 
 ---
 
@@ -119,3 +119,82 @@ Em ordem sugerida:
 4. **Placar com efeito** e polimento da interface. Com isso, a **partida rápida local fica completa** (meta do 1º mês, até 06/12/2026).
 5. **Modo Caos** com as cartas.
 6. **Online**: primeiro por IP, depois procurar partida.
+
+---
+
+## 6. Para devs e agentes de IA
+
+Leia esta seção inteira antes de mexer no código.
+
+### Como trabalhar neste projeto
+- **Idioma:** tudo em **português (BR)**: textos do jogo, nomes de arquivos, variáveis, funções, comentários, commits e PRs. Siga o padrão que já existe (`placar`, `rodizio`, `toques`...).
+- **Quem é o dono:** o Victor nunca tinha usado uma engine antes deste projeto. Explique as coisas em linguagem simples, sem jargão, e diga o que ele precisa fazer no Godot passo a passo.
+- **Tempo:** ~3h por dia, à noite e no fim de semana. O PC do **trabalho** dele não pode receber instalações; Godot e VRoid ficam no **PC de casa**.
+- **Peça ok antes** de qualquer coisa difícil de desfazer: instalar programas no PC dele (por exemplo o VRoid MCP Bridge, um projeto não oficial que mexe no VRoid e na configuração do Claude), apagar arquivos, mudar o histórico do Git, publicar algo.
+- **Limite de conteúdo:** agentes de IA **não criam nem preparam personagens ou times de Haikyuu** (modelos, fichas, uniformes, nomes novos). O Victor e um amigo fazem esses personagens no VRoid por conta própria. Os agentes cuidam do motor, do caminho VRoid → Godot, das animações, dos testes e de conteúdo **original** (como o time Brasil, com nomes fictícios). Não apague o que já existe nos dados; só não acrescente.
+- **Seja preciso:** só diga que algo funciona depois de rodar os testes ou o jogo.
+
+### Branches e PRs
+- O repositório **não tem `main`**. O branch principal é **`claude/project-thread-o4s5hf`**.
+- Trabalho novo vai num branch próprio, com PR (em rascunho) **contra o `claude/project-thread-o4s5hf`**.
+- Histórico: PR #1 (personagens VRoid e animações) e PR #2 (cortada do DeepMotion) já foram mesclados nele.
+- Arquivos pesados (`.vrm`, `.fbx`, `.png`...) estão marcados como binários no `.gitattributes`. Os `.vroid` (projeto editável do VRoid) **não vão pro Git**; ficam no PC de casa e no Drive.
+
+### Como o código está organizado
+- **Fluxo das cenas:** `cenas/menu_principal.tscn` → `cenas/selecao_de_times.tscn` → `cenas/partida.tscn`. Com a partida aberta, **F6** roda só ela (Karasuno x Nekoma no Ginásio Japonês).
+- **Autoloads** (em `project.godot`): `Teclas` (`scripts/entrada/teclas.gd`, cria as ações `p1_passe`, `p2_ataque` etc. de teclado e controle) e `Configuracao` (`scripts/menus/configuracao.gd`, guarda os times e o estádio escolhidos).
+- **`scripts/regras/`:** regras **puras**, sem nós nem gráfico, fáceis de testar: `placar`, `rodizio`, `escalacao`, `formacao`, `toques`, `trajetoria`, `escolha_ataque`, `tempo_do_toque`, `mira`. Regra nova vai aqui, com teste.
+- **`scripts/entrada/`:** teclado e controle viram **comandos**. A partida não sabe de onde o comando veio. É isso que vai permitir o online: basta criar outra fonte de comandos que venha da rede.
+- **`scripts/partida/partida.gd`:** o centro da partida (~1.550 linhas): monta quadra, times e câmeras, liga regras, IA, bloqueio, rodízio, faltas, placar e animações. É o arquivo mais arriscado de mexer; separe partes novas em scripts próprios (como foi feito com `bola.gd`, `anel_de_tempo.gd`, `mira_visual.gd`).
+- **`scripts/visual/`:** `visual_anime.gd` (materiais anime), `animador.gd` (animações dos personagens), `impacto.gd` (congelar e tremer a tela), `rastro.gd` (rastro da bola).
+- **`scripts/menus/`:** `estilo.gd` guarda cores e fontes de todos os menus; `selecao.gd` tem a lógica da seleção e `selecao_de_times.gd` desenha a tela.
+- **`dados/*.json`:** tudo que é ajustável sem código (times, elenco, estádios, cartas), lido por `scripts/comum/dados.gd`. A escalação depende do campo `posicao` em `dados/elenco.json` (levantador, ponteiro, central, oposto): mantenha 1 levantador, 2 ponteiros, 2 centrais e 1 oposto por time.
+- **Câmera e visual:** ajustáveis no Inspetor do nó `Partida` em `cenas/partida.tscn` (tela dividida, altura, distância, foco, visual anime). Valores atuais: altura 14,5, distância 29,5, foco 1,5, abertura 27°.
+
+### Personagens (`.vrm`)
+- Caminho: `personagens/<id do time>/<número com 2 dígitos>_<nome>.vrm`, tudo minúsculo, sem acento nem espaço (ex.: `personagens/brasil/01_nome.vrm`). Sem o arquivo, o atleta vira cápsula.
+- Plugin VRM **2.6.1** (AzPepoze) em `addons/vrm` e `addons/mtoon`. Ele **não funciona no Godot 4.3**; por isso o projeto usa o 4.7.2.
+- Importação: Bone Rename Humanoid e esqueleto `GeneralSkeleton` (já configurado em `project.godot`), pra que todas as animações sirvam em todos os atletas.
+- `GIRO_DO_PERSONAGEM = PI` em `partida.gd` faz o modelo olhar pra rede. Conferir com o primeiro personagem real.
+- **Altura:** os modelos de exemplo do VRoid têm ~1,25 m e não alcançam a bola; nos vídeos de teste foram aumentados pra 1,75 m. Com os personagens reais, conferir a altura.
+- Produção: fichas em `producao/fichas/`, números das camisas e prévias de uniforme com `python3 ferramentas/uniformes.py` (precisa do Pillow), e o estado de cada atleta em `producao/MANIFESTO.md`, gerado por `python3 ferramentas/manifesto.py` a partir de `producao/status.json`. Detalhes em `producao/LEIA-ME.md` e `personagens/LEIA-ME.md`. Alturas das fichas foram escritas de memória e precisam ser conferidas.
+
+### Animações
+- Do **Mixamo**: baixar em **FBX Binary, With Skin, 30 fps**, "In Place" nas de correr. O Mixamo não tem nada de vôlei, então as animações são adaptadas (goleiro, arremesso etc.).
+- O retarget pro esqueleto comum usa `animacoes/mixamo_bone_map.tres`, configurado no bloco `_subresources` de cada `.fbx.import`.
+- **Cuidado:** deixe **Remove Tracks desligado** na importação. No Godot 4.7.2 ele apaga as trilhas da animação.
+- **DeepMotion** (vídeo → animação): ossos com nomes `*_JNT`, vem de costas e o quadril sobe com o tempo. Fica em `animacoes/deepmotion/` com `deepmotion_bone_map.tres`; rode `godot --headless --script res://ferramentas/converte_deepmotion.gd` pra gerar o `.tres` do jogo.
+- Levantamento e cortada montada saem de `ferramentas/animacoes_combinadas.gd`.
+- `scripts/visual/animador.gd`: a tabela `TRECHOS` diz qual pedaço de cada animação toca em cada lance. A cortada usa `TEMPO_ATE_A_BATIDA` (0,3 s) e puxa a bola até a mão (ímã de 0,15 s).
+- Passo a passo completo em `animacoes/LEIA-ME.md`.
+
+### Testes
+- São 17 arquivos em `testes/`. Rode todos, dentro da pasta do projeto:
+
+```
+for t in testes/teste_*.gd; do godot --headless --script res://$t; done
+```
+
+  Cada um precisa terminar com uma linha começando com `OK:`.
+- Teste de regra pura: script que estende `SceneTree` e roda no `_init`.
+- Teste que abre a partida (`teste_regras_na_partida.gd`, `teste_tempo_na_partida.gd`, `teste_mira_na_partida.gd`...): use `_initialize` e espere o **1º quadro**, porque a partida precisa dos autoloads. **Não** use `preload` da cena nesses testes; carregue com `load` dentro do `_initialize`.
+- Depois de mexer em código: rode **todos** os testes e jogue (ou rode o robô) uma partida antes de subir. Atualize o README e este documento se algo mudar.
+
+### Rodar o Godot num servidor Linux sem tela (agentes)
+1. Baixe `Godot_v4.7.2-stable_linux.x86_64` (releases de `godotengine/godot-builds`).
+2. `apt-get install mesa-vulkan-drivers xvfb`.
+3. Rode com tela virtual:
+
+```
+VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json xvfb-run -a -s "-screen 0 1600x900x24" godot --rendering-driver vulkan --path .
+```
+
+- Os testes rodam com `--headless`, sem precisar disso.
+- **Robô e prints:** copie o projeto pra uma pasta temporária, troque `run/main_scene` pra `res://cenas/partida.tscn`, registre um autoload que aperta ações (`InputEventAction`) e salva `get_viewport().get_texture().get_image()`. Não suba essas mudanças.
+- A mensagem `ERR_CANT_OPEN ... audio_driver_alsa` só quer dizer que não há placa de som. Pode ignorar.
+- Na primeira abertura o Godot cria `.godot/`, que fica fora do Git. A importação dos `.fbx` e `.vrm` demora na primeira vez.
+
+### Pendências de dados que ninguém conferiu ainda
+- Números dos atletas do Inarizaki em `dados/elenco.json`.
+- Alturas nas fichas de `producao/fichas/`.
+- `defesa_lateral` e `comemoracao_vitoria` existem mas ainda não são usadas.
