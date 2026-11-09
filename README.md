@@ -66,6 +66,7 @@ Os atletas que você não controla se posicionam sozinhos, e o time gira o **rod
 | `scripts/visual/` | `visual_anime.gd` cria materiais anime prontos: `VisualAnime.material(cor)`. |
 | `dados/` | Times (atributos e cores), estádios (cores da quadra, do fundo, das placas e da luz) e cartas do Modo Caos, em JSON. Mudar um número aqui muda o jogo sem mexer em código. |
 | `arte/` (opcional) | Se você criar `arte/times/<id>.png` (um personagem com fundo transparente, ex.: `arte/times/karasuno.png`), ele aparece grande na seleção de times. `arte/estadios/<id>.png` vira a prévia do estádio. Os ids estão nos arquivos de `dados/`. |
+| `personagens/` | Atletas feitos no VRoid Studio (`.vrm`), um por arquivo: `personagens/<time>/<número>_<nome>.vrm`. Veja o [guia do VRoid](https://claude.ai/artifact/NitRJ4DP8oGWkKQJLS1k6A). |
 | `testes/` | Testes automáticos das regras. |
 
 ## Rodar os testes
@@ -92,6 +93,6 @@ Seguindo as fases do documento de design:
 2. ~~Bola e quadra: física da bola, marcador de queda.~~ Feito.
 3. ~~Um time controlado: troca automática de atleta, passe, levantamento, cortada.~~ Feito.
 4. ~~IA de posicionamento dos 5 atletas sem controle.~~ Feito (com bloqueio e rodízio).
-5. Partida completa local (MVP): ~~menus, seleção de times e estádios~~ feito. Falta trocar as cápsulas pelos personagens (VRoid) e o placar com efeito.
+5. Partida completa local (MVP): ~~menus, seleção de times e estádios~~ feito. Falta trocar as cápsulas pelos personagens (VRoid, passo a passo no [guia](https://claude.ai/artifact/NitRJ4DP8oGWkKQJLS1k6A)) e o placar com efeito.
 
 Os nomes e times inspirados em Haikyuu são só pra jogar entre amigos. Se um dia o jogo for publicado, eles precisam virar times próprios, por isso ficam todos em `dados/times.json`.

@@ -6,3 +6,6 @@
 *.wav binary
 *.ttf binary
 *.otf binary
+*.vrm binary
+*.fbx binary
+*.res binary
