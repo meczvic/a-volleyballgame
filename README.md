@@ -49,6 +49,11 @@ Se os dois escolherem o mesmo time, o Jogador 2 joga com o uniforme reserva.
 7. **Bloqueio:** quando o adversário levanta, os 3 atletas da rede sobem sozinhos e acompanham a bola. Aperte **Bloqueio** pra eles pularem; segurar esquerda ou direita desloca o bloqueio. Acertar o tempo do pulo devolve a cortada.
 8. Bola no chão dentro da quadra: ponto pra quem mandou a bola. Fora: ponto pra quem não tocou por último. As outras faltas estão em **Regras do vôlei**, logo abaixo.
 
+**Toque no tempo certo:** quando a bola vem pro seu atleta, um anel branco fecha em volta dele. Aperte quando o anel encostar no anel do atleta: amarelo é **Bom**, verde é **Perfeito!**. O texto aparece em cima do atleta.
+- Passe perfeito cai na mão do levantador; passe ruim espirra e só deixa levantar alto, na ponta ou no fundo.
+- Passe e levantamento perfeitos dão o **levantamento rápido** (bola baixa, que chega antes do bloqueio).
+- Na cortada, aperte um pouco antes: o atleta pula e bate no alto do pulo. Cortada perfeita é forte e funda (a tela congela por um instante e treme); ruim sai fraca e torta.
+
 Os atletas que você não controla se posicionam sozinhos, e o time gira o **rodízio** quando recupera o saque. A tela é **dividida**: o Jogador 1 vê de trás do time dele na metade esquerda, o Jogador 2 na metade direita. "Cima" é sempre na direção da rede pra cada um. Pra voltar pra uma câmera só, abra `cenas/partida.tscn`, selecione o nó `Partida` e desmarque **Tela Dividida** no Inspetor (lá também dá pra ajustar a altura, a distância e o foco da câmera, e ligar ou desligar o **Visual Anime**: sombra "chapada" e contorno escuro nos atletas e na bola).
 
 ### Regras do vôlei
