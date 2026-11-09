@@ -16,8 +16,10 @@ const SETS_PARA_VENCER := 2
 var _faixas: Array[ColorRect] = []
 var _nomes: Array[Label] = []
 var _pontos: Array[Label] = []
-var _sets: Array[Label] = []
-var _saque: Array[Label] = []
+## Bolinhas dos sets de cada time (desenhadas, não texto: a fonte não tem
+## "●" e no navegador não há fonte reserva).
+var _sets: Array = [[], []]
+var _saque: Array[Panel] = []
 var _rotulo_do_set: Label
 var _aviso: Label
 var _cores: Array[Color] = [Color.WHITE, Color.WHITE]
@@ -38,11 +40,17 @@ func _ready() -> void:
 	for time in 2:
 		var faixa := ColorRect.new()
 		faixa.custom_minimum_size = Vector2(8.0, 44.0)
-		var saque := _rotulo("●", 22, false)
+		var saque := _bolinha(12.0)
 		var nome := _rotulo("", 30, true)
 		nome.custom_minimum_size.x = 170.0
 		nome.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if time == 0 else HORIZONTAL_ALIGNMENT_LEFT
-		var sets := _rotulo("", 20, false)
+		var sets := HBoxContainer.new()
+		sets.add_theme_constant_override("separation", 5)
+		sets.alignment = BoxContainer.ALIGNMENT_CENTER
+		for i in SETS_PARA_VENCER:
+			var bolinha := _bolinha(11.0)
+			sets.add_child(bolinha)
+			_sets[time].append(bolinha)
 		var pontos := _rotulo("0", 48, true)
 		pontos.custom_minimum_size.x = 48.0
 		pontos.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -55,7 +63,6 @@ func _ready() -> void:
 		_faixas.append(faixa)
 		_saque.append(saque)
 		_nomes.append(nome)
-		_sets.append(sets)
 		_pontos.append(pontos)
 	var embaixo := HBoxContainer.new()
 	embaixo.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -74,17 +81,16 @@ func configurar(nomes: Array, cores: Array) -> void:
 		_cores[time] = cores[time]
 		_nomes[time].text = str(nomes[time]).to_upper()
 		_faixas[time].color = cores[time]
-		_saque[time].add_theme_color_override("font_color", cores[time])
+		_pintar(_saque[time], cores[time], cores[time])
 
 
 ## "aviso": { "texto", "quem" } (veja Placar.aviso()).
 func atualizar(pontos: Array, sets: Array, set_atual: int, quem_saca: int, aviso: Dictionary) -> void:
 	for time in 2:
 		_pontos[time].text = str(pontos[time])
-		var bolinhas := ""
 		for i in SETS_PARA_VENCER:
-			bolinhas += "●" if i < int(sets[time]) else "○"
-		_sets[time].text = bolinhas
+			var ganho := i < int(sets[time])
+			_pintar(_sets[time][i], _cores[time] if ganho else Color(0, 0, 0, 0), Estilo.TEXTO)
 		_saque[time].modulate.a = 1.0 if time == quem_saca else 0.0
 	_rotulo_do_set.text = "SET %d" % set_atual
 	var texto: String = aviso.get("texto", "")
@@ -121,8 +127,36 @@ func texto_do_aviso() -> String:
 	return _aviso.text.strip_edges() if _aviso.visible else ""
 
 
+func sets_acesos(time: int) -> int:
+	var n := 0
+	for bolinha in _sets[time]:
+		if bolinha.get_meta("acesa", false):
+			n += 1
+	return n
+
+
 func numero_pulando(time: int) -> bool:
 	return _pontos[time].scale.x > 1.01
+
+
+func _bolinha(tamanho: float) -> Panel:
+	var bolinha := Panel.new()
+	bolinha.custom_minimum_size = Vector2(tamanho, tamanho)
+	bolinha.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	bolinha.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_pintar(bolinha, Color(0, 0, 0, 0), Estilo.TEXTO)
+	return bolinha
+
+
+## Bolinha cheia (cor com alfa) ou vazia (só a borda).
+func _pintar(bolinha: Panel, cor: Color, borda: Color) -> void:
+	var estilo := StyleBoxFlat.new()
+	estilo.bg_color = cor
+	estilo.set_corner_radius_all(int(bolinha.custom_minimum_size.x))
+	estilo.set_border_width_all(2)
+	estilo.border_color = borda
+	bolinha.add_theme_stylebox_override("panel", estilo)
+	bolinha.set_meta("acesa", cor.a > 0.0)
 
 
 func _rotulo(texto: String, tamanho: int, titulo: bool) -> Label:

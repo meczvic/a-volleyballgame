@@ -114,7 +114,7 @@ func _teste_set_mostra_faixa_de_set() -> void:
 	_pontos(partida, 6, 0)
 	partida._encerrar_rally(0, "dentro")
 	_verificar(partida.faixa.texto() == "SET!", "último ponto do set mostra SET! (%s)" % partida.faixa.texto())
-	_verificar(partida.placar_visual._sets[0].text.begins_with("●"), "bolinha do set ganho acesa")
+	_verificar(partida.placar_visual.sets_acesos(0) == 1 and partida.placar_visual.sets_acesos(1) == 0, "bolinha do set ganho acesa")
 	_verificar(partida.placar_visual.texto_do_aviso() == "", "no fim do set, sem aviso de set/match point")
 	_fechar(partida)
 
