@@ -37,7 +37,7 @@ O 1º controle conectado é do Jogador 1, o 2º do Jogador 2.
 7. **Bloqueio:** quando o adversário levanta, os 3 atletas da rede sobem sozinhos e acompanham a bola. Aperte **Bloqueio** pra eles pularem; segurar esquerda ou direita desloca o bloqueio. Acertar o tempo do pulo devolve a cortada.
 8. Bola no chão dentro da quadra: ponto pra quem mandou a bola. Fora: ponto pra quem não tocou por último. 4 toques seguidos do mesmo time é falta.
 
-Os atletas que você não controla se posicionam sozinhos, e o time gira o **rodízio** quando recupera o saque. A tela é **dividida**: o Jogador 1 vê de trás do time dele na metade esquerda, o Jogador 2 na metade direita. "Cima" é sempre na direção da rede pra cada um. Pra voltar pra uma câmera só, selecione o nó `Main` na cena e desmarque **Tela Dividida** no Inspetor (lá também dá pra ajustar a altura e a distância da câmera).
+Os atletas que você não controla se posicionam sozinhos, e o time gira o **rodízio** quando recupera o saque. A tela é **dividida**: o Jogador 1 vê de trás do time dele na metade esquerda, o Jogador 2 na metade direita. "Cima" é sempre na direção da rede pra cada um. Pra voltar pra uma câmera só, selecione o nó `Main` na cena e desmarque **Tela Dividida** no Inspetor (lá também dá pra ajustar a altura e a distância da câmera, e ligar ou desligar o **Visual Anime**: sombra "chapada" e contorno escuro nos atletas e na bola).
 
 ## Pastas
 
@@ -47,6 +47,8 @@ Os atletas que você não controla se posicionam sozinhos, e o time gira o **rod
 | `scripts/regras/` | Regras puras, sem gráfico: placar, sets, rodízio, toques, trajetória da bola, escolha do atacante. |
 | `scripts/entrada/` | Teclado e controle viram "comandos". A lógica do jogo não sabe se o comando veio do teclado ou da internet, o que facilita o online depois. |
 | `scripts/partida/` | O que acontece na quadra. |
+| `shaders/` | Efeito anime: `anime.gdshader` (luz e sombra em faixas) e `contorno.gdshader` (contorno escuro). |
+| `scripts/visual/` | `visual_anime.gd` cria materiais anime prontos: `VisualAnime.material(cor)`. |
 | `dados/` | Times (atributos e cores) e cartas do Modo Caos, em JSON. Mudar um número aqui muda o jogo sem mexer em código. |
 | `testes/` | Testes automáticos das regras. |
 

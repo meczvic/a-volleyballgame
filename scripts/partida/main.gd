@@ -24,6 +24,7 @@ const EscolhaAtaque := preload("res://scripts/regras/escolha_ataque.gd")
 const EntradaLocal := preload("res://scripts/entrada/entrada_local.gd")
 const Bola := preload("res://scripts/partida/bola.gd")
 const MarcadorQueda := preload("res://scripts/partida/marcador_queda.gd")
+const VisualAnime := preload("res://scripts/visual/visual_anime.gd")
 
 enum Estado { SAQUE, RALLY, PONTO, FIM }
 
@@ -87,6 +88,8 @@ const ATAQUE_PADRAO := 1
 ## Tela dividida: cada jogador vê de trás do próprio time.
 ## Desligado: uma câmera só, do lado do Jogador 1.
 @export var tela_dividida := true
+## Visual anime (sombra "chapada" e contorno escuro) nos atletas e na bola.
+@export var visual_anime := true
 
 var placar = Placar.new()
 var toques = Toques.new()
@@ -126,6 +129,7 @@ func _ready() -> void:
 
 	bola = Bola.new()
 	bola.name = "Bola"
+	bola.usar_visual_anime = visual_anime
 	add_child(bola)
 	bola.verificar_bloqueio = _tem_bloqueio
 	bola.tocou_chao.connect(_ao_bola_tocar_chao)
@@ -556,7 +560,8 @@ func _criar_ambiente() -> void:
 	env.background_color = Color("#1B2A3A")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(1.0, 0.95, 0.9)
-	env.ambient_light_energy = 0.6
+	# A sombra "chapada" do visual anime fica melhor com mais luz ambiente.
+	env.ambient_light_energy = 0.8 if visual_anime else 0.6
 	var mundo := WorldEnvironment.new()
 	mundo.environment = env
 	add_child(mundo)
@@ -614,9 +619,20 @@ func _criar_atletas(time: int) -> void:
 		capsula.radius = 0.35
 		capsula.height = 1.8
 		corpo.mesh = capsula
-		corpo.material_override = _material(cor_uniforme)
+		corpo.material_override = _material_do_atleta(cor_uniforme, 0.03)
 		corpo.position.y = 0.9
 		atleta.add_child(corpo)
+
+		# Faixa no peito com a cor de detalhe do uniforme.
+		var faixa := MeshInstance3D.new()
+		var anel_do_peito := CylinderMesh.new()
+		anel_do_peito.top_radius = 0.36
+		anel_do_peito.bottom_radius = 0.36
+		anel_do_peito.height = 0.12
+		faixa.mesh = anel_do_peito
+		faixa.material_override = _material_do_atleta(cor_detalhe, 0.0)
+		faixa.position.y = 1.15
+		atleta.add_child(faixa)
 		add_child(atleta)
 		atletas[time].append(atleta)
 
@@ -761,6 +777,13 @@ func _caixa(tamanho: Vector3, posicao: Vector3, cor: Color) -> MeshInstance3D:
 	caixa.position = posicao
 	add_child(caixa)
 	return caixa
+
+
+## Material dos atletas: anime (com contorno) ou comum, conforme "visual_anime".
+func _material_do_atleta(cor: Color, contorno: float) -> Material:
+	if visual_anime:
+		return VisualAnime.material(cor, contorno)
+	return _material(cor)
 
 
 func _material(cor: Color) -> StandardMaterial3D:

@@ -10,6 +10,7 @@ signal tocou_rede
 signal bloqueada
 
 const Trajetoria := preload("res://scripts/regras/trajetoria.gd")
+const VisualAnime := preload("res://scripts/visual/visual_anime.gd")
 
 ## Um pouco maior que a bola real (0,105 m) pra enxergar bem de cima.
 const RAIO := 0.18
@@ -25,6 +26,8 @@ var ponto_previsto := Vector3.ZERO
 ## Quem cuida do bloqueio: função(ponto_na_rede: Vector3, lado_destino: float) -> bool.
 ## Devolve true se tem alguém pulando no lugar certo pra bloquear.
 var verificar_bloqueio := Callable()
+## Visual anime (contorno escuro). Defina antes de colocar a bola na cena.
+var usar_visual_anime := true
 
 var _origem := Vector3.ZERO
 var _velocidade_inicial := Vector3.ZERO
@@ -38,9 +41,13 @@ func _ready() -> void:
 	esfera.height = RAIO * 2.0
 	var visual := MeshInstance3D.new()
 	visual.mesh = esfera
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color("#F7F3E8")
-	visual.material_override = material
+	var cor := Color("#F7F3E8")
+	if usar_visual_anime:
+		visual.material_override = VisualAnime.material(cor, 0.015)
+	else:
+		var material := StandardMaterial3D.new()
+		material.albedo_color = cor
+		visual.material_override = material
 	add_child(visual)
 
 	# Sombra redonda sempre no chão, embaixo da bola.
