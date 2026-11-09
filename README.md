@@ -49,6 +49,8 @@ Se os dois escolherem o mesmo time, o Jogador 2 joga com o uniforme reserva.
 7. **Bloqueio:** quando o adversário levanta, os 3 atletas da rede sobem sozinhos e acompanham a bola. Aperte **Bloqueio** pra eles pularem; segurar esquerda ou direita desloca o bloqueio. Acertar o tempo do pulo devolve a cortada.
 8. Bola no chão dentro da quadra: ponto pra quem mandou a bola. Fora: ponto pra quem não tocou por último. As outras faltas estão em **Regras do vôlei**, logo abaixo.
 
+**Mira:** no saque, **segure** Ataque (ou Flutuante) pra encher a força e **solte** pra sacar. Enquanto segura, a direção move o X vermelho na quadra do outro lado; o círculo mostra onde a bola pode cair. Mais força: bola mais baixa e rápida, mas o círculo cresce, e no máximo (vermelho forte) o risco de sair é grande. A força enche e esvazia, então o tempo de soltar importa. Na cortada, a direção na hora da batida escolhe o lugar: esquerda ou direita, e pra frente (bola funda) ou pra trás (bola curta). A mira aparece quando o levantamento está no ar.
+
 **Toque no tempo certo:** quando a bola vem pro seu atleta, um anel branco fecha em volta dele. Aperte quando o anel encostar no anel do atleta: amarelo é **Bom**, verde é **Perfeito!**. O texto aparece em cima do atleta.
 - Passe perfeito cai na mão do levantador; passe ruim espirra e só deixa levantar alto, na ponta ou no fundo.
 - Passe e levantamento perfeitos dão o **levantamento rápido** (bola baixa, que chega antes do bloqueio).

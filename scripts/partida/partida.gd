@@ -57,6 +57,8 @@ const AnelDeTempo := preload("res://scripts/partida/anel_de_tempo.gd")
 const AvisoDeToque := preload("res://scripts/partida/aviso_de_toque.gd")
 const Impacto := preload("res://scripts/visual/impacto.gd")
 const Rastro := preload("res://scripts/visual/rastro.gd")
+const Mira := preload("res://scripts/regras/mira.gd")
+const MiraVisual := preload("res://scripts/partida/mira_visual.gd")
 const Qualidade := TempoDoToque.Qualidade
 
 enum Estado { SAQUE, RALLY, PONTO, FIM }
@@ -203,6 +205,13 @@ var aneis_de_tempo: Array = [null, null]
 var qualidade_do_passe: Array = [Qualidade.BOM, Qualidade.BOM]
 var impacto
 var rastro
+## Mira de cada time (saque carregado e cortada).
+var miras: Array = [null, null]
+## Segundos segurando o botão do saque (-1 = não está carregando).
+var carga_do_saque := -1.0
+var saque_flutuante := false
+## Alvo do saque na quadra do outro time (x = lado, y = distância da rede).
+var alvo_do_saque := Mira.ALVO_INICIAL
 ## Cortada de cada time que já saiu do chão e ainda vai bater na bola
 ## (vazio = nenhuma). Ver _comecar_cortada.
 var cortadas: Array = [{}, {}]
@@ -237,6 +246,11 @@ func _ready() -> void:
 		add_child(anel_de_tempo)
 		anel_de_tempo.usar_camada(CAMADA_DO_ANEL_DE_TEMPO[time])
 		aneis_de_tempo[time] = anel_de_tempo
+		var mira = MiraVisual.new()
+		mira.name = "Mira%d" % time
+		add_child(mira)
+		mira.usar_camada(CAMADA_DO_ANEL_DE_TEMPO[time])
+		miras[time] = mira
 	impacto = Impacto.new()
 	impacto.name = "Impacto"
 	impacto.cameras = cameras
@@ -259,6 +273,7 @@ func _ready() -> void:
 		entrada.jogador = jogador
 		entrada.name = "EntradaJogador%d" % jogador
 		entrada.comando.connect(_ao_receber_comando)
+		entrada.soltou.connect(_ao_soltar_botao)
 		add_child(entrada)
 		entradas.append(entrada)
 
@@ -300,6 +315,7 @@ func _physics_process(delta: float) -> void:
 			_atualizar_pulo(atleta, delta)
 		aneis[time].position = Vector3(controlado.position.x, 0.03, controlado.position.z)
 		_atualizar_anel_de_tempo(time)
+		_atualizar_mira(time, delta)
 
 	# Antes do saque, a bola fica na mão de quem saca.
 	if estado == Estado.SAQUE:
@@ -488,8 +504,12 @@ func _ao_receber_comando(jogador: int, tipo: String) -> void:
 	var time := jogador - 1
 	match estado:
 		Estado.SAQUE:
-			if time == placar.quem_saca and (tipo == "ataque" or tipo == "saque_flutuante"):
-				_sacar(time, tipo == "saque_flutuante")
+			# Segurar carrega a força; o saque sai quando solta (_ao_soltar_botao).
+			if time == placar.quem_saca and carga_do_saque < 0.0 \
+					and (tipo == "ataque" or tipo == "saque_flutuante"):
+				carga_do_saque = 0.0
+				saque_flutuante = tipo == "saque_flutuante"
+				alvo_do_saque = Mira.ALVO_INICIAL
 		Estado.RALLY:
 			if tipo == "passe":
 				_tentar_tocar(time, false)
@@ -502,7 +522,22 @@ func _ao_receber_comando(jogador: int, tipo: String) -> void:
 				_animar(controlados[time], "mergulho")
 
 
-func _sacar(time: int, flutuante: bool) -> void:
+func _ao_soltar_botao(jogador: int, tipo: String) -> void:
+	var time := jogador - 1
+	if estado != Estado.SAQUE or time != placar.quem_saca or carga_do_saque < 0.0:
+		return
+	if tipo != ("saque_flutuante" if saque_flutuante else "ataque"):
+		return
+	var forca := Mira.forca(carga_do_saque)
+	carga_do_saque = -1.0
+	_sacar(time, saque_flutuante, forca, alvo_do_saque)
+
+
+## Saque com "forca" (0 a 1) mirando "alvo" (na quadra do outro time).
+## Mais força: mais baixo e rápido, mas com mais erro (pode sair).
+func _sacar(time: int, flutuante: bool, forca := 0.4, alvo := Mira.ALVO_INICIAL) -> void:
+	carga_do_saque = -1.0
+	miras[time].esconder()
 	_animar(controlados[time], "saque")
 	# Na hora do saque, os dois times têm que estar na ordem do rodízio.
 	var falta_de_posicao := _time_fora_de_posicao()
@@ -512,10 +547,10 @@ func _sacar(time: int, flutuante: bool) -> void:
 	toques.reiniciar()
 	toques.registrar(time, atletas[time].find(controlados[time]))
 	saque_em_jogo = true
-	var destino := _ponto_aleatorio_no_lado(1 - time, 2.0, 8.0)
+	var ponto := Mira.com_erro(alvo, Mira.erro_do_saque(forca), Vector2(randf(), randf()))
+	var destino := Vector3(ponto.x, 0.0, ponto.y * _lado(1 - time))
 	# Provisório: o flutuante só sai mais baixo. O balanço vem depois.
-	var altura := 3.4 if flutuante else 4.2
-	bola.lancar(destino, altura)
+	bola.lancar(destino, Mira.altura_do_saque(forca, flutuante))
 	ultimo_toque = time
 	estado = Estado.RALLY
 	_mostrar_mensagem("")
@@ -712,12 +747,13 @@ func _bater_na_bola(time: int, atleta: Node3D) -> void:
 ## Cortada ruim sai fraca e torta.
 func _cortar(time: int, qualidade: Qualidade = Qualidade.BOM) -> void:
 	var jeito: Dictionary = TempoDoToque.CORTADA[qualidade]
-	# A direção mira pra esquerda ou direita da quadra adversária.
-	var direcao := _direcao_no_mundo(time)
-	var erro_da_mira: float = jeito["erro_da_mira"]
-	var mira_x := clampf(direcao.x * 3.0 + randf_range(-erro_da_mira, erro_da_mira), -LARGURA / 2.0 + 0.3, LARGURA / 2.0 - 0.3)
-	var profundidade := randf_range(jeito["fundo_min"], jeito["fundo_max"])
-	var destino := Vector3(mira_x, 0.0, profundidade * _lado(1 - time))
+	# A direção mira: esquerda/direita, e pra frente (funda) ou pra trás (curta).
+	var alvo := _alvo_da_cortada(time)
+	alvo.y = clampf(alvo.y, jeito["fundo_min"], jeito["fundo_max"])
+	var ponto := Mira.com_erro(alvo, jeito["erro_da_mira"], Vector2(randf(), randf()))
+	ponto.x = clampf(ponto.x, -LARGURA / 2.0 + 0.2, LARGURA / 2.0 - 0.2)
+	var destino := Vector3(ponto.x, 0.0, ponto.y * _lado(1 - time))
+	miras[time].esconder()
 	bola.lancar(destino, bola.position.y + float(jeito["subida"]))
 	_ao_lancar_bola()
 	if qualidade != Qualidade.RUIM:
@@ -832,6 +868,35 @@ func _avisar_qualidade(atleta: Node3D, qualidade: Qualidade) -> void:
 	AvisoDeToque.mostrar(self, atleta.position + Vector3(0.0, 2.3, 0.0), TempoDoToque.nome(qualidade), cor)
 
 
+# --- Mira ---
+
+## Alvo da cortada do "time" pela direção apertada agora (na quadra do outro).
+func _alvo_da_cortada(time: int) -> Vector2:
+	return Mira.alvo_da_cortada(_direcao_no_mundo(time), _lado(1 - time))
+
+
+## Mostra a mira: no saque carregando (alvo que anda + força) e quando o time
+## vai atacar (levantamento no ar ou atleta no pulo da cortada).
+func _atualizar_mira(time: int, delta: float) -> void:
+	var mira = miras[time]
+	var lado_do_alvo := _lado(1 - time)
+	if estado == Estado.SAQUE and time == placar.quem_saca and carga_do_saque >= 0.0:
+		carga_do_saque += delta
+		alvo_do_saque = Mira.mover_alvo(alvo_do_saque, _direcao_no_mundo(time), lado_do_alvo, delta)
+		var forca := Mira.forca(carga_do_saque)
+		var ponto := Vector3(alvo_do_saque.x, 0.0, alvo_do_saque.y * lado_do_alvo)
+		mira.mostrar(ponto, Mira.erro_do_saque(forca), forca, forca >= Mira.FORCA_ARRISCADA)
+		return
+	var vai_atacar: bool = estado == Estado.RALLY and (not cortadas[time].is_empty() \
+		or (toques.time_com_a_bola == time and toques.toques == 2 and bola.em_voo and _lado_da_queda() == time))
+	if not vai_atacar:
+		mira.esconder()
+		return
+	var alvo := _alvo_da_cortada(time)
+	var raio: float = TempoDoToque.CORTADA[Qualidade.BOM]["erro_da_mira"]
+	mira.mostrar(Vector3(alvo.x, 0.0, alvo.y * lado_do_alvo), raio)
+
+
 # --- Regras (faltas) ---
 
 ## Falta no toque do atleta controlado do "time"? Devolve o motivo, ou "".
@@ -885,7 +950,7 @@ func _contar_tempo_do_saque(delta: float) -> void:
 		return
 	if restam <= 3 and restam != _segundos_mostrados:
 		_segundos_mostrados = restam
-		_mostrar_mensagem("%s saca: aperte Ataque (%d)" % [times_em_jogo[placar.quem_saca]["nome"], restam])
+		_mostrar_mensagem("%s saca: segure e solte Ataque (%d)" % [times_em_jogo[placar.quem_saca]["nome"], restam])
 
 
 func _e_da_rede(time: int, atleta: Node3D) -> bool:
@@ -951,6 +1016,7 @@ func _preparar_saque() -> void:
 	qualidade_do_passe = [Qualidade.BOM, Qualidade.BOM]
 	saque_em_jogo = false
 	tempo_no_saque = 0.0
+	carga_do_saque = -1.0
 	_segundos_mostrados = -1
 	toques.reiniciar()
 	marcador.esconder()
@@ -977,7 +1043,7 @@ func _preparar_saque() -> void:
 		passador = rodizios[outro].atleta_na(5)
 	controlados[outro] = atletas[outro][passador]
 
-	_mostrar_mensagem("%s saca: aperte Ataque" % times_em_jogo[time]["nome"])
+	_mostrar_mensagem("%s saca: segure e solte Ataque" % times_em_jogo[time]["nome"])
 
 
 func _ao_encerrar_partida(vencedor: int) -> void:

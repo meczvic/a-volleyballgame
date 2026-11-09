@@ -24,7 +24,7 @@ func _ready() -> void:
 	billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	no_depth_test = true
 	fixed_size = true
-	pixel_size = 0.0015
+	pixel_size = 0.0007
 	font_size = 44
 	outline_size = 14
 	outline_modulate = Color(0.08, 0.08, 0.1)
