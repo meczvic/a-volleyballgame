@@ -1,0 +1,61 @@
+{
+	"_sobre": "Atributos de 1 a 5, cada time soma 17. Cores: [principal, detalhe, terceira]. Nomes ficam aqui para serem trocados facilmente se o jogo for publicado.",
+	"times": [
+		{
+			"id": "karasuno",
+			"nome": "Karasuno",
+			"estilo": "Rápido e ofensivo",
+			"atributos": { "ataque": 4, "defesa": 2, "saque": 3, "bloqueio": 3, "velocidade": 5 },
+			"jogada": "Ataque rápido do meio",
+			"cores": ["#1F1F24", "#F28C28", "#FFFFFF"]
+		},
+		{
+			"id": "aoba_johsai",
+			"nome": "Aoba Johsai",
+			"estilo": "Levantador forte, saque potente",
+			"atributos": { "ataque": 4, "defesa": 3, "saque": 5, "bloqueio": 2, "velocidade": 3 },
+			"jogada": "Saque com salto do levantador",
+			"cores": ["#F2F4F3", "#2E9E93", "#1E3A5C"]
+		},
+		{
+			"id": "shiratorizawa",
+			"nome": "Shiratorizawa",
+			"estilo": "Ataque de força bruta",
+			"atributos": { "ataque": 5, "defesa": 3, "saque": 4, "bloqueio": 3, "velocidade": 2 },
+			"jogada": "Cortada do ás canhoto",
+			"cores": ["#6A3E9E", "#FFFFFF", "#C9B4EC"]
+		},
+		{
+			"id": "nekoma",
+			"nome": "Nekoma",
+			"estilo": "Defesa e recepção",
+			"atributos": { "ataque": 2, "defesa": 5, "saque": 3, "bloqueio": 3, "velocidade": 4 },
+			"jogada": "Recepção perfeita em sequência",
+			"cores": ["#C62A31", "#FFFFFF", "#1A1A1E"]
+		},
+		{
+			"id": "fukurodani",
+			"nome": "Fukurodani",
+			"estilo": "Ataque com ás instável",
+			"atributos": { "ataque": 5, "defesa": 3, "saque": 3, "bloqueio": 3, "velocidade": 3 },
+			"jogada": "Ás que fica mais forte quando faz ponto",
+			"cores": ["#2F333B", "#E3B23C", "#FFFFFF"]
+		},
+		{
+			"id": "inarizaki",
+			"nome": "Inarizaki",
+			"estilo": "Versátil e imprevisível",
+			"atributos": { "ataque": 4, "defesa": 3, "saque": 4, "bloqueio": 3, "velocidade": 3 },
+			"jogada": "Jogada copiada do adversário",
+			"cores": ["#ECEDEF", "#23252B", "#D9582B"]
+		},
+		{
+			"id": "brasil",
+			"nome": "Brasil",
+			"estilo": "Equilíbrio e ataque pelas pontas",
+			"atributos": { "ataque": 4, "defesa": 3, "saque": 3, "bloqueio": 3, "velocidade": 4 },
+			"jogada": "Ataque pelas pontas com pipe",
+			"cores": ["#F6CF1B", "#13924A", "#1D4E9E"]
+		}
+	]
+}

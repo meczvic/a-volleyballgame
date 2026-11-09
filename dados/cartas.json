@@ -1,0 +1,34 @@
+{
+	"_sobre": "Cartas do Modo Caos. A escolha abre na pausa depois do ponto; o saque espera até os 2 escolherem, com limite de 60 segundos (depois disso a carta é sorteada).",
+	"tempo_limite_escolha": 60,
+	"cartas": [
+		{ "id": "maos_firmes", "nome": "Mãos Firmes", "raridade": "prata", "conjunto": "defesa", "efeito": "Passes ficam mais precisos" },
+		{ "id": "leitura_de_jogo", "nome": "Leitura de Jogo", "raridade": "prata", "conjunto": "defesa", "efeito": "O marcador de queda aparece mais cedo" },
+		{ "id": "tapete_vermelho", "nome": "Tapete Vermelho", "raridade": "prata", "conjunto": "defesa", "efeito": "Mergulhos levantam mais rápido do chão" },
+		{ "id": "pes_leves", "nome": "Pés Leves", "raridade": "prata", "conjunto": "velocidade", "efeito": "Atletas correm 15% mais rápido" },
+		{ "id": "saque_firme", "nome": "Saque Firme", "raridade": "prata", "conjunto": "saque", "efeito": "Saque erra menos ao carregar no máximo" },
+		{ "id": "braco_quente", "nome": "Braço Quente", "raridade": "prata", "conjunto": "ataque", "efeito": "Cortada carrega mais rápido" },
+		{ "id": "salto_alto", "nome": "Salto Alto", "raridade": "prata", "conjunto": "rede", "efeito": "Bloqueio pula um pouco mais alto" },
+		{ "id": "levantador_preciso", "nome": "Levantador Preciso", "raridade": "prata", "conjunto": "ataque", "efeito": "Levantamento sai sempre no ponto ideal" },
+		{ "id": "super_saque", "nome": "Super Saque", "raridade": "ouro", "conjunto": "saque", "efeito": "Saque muito mais forte e difícil de receber" },
+		{ "id": "muro", "nome": "Muro", "raridade": "ouro", "conjunto": "rede", "efeito": "Bloqueio fica mais alto e largo" },
+		{ "id": "bloqueio_leitor", "nome": "Bloqueio Leitor", "raridade": "ouro", "conjunto": "rede", "efeito": "Bloqueio se move sozinho pro atacante certo" },
+		{ "id": "ataque_rapido", "nome": "Ataque Rápido", "raridade": "ouro", "conjunto": "ataque", "efeito": "Libera a bola de tempo rápido" },
+		{ "id": "diagonal_mortal", "nome": "Diagonal Mortal", "raridade": "ouro", "conjunto": "ataque", "efeito": "Cortada em diagonal ganha ângulo extra" },
+		{ "id": "defesa_de_ferro", "nome": "Defesa de Ferro", "raridade": "ouro", "conjunto": "defesa", "efeito": "Uma vez por set, uma bola impossível é salva automaticamente" },
+		{ "id": "contra_ataque", "nome": "Contra-Ataque", "raridade": "ouro", "conjunto": "velocidade", "efeito": "Depois de defender uma cortada, o próximo ataque é mais forte" },
+		{ "id": "cortada_sinistra", "nome": "Cortada Sinistra", "raridade": "prismatica", "conjunto": "ataque", "efeito": "Cortada que atravessa o bloqueio" },
+		{ "id": "bola_fantasma", "nome": "Bola Fantasma", "raridade": "prismatica", "conjunto": "ataque", "efeito": "A sombra da bola some por um instante no ataque" },
+		{ "id": "saque_canhao", "nome": "Saque Canhão", "raridade": "prismatica", "conjunto": "saque", "efeito": "Próximo saque derruba quem recebe (ponto ou bola ruim)" },
+		{ "id": "muralha_total", "nome": "Muralha Total", "raridade": "prismatica", "conjunto": "rede", "efeito": "Nos próximos 3 ataques adversários o bloqueio triplo se forma sozinho; o tempo do salto continua com o jogador" },
+		{ "id": "relampago", "nome": "Relâmpago", "raridade": "prismatica", "conjunto": "velocidade", "efeito": "Por 20 segundos, o time inteiro fica muito mais rápido" },
+		{ "id": "troca_de_lugar", "nome": "Troca de Lugar", "raridade": "prismatica", "conjunto": "coringa", "efeito": "Copia a última carta que o adversário pegou" }
+	],
+	"conjuntos": [
+		{ "id": "ataque", "com_2": "Cortadas 10% mais fortes", "com_3": "Toda cortada perfeita vira ponto se não for bloqueada" },
+		{ "id": "defesa", "com_2": "Recepção mais fácil", "com_3": "Primeira bola de cada rally sempre chega no levantador" },
+		{ "id": "saque", "com_2": "Saque mais preciso", "com_3": "Um ace conta 2 pontos" },
+		{ "id": "rede", "com_2": "Bloqueio mais rápido", "com_3": "Bola bloqueada sempre cai do lado adversário" },
+		{ "id": "velocidade", "com_2": "Atletas 10% mais rápidos", "com_3": "Mergulho sem tempo no chão" }
+	]
+}

@@ -1,0 +1,11 @@
+# Pasta interna do Godot (gerada ao abrir o projeto)
+.godot/
+
+# Builds exportados
+export/
+*.exe
+*.pck
+
+# Sistema
+.DS_Store
+Thumbs.db
