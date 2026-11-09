@@ -58,6 +58,10 @@ Se os dois escolherem o mesmo time, o Jogador 2 joga com o uniforme reserva.
 - Passe e levantamento perfeitos dão o **levantamento rápido** (bola baixa, que chega antes do bloqueio).
 - Na cortada, aperte um pouco antes: o atleta pula e bate no alto do pulo. Cortada perfeita é forte e funda (a tela congela por um instante e treme); ruim sai fraca e torta.
 
+**Largada:** depois de apertar Ataque, aperte **Passe** enquanto o atleta está no ar. Em vez de bater, ele empurra a bola devagar **por cima do bloqueio**, e ela cai curta, entre 1 e 3 m da rede. A direção escolhe o lado. Funciona bem quando o bloqueio está fechado e a defesa está lá atrás. Contra uma defesa que espera perto da rede, é bola fácil.
+
+**Leitura do bloqueio:** quando o adversário levanta, os bloqueadores levam um instante (0,4 s) pra ler o levantamento. Depois correm pra onde a bola vai ser atacada. O central vai sempre, e o da ponta só ajuda se a bola vai pro lado dele. No levantamento alto dá tempo de montar o bloqueio. No **levantamento rápido** sobra pouco tempo pra correr e acertar o pulo, então ele é a melhor arma contra um bloqueio forte.
+
 **Mergulho:** aperte **Mergulho** quando a bola estiver baixa (até 1,4 m) e longe demais pro passe normal. O atleta se joga e alcança até uns 3,2 m, bem mais que o passe (1,8 m). Mas a bola sai pior: no máximo **Bom**, e **Ruim** quando ela estava fora do alcance normal. Depois ele fica **no chão** por 0,8 s, sem andar. Mergulhar sem bola por perto também derruba o atleta, então não mergulhe à toa.
 
 **Atributos dos times** (1 a 5, em `dados/times.json`; 3 é o normal):
@@ -119,7 +123,7 @@ godot --headless --script res://testes/teste_animacoes.gd
 godot --headless --script res://testes/teste_animador.gd
 ```
 
-Ou todos de uma vez (19 arquivos, incluindo tempo do toque, mira, cortada, atributos e mergulho):
+Ou todos de uma vez (20 arquivos, incluindo tempo do toque, mira, cortada, atributos, mergulho e jogadas):
 
 ```
 for t in testes/teste_*.gd; do godot --headless --script res://$t; done

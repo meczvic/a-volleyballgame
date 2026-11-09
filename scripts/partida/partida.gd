@@ -118,6 +118,21 @@ const ALTURA_MAXIMA_DO_MERGULHO := 1.4
 const TEMPO_NO_CHAO := 0.8
 ## Quanto o atleta se joga quando o mergulho não alcança a bola (m).
 const MERGULHO_NO_VAZIO := 1.5
+## Largada: em vez de bater, o atacante empurra a bola devagar por cima do
+## bloqueio, pra cair curta (entre essas distâncias da rede, em m).
+const LARGADA_FUNDO_MIN := 1.0
+const LARGADA_FUNDO_MAX := 3.0
+## Quanto a largada sobe acima do ponto de contato (m): alto o bastante pra
+## passar por cima das mãos do bloqueio.
+const SUBIDA_DA_LARGADA := 1.3
+## Erro da mira da largada (m), por qualidade (o tempo do botão da cortada).
+const ERRO_DA_LARGADA := [0.2, 0.5, 1.2]
+## Leitura do bloqueio: os bloqueadores da ponta só ajudam se o levantamento
+## vai pro lado deles (até essa distância, em m). O central vai sempre.
+const AJUDA_DO_BLOQUEIO := 4.0
+## Tempo de reação do bloqueio (s): só depois disso de bola no ar ele "lê" o
+## levantamento e corre. É o que faz o levantamento rápido chegar antes.
+const REACAO_DO_BLOQUEIO := 0.4
 ## Só bloqueia quem está até essa distância da rede.
 const DISTANCIA_MAXIMA_DO_BLOQUEIO := 1.2
 ## Quanto a direção desloca o bloqueio na hora do pulo (m).
@@ -375,9 +390,8 @@ func _alvo_da_ia(time: int, indice: int) -> Vector3:
 	var lugar: Vector2
 
 	if da_rede and adversario_vai_atacar:
-		# Sobe pra rede e acompanha a bola pra bloquear.
-		var bola_x_do_time: float = bola.position.x * _lado(time)
-		lugar = Vector2(lerpf(x_da_funcao, bola_x_do_time, 0.5), 0.7)
+		# Sobe pra rede e lê o levantamento: corre pra onde a bola vai.
+		lugar = Vector2(_x_do_bloqueio(time, indice, funcao, x_da_funcao), 0.7)
 	elif e_levantador and montando_o_ataque:
 		# Infiltração: o levantador vai pro lugar do levantamento.
 		lugar = PONTO_DO_LEVANTADOR
@@ -389,6 +403,26 @@ func _alvo_da_ia(time: int, indice: int) -> Vector3:
 	else:
 		lugar = Vector2(x_da_funcao, Formacao.Y_FUNDO)
 	return _no_mundo(time, lugar)
+
+
+## Leitura do bloqueio: com o levantamento no ar, o bloqueio vê onde a bola
+## vai estar na hora da cortada e corre pra lá. O central vai sempre; os
+## da ponta só se a bola vai pro lado deles. Com o tempo de reação e a
+## velocidade limitada, o levantamento rápido chega antes do bloqueio fechar.
+## Antes do levantamento, acompanha a bola.
+func _x_do_bloqueio(time: int, indice: int, funcao: String, x_da_funcao: float) -> float:
+	var bola_x_do_time: float = bola.position.x * _lado(time)
+	if toques.toques < 2 or not bola.em_voo or _lado_da_queda() == time:
+		return lerpf(x_da_funcao, bola_x_do_time, 0.5)
+	if bola.tempo_de_voo() < REACAO_DO_BLOQUEIO:
+		# Ainda lendo o levantamento: fica onde está.
+		return atletas[time][indice].position.x * _lado(time)
+	# Onde a bola vai estar na altura da cortada (descendo).
+	var ate_a_batida := TempoDoToque.tempo_ate_altura(bola.position, bola.velocidade_atual(), TempoDoToque.ALTURA_IDEAL["cortada"])
+	var alvo_x: float = bola.posicao_daqui_a(maxf(ate_a_batida, 0.0)).x * _lado(time)
+	if funcao == "central" or absf(alvo_x - x_da_funcao) <= AJUDA_DO_BLOQUEIO:
+		return alvo_x
+	return x_da_funcao
 
 
 ## Antes do saque, o atleta controlado do time que recebe não pode sair da
@@ -525,7 +559,11 @@ func _ao_receber_comando(jogador: int, tipo: String) -> void:
 				alvo_do_saque = Mira.ALVO_INICIAL
 		Estado.RALLY:
 			if tipo == "passe":
-				_tentar_tocar(time, false)
+				if not cortadas[time].is_empty():
+					# Passe no ar, durante a cortada: vira largada.
+					controlados[time].set_meta("largada", true)
+				else:
+					_tentar_tocar(time, false)
 			elif tipo == "ataque":
 				_comecar_cortada(time)
 			elif tipo == "bloqueio":
@@ -722,6 +760,7 @@ func _atualizar_cortada(time: int, delta: float) -> void:
 		bola.puxar_para(Vector3.ZERO, 0.0)
 		atleta.remove_meta("saiu_do_chao_em")
 		atleta.remove_meta("qualidade_da_cortada")
+		atleta.remove_meta("largada")
 		return
 	if cortada["tempo"] < TEMPO_ATE_A_BATIDA:
 		# Chegando na batida, a bola vai encostando na mão.
@@ -734,6 +773,7 @@ func _atualizar_cortada(time: int, delta: float) -> void:
 	_bater_na_bola(time, atleta)
 	bola.puxar_para(Vector3.ZERO, 0.0)
 	atleta.remove_meta("saiu_do_chao_em")
+	atleta.remove_meta("largada")
 
 
 ## Posição da mão da cortada, se ela vai estar perto da bola daqui a
@@ -764,6 +804,9 @@ func _bater_na_bola(time: int, atleta: Node3D) -> void:
 ## a força (quanto a bola sobe), o erro da mira e a profundidade.
 ## Cortada ruim sai fraca e torta.
 func _cortar(time: int, qualidade: Qualidade = Qualidade.BOM) -> void:
+	if controlados[time].get_meta("largada", false):
+		_largar(time, qualidade)
+		return
 	var jeito: Dictionary = TempoDoToque.CORTADA[qualidade]
 	# A direção mira: esquerda/direita, e pra frente (funda) ou pra trás (curta).
 	var alvo := _alvo_da_cortada(time)
@@ -777,6 +820,21 @@ func _cortar(time: int, qualidade: Qualidade = Qualidade.BOM) -> void:
 	_ao_lancar_bola()
 	if qualidade != Qualidade.RUIM:
 		impacto.cortada(qualidade == Qualidade.PERFEITO)
+
+
+## Largada: bola curta, devagar e por cima do bloqueio. A direção mira o lado
+## (esquerda/direita); a qualidade (tempo do botão) só muda o erro.
+func _largar(time: int, qualidade: Qualidade) -> void:
+	var alvo := _alvo_da_cortada(time)
+	alvo.y = (LARGADA_FUNDO_MIN + LARGADA_FUNDO_MAX) / 2.0
+	var ponto := Mira.com_erro(alvo, ERRO_DA_LARGADA[qualidade], Vector2(randf(), randf()))
+	ponto.x = clampf(ponto.x, -LARGURA / 2.0 + 0.2, LARGURA / 2.0 - 0.2)
+	ponto.y = clampf(ponto.y, LARGADA_FUNDO_MIN, LARGADA_FUNDO_MAX)
+	var destino := Vector3(ponto.x, 0.0, ponto.y * _lado(1 - time))
+	miras[time].esconder()
+	bola.lancar(destino, bola.position.y + SUBIDA_DA_LARGADA)
+	_ao_lancar_bola()
+	_mostrar_mensagem("Largada!")
 
 
 func _devolver_de_graca(time: int) -> void:

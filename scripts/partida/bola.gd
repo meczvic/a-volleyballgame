@@ -105,6 +105,11 @@ func posicao_daqui_a(segundos: float) -> Vector3:
 	return Trajetoria.posicao_em(_origem, _velocidade_inicial, _tempo + segundos)
 
 
+## Há quantos segundos a bola foi lançada (ou desviada).
+func tempo_de_voo() -> float:
+	return _tempo
+
+
 func velocidade_atual() -> Vector3:
 	return _velocidade_inicial + Vector3(0.0, -Trajetoria.GRAVIDADE * _tempo, 0.0)
 
