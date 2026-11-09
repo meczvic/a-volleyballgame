@@ -58,6 +58,8 @@ Se os dois escolherem o mesmo time, o Jogador 2 joga com o uniforme reserva.
 - Passe e levantamento perfeitos dão o **levantamento rápido** (bola baixa, que chega antes do bloqueio).
 - Na cortada, aperte um pouco antes: o atleta pula e bate no alto do pulo. Cortada perfeita é forte e funda (a tela congela por um instante e treme); ruim sai fraca e torta.
 
+**Placar e efeitos:** o placar fica em cima, no meio, com a cor de cada time, as bolinhas dos sets (● ganho, ○ não) e um ponto colorido do lado de quem saca. Quando sai ponto, o número de quem pontuou pula e pisca. Embaixo aparece **SET POINT**, **MATCH POINT** ou **PONTO DECISIVO** (quando os dois fecham o set com o próximo ponto). Uma faixa na cor do time atravessa a tela: **PONTO!** (com o motivo, se foi falta), **ACE!** (saque que cai sem ninguém tocar), **BLOQUEIO!**, **SET!** e **JOGO!**. A bola que cai dentro abre uma onda no chão e treme a tela. O bloqueio congela o jogo por um instante, treme a tela e mostra "Bloqueio!" em cima da bola.
+
 **Largada:** depois de apertar Ataque, aperte **Passe** enquanto o atleta está no ar. Em vez de bater, ele empurra a bola devagar **por cima do bloqueio**, e ela cai curta, entre 1 e 3 m da rede. A direção escolhe o lado. Funciona bem quando o bloqueio está fechado e a defesa está lá atrás. Contra uma defesa que espera perto da rede, é bola fácil.
 
 **Leitura do bloqueio:** quando o adversário levanta, os bloqueadores levam um instante (0,4 s) pra ler o levantamento. Depois correm pra onde a bola vai ser atacada. O central vai sempre, e o da ponta só ajuda se a bola vai pro lado dele. No levantamento alto dá tempo de montar o bloqueio. No **levantamento rápido** sobra pouco tempo pra correr e acertar o pulo, então ele é a melhor arma contra um bloqueio forte.
@@ -123,7 +125,7 @@ godot --headless --script res://testes/teste_animacoes.gd
 godot --headless --script res://testes/teste_animador.gd
 ```
 
-Ou todos de uma vez (20 arquivos, incluindo tempo do toque, mira, cortada, atributos, mergulho e jogadas):
+Ou todos de uma vez (21 arquivos, incluindo tempo do toque, mira, cortada, atributos, mergulho, jogadas e placar):
 
 ```
 for t in testes/teste_*.gd; do godot --headless --script res://$t; done

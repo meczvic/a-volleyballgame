@@ -28,7 +28,7 @@ Material de apoio (privado, no Claude): [documento de design](https://claude.ai/
 
 ## 2. O que já foi feito
 
-Tudo abaixo está neste repositório. Segundo os registros de 09/11/2026, os **20 testes automáticos** (pasta `testes/`) passam no Godot 4.7.2, e um robô jogou partidas completas (3 sets) dos dois lados sem erro.
+Tudo abaixo está neste repositório. Segundo os registros de 09/11/2026, os **21 testes automáticos** (pasta `testes/`) passam no Godot 4.7.2, e um robô jogou partidas completas (3 sets) dos dois lados sem erro.
 
 ### Menus e telas
 - Menu principal (Partida rápida, Controles, Sair; Modo Caos e Online aparecem como "em breve").
@@ -55,6 +55,11 @@ Tudo abaixo está neste repositório. Segundo os registros de 09/11/2026, os **2
 - **Mira no saque**: segurar enche a força, soltar saca; a direção move o alvo; mais força = bola mais rápida, mas mais risco de sair.
 - **Mira na cortada**: a direção escolhe paralela, diagonal, funda ou curta.
 - Na cortada, o atleta pula no botão e **a mão bate na bola no alto do pulo** (0,3 s depois).
+
+### Placar e impacto visual
+- **Placar novo** (`scripts/partida/placar_visual.gd`), em cima e no meio: cores dos times, sets em bolinhas, quem saca, número que pula no ponto e aviso de SET POINT / MATCH POINT / PONTO DECISIVO (regra em `placar.gd`: `ponto_de_set`, `ponto_de_partida`, `aviso`).
+- **Faixa do ponto** (`faixa_de_ponto.gd`): PONTO!, ACE!, BLOQUEIO!, SET! e JOGO!, na cor do time.
+- **Efeitos**: onda no chão onde a bola cai (`scripts/visual/onda_no_chao.gd`) com tremor; bloqueio congela, treme e mostra "Bloqueio!".
 
 ### Jogadas e leitura do bloqueio
 - **Largada**: Passe no ar durante a cortada. A bola sai devagar e alta, passa por cima do bloqueio e cai curta (1 a 3 m da rede).
@@ -86,11 +91,8 @@ Tudo abaixo está neste repositório. Segundo os registros de 09/11/2026, os **2
 - Os personagens dos times inspirados em Haikyuu serão **modelados pelo Victor e por um amigo no VRoid**, por conta própria. O Claude não cria nem prepara esses personagens; ele cuida do motor, do caminho VRoid → Godot (uniformes, animações, testes) e de conteúdo original, como o **time Brasil**.
 - Basta exportar cada `.vrm` para `personagens/<time>/` com o nome certo que o jogo usa sozinho.
 
-### Jogabilidade
-- **Mais impacto visual**: efeitos de cortada, bloqueio e ponto.
-
-### Interface
-- **Placar com efeito** na troca de pontos (previsto no design).
+### Jogabilidade e interface
+- A base está feita. Falta testar com gente de verdade e ajustar números (janelas de tempo, alcance, força).
 
 ### Modos
 - **Modo Caos**: as cartas estão em `dados/cartas.json`, mas o modo não existe ainda. Falta a tela de escolha na pausa depois do ponto (limite de 1 minuto, senão a carta é sorteada) e o efeito de cada carta.
@@ -120,8 +122,8 @@ Em ordem sugerida:
 
 1. **Hoje à noite (PC de casa):** instalar o Godot 4.7.2 e o VRoid Studio, abrir o projeto e fazer um **personagem piloto** (um atleta do time Brasil) para conferir o caminho completo VRoid → jogo.
 2. **Personagens:** Victor e o amigo modelam os atletas no VRoid e colocam os `.vrm` em `personagens/<time>/`.
-3. **Jogabilidade:** impacto visual (jogadas, leitura do bloqueio, defesa, mergulho e atributos já feitos).
-4. **Placar com efeito** e polimento da interface. Com isso, a **partida rápida local fica completa** (meta do 1º mês, até 06/12/2026).
+3. **Jogabilidade:** feita a base (tempo, mira, jogadas, leitura do bloqueio, defesa, mergulho, atributos, placar e impacto visual). Falta jogar com os amigos e ajustar.
+4. **Polimento da interface** (placar com efeito já feito). Com isso, a **partida rápida local fica completa** (meta do 1º mês, até 06/12/2026).
 5. **Modo Caos** com as cartas.
 6. **Online**: primeiro por IP, depois procurar partida.
 
@@ -174,7 +176,7 @@ Leia esta seção inteira antes de mexer no código.
 - Passo a passo completo em `animacoes/LEIA-ME.md`.
 
 ### Testes
-- São 20 arquivos em `testes/`. Rode todos, dentro da pasta do projeto:
+- São 21 arquivos em `testes/`. Rode todos, dentro da pasta do projeto:
 
 ```
 for t in testes/teste_*.gd; do godot --headless --script res://$t; done

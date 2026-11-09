@@ -55,6 +55,37 @@ func marcar_ponto(time: int) -> void:
 		_encerrar_set(time)
 
 
+## Se o "time" fecha o set fazendo o próximo ponto (set point).
+func ponto_de_set(time: int) -> bool:
+	# No fim do set o placar ainda mostra o resultado: aí não tem aviso.
+	if encerrada or _set_acabou(0) or _set_acabou(1):
+		return false
+	var depois := pontos[time] + 1
+	if depois >= LIMITE_DE_PONTOS:
+		return true
+	return depois >= PONTOS_PARA_VENCER_SET and depois - pontos[1 - time] >= DIFERENCA_MINIMA
+
+
+## Se o "time" ganha a partida fazendo o próximo ponto (match point).
+func ponto_de_partida(time: int) -> bool:
+	return ponto_de_set(time) and sets[time] == SETS_PARA_VENCER - 1
+
+
+## Aviso do placar agora: "MATCH POINT", "SET POINT", "PONTO DECISIVO" (os dois
+## fecham com o próximo ponto) ou "" (nada). "quem" recebe o time do aviso
+## (-1 quando vale pros dois ou não tem aviso).
+func aviso() -> Dictionary:
+	var de_set := [ponto_de_set(0), ponto_de_set(1)]
+	if de_set[0] and de_set[1]:
+		return { "texto": "PONTO DECISIVO", "quem": -1 }
+	for time in 2:
+		if ponto_de_partida(time):
+			return { "texto": "MATCH POINT", "quem": time }
+		if de_set[time]:
+			return { "texto": "SET POINT", "quem": time }
+	return { "texto": "", "quem": -1 }
+
+
 func _set_acabou(time: int) -> bool:
 	var outro := 1 - time
 	if pontos[time] >= LIMITE_DE_PONTOS:

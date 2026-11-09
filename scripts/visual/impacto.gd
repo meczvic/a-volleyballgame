@@ -11,6 +11,9 @@ const CONGELAR_NORMAL := 0.04
 const TREMOR_FORTE := 0.35
 const TREMOR_NORMAL := 0.15
 const DURACAO_DO_TREMOR := 0.3
+const CONGELAR_BLOQUEIO := 0.06
+const TREMOR_BLOQUEIO := 0.25
+const TREMOR_PONTO := 0.1
 ## Velocidade do jogo enquanto congela (quase parado).
 const ESCALA_CONGELADA := 0.03
 
@@ -37,6 +40,17 @@ func _exit_tree() -> void:
 func cortada(forte: bool) -> void:
 	congelar(CONGELAR_FORTE if forte else CONGELAR_NORMAL)
 	tremer(TREMOR_FORTE if forte else TREMOR_NORMAL)
+
+
+## Impacto do bloqueio: congela um pouco e treme.
+func bloqueio() -> void:
+	congelar(CONGELAR_BLOQUEIO)
+	tremer(TREMOR_BLOQUEIO)
+
+
+## Bola caindo dentro: um tremor curto.
+func ponto() -> void:
+	tremer(TREMOR_PONTO)
 
 
 ## Deixa o jogo quase parado por "segundos" (tempo de verdade).

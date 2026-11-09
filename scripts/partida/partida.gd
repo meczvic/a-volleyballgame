@@ -60,6 +60,9 @@ const Rastro := preload("res://scripts/visual/rastro.gd")
 const Mira := preload("res://scripts/regras/mira.gd")
 const Atributos := preload("res://scripts/regras/atributos.gd")
 const MiraVisual := preload("res://scripts/partida/mira_visual.gd")
+const PlacarVisual := preload("res://scripts/partida/placar_visual.gd")
+const FaixaDePonto := preload("res://scripts/partida/faixa_de_ponto.gd")
+const OndaNoChao := preload("res://scripts/visual/onda_no_chao.gd")
 const Qualidade := TempoDoToque.Qualidade
 
 enum Estado { SAQUE, RALLY, PONTO, FIM }
@@ -215,7 +218,12 @@ var marcas_de_ataque: Array[Node3D] = [null, null]
 var bola
 var marcador
 var menu
-var rotulo_placar: Label
+var placar_visual: PanelContainer
+## Faixa grande do ponto ("PONTO!", "ACE!", "BLOQUEIO!", "SET!").
+var faixa: Control
+## Time que bloqueou por último no rally (pra saber se o ponto foi de
+## bloqueio). -1 depois de qualquer toque.
+var _ponto_de_bloqueio := -1
 var rotulo_mensagem: Label
 ## Caixa escura atrás da mensagem; some quando não tem mensagem.
 var caixa_da_mensagem: PanelContainer
@@ -532,6 +540,9 @@ func _ao_bola_ser_bloqueada() -> void:
 	# O bloqueio não conta como toque: quem bloqueou ainda tem 3 toques.
 	toques.registrar_bloqueio(time_que_bloqueou)
 	ultimo_toque = time_que_bloqueou
+	_ponto_de_bloqueio = time_que_bloqueou
+	impacto.bloqueio()
+	AvisoDeToque.mostrar(self, bola.position + Vector3(0.0, 0.8, 0.0), "Bloqueio!", _cor_do_time(time_que_bloqueou))
 	_mostrar_mensagem("Bloqueio!")
 	_ao_lancar_bola()
 
@@ -633,6 +644,7 @@ func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> void:
 	if time != placar.quem_saca:
 		saque_em_jogo = false
 	ultimo_toque = time
+	_ponto_de_bloqueio = -1
 	_mostrar_marcas_de_ataque(-1)
 
 	var numero: int = toques.toques
@@ -1103,7 +1115,10 @@ func _ao_bola_tocar_chao(posicao: Vector3) -> void:
 		and absf(posicao.z) <= COMPRIMENTO / 2.0 + Bola.RAIO
 	if dentro:
 		# Caiu do lado do time 0 (z positivo): ponto do time 1, e vice-versa.
-		_encerrar_rally(1 if posicao.z > 0.0 else 0, "dentro")
+		var quem := 1 if posicao.z > 0.0 else 0
+		OndaNoChao.mostrar(self, posicao, _cor_do_time(quem))
+		impacto.ponto()
+		_encerrar_rally(quem, "dentro")
 	else:
 		_encerrar_rally(1 - ultimo_toque, "fora")
 
@@ -1112,10 +1127,20 @@ func _encerrar_rally(vencedor: int, motivo: String) -> void:
 	if estado != Estado.SAQUE and estado != Estado.RALLY:
 		return
 	estado = Estado.PONTO
+	var saque_do_rally_em_jogo := saque_em_jogo
 	saque_em_jogo = false
 	marcador.esconder()
 	_mostrar_marcas_de_ataque(-1)
 	_mostrar_mensagem("Ponto %s! (%s)" % [times_em_jogo[vencedor]["nome"], motivo])
+	var nome := str(times_em_jogo[vencedor]["nome"])
+	if motivo == "dentro" and saque_do_rally_em_jogo and vencedor == placar.quem_saca:
+		faixa.mostrar("ACE!", nome, _cor_do_time(vencedor))
+	elif motivo == "dentro" and vencedor == _ponto_de_bloqueio:
+		faixa.mostrar("BLOQUEIO!", nome, _cor_do_time(vencedor))
+	elif motivo == "dentro":
+		faixa.mostrar("PONTO!", nome, _cor_do_time(vencedor))
+	else:
+		faixa.mostrar("PONTO!", "%s  ·  %s" % [nome, motivo], _cor_do_time(vencedor))
 	for atleta in atletas[vencedor]:
 		_animar(atleta, "comemoracao_palmas")
 	# Se foi o último ponto, o placar chama _ao_encerrar_partida aqui dentro.
@@ -1138,6 +1163,7 @@ func _depois_do_ponto() -> void:
 func _preparar_saque() -> void:
 	estado = Estado.SAQUE
 	ultimo_toque = -1
+	_ponto_de_bloqueio = -1
 	qualidade_do_passe = [Qualidade.BOM, Qualidade.BOM]
 	saque_em_jogo = false
 	tempo_no_saque = 0.0
@@ -1176,13 +1202,16 @@ func _ao_encerrar_partida(vencedor: int) -> void:
 	marcador.esconder()
 	_mostrar_marcas_de_ataque(-1)
 	_mostrar_mensagem("Fim de jogo! %s venceu." % times_em_jogo[vencedor]["nome"])
+	faixa.mostrar("JOGO!", "%s venceu" % times_em_jogo[vencedor]["nome"], _cor_do_time(vencedor))
 	for atleta in atletas[vencedor]:
 		_animar(atleta, "comemoracao_torcida")
 
 
 func _conectar_placar() -> void:
 	placar.sortear_primeiro_saque()
-	placar.ponto_marcado.connect(func(_time: int) -> void: _atualizar_placar())
+	placar.ponto_marcado.connect(func(time: int) -> void:
+		_atualizar_placar()
+		placar_visual.comemorar(time))
 	placar.rodizio.connect(func(time: int) -> void: rodizios[time].girar())
 	placar.set_encerrado.connect(_ao_encerrar_set)
 	placar.partida_encerrada.connect(_ao_encerrar_partida)
@@ -1195,6 +1224,9 @@ func _ao_encerrar_set(vencedor: int) -> void:
 	for rodizio in rodizios:
 		rodizio.reiniciar()
 	_atualizar_placar()
+	faixa.mostrar("SET!", "%s  %d x %d" % [
+		str(times_em_jogo[vencedor]["nome"]), placar.pontos[vencedor], placar.pontos[1 - vencedor],
+	], _cor_do_time(vencedor))
 	_mostrar_mensagem("Set %d: %s venceu! (%d x %d)" % [
 		placar.set_atual, times_em_jogo[vencedor]["nome"],
 		placar.pontos[vencedor], placar.pontos[1 - vencedor],
@@ -1202,12 +1234,16 @@ func _ao_encerrar_set(vencedor: int) -> void:
 
 
 func _atualizar_placar() -> void:
-	var a: Dictionary = times_em_jogo[0]
-	var b: Dictionary = times_em_jogo[1]
-	rotulo_placar.text = "%s  %d  x  %d  %s\nSet %d   (sets %d - %d)" % [
-		a["nome"], placar.pontos[0], placar.pontos[1], b["nome"],
-		placar.set_atual, placar.sets[0], placar.sets[1],
-	]
+	placar_visual.atualizar(placar.pontos, placar.sets, placar.set_atual, placar.quem_saca, placar.aviso())
+
+
+## Cor do time no placar e nos efeitos: a do menu (ou a do uniforme reserva,
+## quando os dois escolheram o mesmo time).
+func _cor_do_time(time: int) -> Color:
+	var dados: Dictionary = times_em_jogo[time]
+	if time == 1 and dados.get("id", "") == times_em_jogo[0].get("id", "-"):
+		return Color.from_string(str(dados["cores"][0]), Color.WHITE)
+	return Color.from_string(str(dados.get("cor_do_menu", dados["cores"][0])), Color.WHITE)
 
 
 ## Uma linha com o placar, pro menu de pausa.
@@ -1579,24 +1615,32 @@ func _criar_interface() -> void:
 		divisoria.offset_right = 2.0
 		camada.add_child(divisoria)
 
-	# Placar no canto, numa caixa escura pra ler bem em qualquer estádio.
-	var caixa_do_placar := _caixa_da_interface()
-	caixa_do_placar.position = Vector2(18.0, 16.0)
-	camada.add_child(caixa_do_placar)
-	rotulo_placar = _rotulo_da_interface(28, true)
-	caixa_do_placar.add_child(rotulo_placar)
+	# Placar em cima, no meio (em cima da divisória na tela dividida).
+	var topo := CenterContainer.new()
+	topo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	topo.position = Vector2(0.0, 10.0)
+	topo.size = Vector2(1600.0, 100.0)
+	camada.add_child(topo)
+	placar_visual = PlacarVisual.new()
+	topo.add_child(placar_visual)
+	placar_visual.configurar(
+		[times_em_jogo[0]["nome"], times_em_jogo[1]["nome"]],
+		[_cor_do_time(0), _cor_do_time(1)])
 
 	# Mensagem no meio, em cima. O CenterContainer mantém a caixa centralizada
 	# e do tamanho do texto.
 	var centro := CenterContainer.new()
 	centro.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	centro.position = Vector2(0.0, 86.0)
+	centro.position = Vector2(0.0, 118.0)
 	centro.size = Vector2(1600.0, 56.0)
 	camada.add_child(centro)
 	caixa_da_mensagem = _caixa_da_interface()
 	centro.add_child(caixa_da_mensagem)
 	rotulo_mensagem = _rotulo_da_interface(32, true)
 	caixa_da_mensagem.add_child(rotulo_mensagem)
+
+	faixa = FaixaDePonto.new()
+	camada.add_child(faixa)
 
 	# Comandos de cada jogador embaixo da metade dele (ou só do J1, sem tela dividida).
 	var ajudas := [

@@ -15,6 +15,7 @@ func _init() -> void:
 	_teste_partida_acaba_com_2_sets()
 	_teste_rodizio_so_quando_recebe_e_pontua()
 	_teste_ordem_de_saque_por_set()
+	_teste_set_point_e_match_point()
 
 	if falhas == 0:
 		print("OK: todos os testes do placar passaram.")
@@ -104,3 +105,29 @@ func _teste_ordem_de_saque_por_set() -> void:
 	outro.sortear_primeiro_saque()
 	_pontos(outro, 1, 7)
 	_verificar(outro.quem_saca == 1, "2º set: saca o time que recebeu primeiro no 1º")
+
+
+func _teste_set_point_e_match_point() -> void:
+	var placar = Placar.new()
+	placar.sorteio = func() -> int: return 0
+	placar.sortear_primeiro_saque()
+	_verificar(placar.aviso()["texto"] == "", "0 x 0: sem aviso")
+	_pontos(placar, 0, 6)
+	_verificar(placar.ponto_de_set(0) and not placar.ponto_de_set(1), "6 x 0: set point do time 0")
+	_verificar(placar.aviso()["texto"] == "SET POINT" and placar.aviso()["quem"] == 0, "aviso de set point")
+	_pontos(placar, 1, 5)
+	_verificar(placar.ponto_de_set(0), "6 x 5: ainda é set point (7 x 5)")
+	_pontos(placar, 1, 1)
+	_verificar(placar.aviso()["texto"] == "", "6 x 6: ninguém fecha com 1 ponto (precisa de 2 de diferença)")
+	for i in 2:
+		_pontos(placar, 0, 1)
+		_pontos(placar, 1, 1)
+	_verificar(placar.pontos == [8, 8] and placar.aviso()["texto"] == "", "8 x 8: ninguém fecha com 1 ponto")
+	_pontos(placar, 0, 1)
+	_pontos(placar, 1, 1)
+	_verificar(placar.aviso()["texto"] == "PONTO DECISIVO", "9 x 9: quem fizer o próximo (10) fecha")
+	_pontos(placar, 0, 1)
+	_verificar(placar.sets == [1, 0], "10 x 9: set do time 0 pelo limite")
+	_pontos(placar, 0, 6)
+	_verificar(placar.aviso()["texto"] == "MATCH POINT" and placar.aviso()["quem"] == 0,
+		"com 1 set, set point vira match point")
