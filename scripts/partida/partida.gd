@@ -91,12 +91,16 @@ const ATAQUES := [
 ## Sem direção apertada, o levantamento vai pro meio.
 const ATAQUE_PADRAO := 1
 
-## Ajuste aqui (ou no Inspetor) até achar o ângulo que você gosta.
-@export var altura_camera := 17.0
-@export var distancia_camera := 17.0
+## Câmera atrás do próprio time, baixa e de longe, como numa transmissão de TV
+## (referência: Spike Volleyball). Ajuste aqui ou no Inspetor.
+## Altura e distância da rede, em metros.
+@export var altura_camera := 14.5
+@export var distancia_camera := 29.5
 ## Pra onde a câmera aponta: metros antes da rede, do lado do próprio time.
 ## Mais alto mostra mais o fundo da sua quadra (onde fica quem saca).
-@export var foco_da_camera := 2.0
+@export var foco_da_camera := 1.5
+## Abertura vertical da câmera, em graus. Menor = mais "zoom" e menos distorção.
+@export var abertura_da_camera := 27.0
 ## Tela dividida: cada jogador vê de trás do próprio time.
 ## Desligado: uma câmera só, do lado do Jogador 1.
 @export var tela_dividida := true
@@ -807,7 +811,7 @@ func _criar_camera() -> void:
 func _adicionar_camera(onde: Node, time: int) -> void:
 	var lado := _lado(time)
 	var camera := Camera3D.new()
-	camera.fov = 50.0
+	camera.fov = abertura_da_camera
 	onde.add_child(camera)
 	camera.look_at_from_position(
 		Vector3(0.0, altura_camera, distancia_camera * lado),
