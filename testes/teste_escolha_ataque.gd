@@ -52,3 +52,15 @@ func _teste_setas() -> void:
 	for alvo in ALVOS:
 		setas.append(EscolhaAtaque.seta_de(alvo, centro))
 	_verificar(setas == ["<", "^", ">", "v"], "setas certas (vieram %s)" % [setas])
+
+	# Time do outro lado, com a própria câmera: tudo espelhado, mesmas setas.
+	var alvos_espelhados := []
+	for alvo in ALVOS:
+		alvos_espelhados.append(Vector3(-alvo.x, 0.0, -alvo.z))
+	var centro_espelhado := EscolhaAtaque.centro_de(alvos_espelhados)
+	var setas_espelhadas := []
+	for alvo in alvos_espelhados:
+		setas_espelhadas.append(EscolhaAtaque.seta_de(alvo, centro_espelhado, -1.0))
+	_verificar(setas_espelhadas == ["<", "^", ">", "v"], "setas do outro lado (vieram %s)" % [setas_espelhadas])
+	# Esquerda na tela do outro lado é x positivo no mundo: escolhe a ponta dele.
+	_verificar(EscolhaAtaque.escolher(alvos_espelhados, -Vector2.LEFT, MEIO) == 0, "esquerda do outro lado escolhe a ponta")

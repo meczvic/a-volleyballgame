@@ -1,5 +1,5 @@
 extends Node3D
-## Cena de teste: saque, 3 toques, bloqueio, rodízio e IA dos atletas.
+## Cena de teste: saque, 3 toques, bloqueio, rodízio, IA dos atletas e tela dividida.
 ##
 ## Como jogar:
 ## - Quem saca (o atleta na posição 1 do rodízio) aperta Ataque.
@@ -84,6 +84,9 @@ const ATAQUE_PADRAO := 1
 ## Ajuste aqui (ou no Inspetor) até achar o ângulo que você gosta.
 @export var altura_camera := 17.0
 @export var distancia_camera := 15.0
+## Tela dividida: cada jogador vê de trás do próprio time.
+## Desligado: uma câmera só, do lado do Jogador 1.
+@export var tela_dividida := true
 
 var placar = Placar.new()
 var toques = Toques.new()
@@ -151,7 +154,7 @@ func _physics_process(delta: float) -> void:
 		var controlado := controlados[time]
 		var sacando := estado == Estado.SAQUE and time == placar.quem_saca
 		if not sacando:
-			_mover(controlado, time, entradas[time].direcao, delta)
+			_mover(controlado, time, _direcao_no_mundo(time), delta)
 
 		# Os outros 5 vão sozinhos pro lugar certo.
 		if estado == Estado.SAQUE or estado == Estado.RALLY:
@@ -239,7 +242,7 @@ func _atualizar_pulo(atleta: Node3D, delta: float) -> void:
 
 
 func _bloquear(time: int) -> void:
-	var deslocamento: float = entradas[time].direcao.x * DESLOCAMENTO_DO_BLOQUEIO
+	var deslocamento := _direcao_no_mundo(time).x * DESLOCAMENTO_DO_BLOQUEIO
 	for i in 6:
 		if not Rodizio.e_da_rede(rodizios[time].posicao_de(i)):
 			continue
@@ -352,7 +355,7 @@ func _passar_pro_levantador(time: int) -> void:
 
 
 func _levantar(time: int) -> void:
-	var direcao: Vector2 = entradas[time].direcao
+	var direcao := _direcao_no_mundo(time)
 	var escolhido := EscolhaAtaque.escolher(alvos_de_ataque[time], direcao, ATAQUE_PADRAO)
 	var alvo: Vector3 = alvos_de_ataque[time][escolhido]
 	bola.lancar(alvo, 4.4)
@@ -363,7 +366,7 @@ func _levantar(time: int) -> void:
 func _cortar(time: int) -> void:
 	_pular(controlados[time])
 	# A direção mira pra esquerda ou direita da quadra adversária.
-	var direcao: Vector2 = entradas[time].direcao
+	var direcao := _direcao_no_mundo(time)
 	var mira_x := clampf(direcao.x * 3.0 + randf_range(-0.8, 0.8), -LARGURA / 2.0 + 0.5, LARGURA / 2.0 - 0.5)
 	var profundidade := randf_range(4.0, 8.5)
 	var destino := Vector3(mira_x, 0.0, profundidade * _lado(1 - time))
@@ -482,6 +485,19 @@ func _atualizar_placar() -> void:
 ## 1 pro time do Jogador 1 (lado da câmera, z positivo), -1 pro outro.
 func _lado(time: int) -> float:
 	return 1.0 if time == 0 else -1.0
+
+
+## De que lado está a câmera que esse jogador olha: 1 = atrás do time 0,
+## -1 = atrás do time 1 (só com tela dividida).
+func _lado_da_camera(time: int) -> float:
+	return _lado(time) if tela_dividida else 1.0
+
+
+## Direção apertada pelo jogador, convertida pro mundo (x, z).
+## "Cima" na tela é sempre "pra frente" na câmera daquele jogador.
+func _direcao_no_mundo(time: int) -> Vector2:
+	var direcao: Vector2 = entradas[time].direcao
+	return direcao * _lado_da_camera(time)
 
 
 ## Converte coordenadas "do time" (x = lado, y = distância da rede) pro mundo.
@@ -648,7 +664,7 @@ func _criar_marcas_de_ataque(time: int) -> void:
 		grupo.add_child(circulo)
 
 		var texto := Label3D.new()
-		texto.text = "%s %s" % [EscolhaAtaque.seta_de(alvo, centro), ATAQUES[i]["nome"]]
+		texto.text = "%s %s" % [EscolhaAtaque.seta_de(alvo, centro, _lado_da_camera(time)), ATAQUES[i]["nome"]]
 		texto.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		texto.no_depth_test = true
 		texto.font_size = 48
@@ -659,19 +675,63 @@ func _criar_marcas_de_ataque(time: int) -> void:
 
 
 func _criar_camera() -> void:
+	if not tela_dividida:
+		_adicionar_camera(self, 0)
+		return
+
+	# Duas metades da tela, cada uma com a própria câmera olhando o mesmo mundo.
+	# Fica numa camada atrás da interface (placar e mensagens).
+	var camada := CanvasLayer.new()
+	camada.name = "TelaDividida"
+	camada.layer = -1
+	add_child(camada)
+	for time in 2:
+		var moldura := SubViewportContainer.new()
+		moldura.name = "TelaJogador%d" % (time + 1)
+		moldura.stretch = true
+		moldura.anchor_left = 0.5 * time
+		moldura.anchor_right = 0.5 * (time + 1)
+		moldura.anchor_top = 0.0
+		moldura.anchor_bottom = 1.0
+		camada.add_child(moldura)
+
+		var tela := SubViewport.new()
+		tela.world_3d = get_viewport().find_world_3d()
+		tela.msaa_3d = Viewport.MSAA_2X
+		moldura.add_child(tela)
+		_adicionar_camera(tela, time)
+
+
+## Câmera alta atrás do time, olhando pra rede.
+func _adicionar_camera(onde: Node, time: int) -> void:
+	var lado := _lado(time)
 	var camera := Camera3D.new()
 	camera.fov = 50.0
-	add_child(camera)
+	onde.add_child(camera)
 	camera.look_at_from_position(
-		Vector3(0, altura_camera, distancia_camera),
-		Vector3(0, 0, -1.0)
+		Vector3(0.0, altura_camera, distancia_camera * lado),
+		Vector3(0.0, 0.0, -1.0 * lado)
 	)
-	camera.make_current()
+	camera.current = true
 
 
 func _criar_interface() -> void:
 	var camada := CanvasLayer.new()
+	camada.name = "Interface"
+	camada.layer = 1
 	add_child(camada)
+
+	if tela_dividida:
+		# Linha separando as duas metades.
+		var divisoria := ColorRect.new()
+		divisoria.color = Color("#0F1620")
+		divisoria.anchor_left = 0.5
+		divisoria.anchor_right = 0.5
+		divisoria.anchor_top = 0.0
+		divisoria.anchor_bottom = 1.0
+		divisoria.offset_left = -2.0
+		divisoria.offset_right = 2.0
+		camada.add_child(divisoria)
 
 	rotulo_placar = Label.new()
 	rotulo_placar.position = Vector2(24, 20)

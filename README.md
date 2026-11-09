@@ -37,7 +37,7 @@ O 1º controle conectado é do Jogador 1, o 2º do Jogador 2.
 7. **Bloqueio:** quando o adversário levanta, os 3 atletas da rede sobem sozinhos e acompanham a bola. Aperte **Bloqueio** pra eles pularem; segurar esquerda ou direita desloca o bloqueio. Acertar o tempo do pulo devolve a cortada.
 8. Bola no chão dentro da quadra: ponto pra quem mandou a bola. Fora: ponto pra quem não tocou por último. 4 toques seguidos do mesmo time é falta.
 
-Os atletas que você não controla se posicionam sozinhos, e o time gira o **rodízio** quando recupera o saque. Por enquanto a câmera é só do lado do Jogador 1; a tela dividida vem depois.
+Os atletas que você não controla se posicionam sozinhos, e o time gira o **rodízio** quando recupera o saque. A tela é **dividida**: o Jogador 1 vê de trás do time dele na metade esquerda, o Jogador 2 na metade direita. "Cima" é sempre na direção da rede pra cada um. Pra voltar pra uma câmera só, selecione o nó `Main` na cena e desmarque **Tela Dividida** no Inspetor (lá também dá pra ajustar a altura e a distância da câmera).
 
 ## Pastas
 

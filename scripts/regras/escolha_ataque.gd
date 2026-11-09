@@ -37,8 +37,10 @@ static func centro_de(alvos: Array) -> Vector3:
 
 ## Seta que indica qual direção apertar pra escolher esse alvo.
 ## Usa só caracteres simples (< ^ > v) pra funcionar com qualquer fonte.
-static func seta_de(alvo: Vector3, centro: Vector3) -> String:
-	var rumo := Vector2(alvo.x - centro.x, alvo.z - centro.z)
+## "lado_da_camera" = 1 pra câmera no lado z positivo, -1 pra câmera do outro
+## lado (aí esquerda e direita, cima e baixo se invertem na tela).
+static func seta_de(alvo: Vector3, centro: Vector3, lado_da_camera: float = 1.0) -> String:
+	var rumo := Vector2(alvo.x - centro.x, alvo.z - centro.z) * lado_da_camera
 	if absf(rumo.x) >= absf(rumo.y):
 		return ">" if rumo.x > 0.0 else "<"
 	return "v" if rumo.y > 0.0 else "^"
