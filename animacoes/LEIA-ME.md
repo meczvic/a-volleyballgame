@@ -11,10 +11,17 @@ serve pros 42 atletas.
 | `lateral_esquerda.fbx` | Left Strafe | Passo lateral |
 | `lateral_direita.fbx` | Right Strafe | Passo lateral |
 | `defesa_lateral.fbx` | Goalkeeper Sidestep | Deslocamento de defesa |
+| `manchete.fbx` | Goalkeeper Catch 1 | Abaixa e pega a bola baixa |
+| `bloqueio.fbx` | Goalkeeper Catch | Tem um pulo com os braços pra cima |
+| `saque.fbx` | Goalie Throw | Arremesso com o braço por cima |
+| `mergulho.fbx` | Goalkeeper Diving Save | Mergulho de lado |
+| `comemoracao_torcida.fbx` | Rallying | Comemoração, em loop |
+| `comemoracao_palmas.fbx` | Clapping | Palmas, em loop |
+| `comemoracao_vitoria.fbx` | Victory | Fim de jogo (mexe pouco) |
 
-Faltam: manchete, levantamento, cortada, bloqueio, saque, mergulho e comemoração.
-O Mixamo não tem nada de vôlei, então essas vão sair de outras animações
-(pulo, arremesso, defesa de goleiro) ou ser feitas à mão no Godot.
+Ainda faltam **levantamento** e **cortada**. O Mixamo não tem nada de vôlei, então todas
+essas são adaptadas de outros esportes. Vão precisar de corte (usar só o trecho certo)
+e ajuste à mão no Godot quando entrarem no jogo.
 
 ## Como adicionar uma animação nova
 
