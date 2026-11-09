@@ -14,6 +14,7 @@ func _init() -> void:
 	_teste_limite_em_10()
 	_teste_partida_acaba_com_2_sets()
 	_teste_rodizio_so_quando_recebe_e_pontua()
+	_teste_ordem_de_saque_por_set()
 
 	if falhas == 0:
 		print("OK: todos os testes do placar passaram.")
@@ -83,3 +84,23 @@ func _teste_rodizio_so_quando_recebe_e_pontua() -> void:
 	placar.marcar_ponto(1)  # time 1 agora saca: sem rodízio
 	_verificar(rodizios == [1], "só um rodízio, do time 1")
 	_verificar(placar.quem_saca == 1, "time 1 passa a sacar")
+
+
+func _teste_ordem_de_saque_por_set() -> void:
+	var placar = Placar.new()
+	var resultados := [1, 0]
+	placar.sorteio = func() -> int: return resultados.pop_front()
+	placar.sortear_primeiro_saque()
+	_verificar(placar.quem_saca == 1, "o sorteio decide quem saca no 1º set")
+	_pontos(placar, 1, 7)
+	_verificar(placar.quem_saca == 0, "no 2º set saca quem não sacou primeiro no 1º")
+	_pontos(placar, 0, 7)
+	_verificar(placar.set_atual == 3, "foi pro desempate")
+	_verificar(placar.quem_saca == 0, "no desempate vale o novo sorteio")
+
+	# Mesmo que o time 0 perca o 1º set, se ele sacou primeiro, o 2º começa com o 1.
+	var outro = Placar.new()
+	outro.sorteio = func() -> int: return 0
+	outro.sortear_primeiro_saque()
+	_pontos(outro, 1, 7)
+	_verificar(outro.quem_saca == 1, "2º set: saca o time que recebeu primeiro no 1º")

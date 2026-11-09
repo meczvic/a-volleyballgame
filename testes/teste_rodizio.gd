@@ -13,6 +13,8 @@ func _init() -> void:
 	_teste_girar_uma_vez()
 	_teste_seis_giros_voltam_ao_comeco()
 	_teste_quem_e_da_rede()
+	_teste_comecar_com_escalacao()
+	_teste_reiniciar_volta_pra_escalacao()
 
 	if falhas == 0:
 		print("OK: todos os testes do rodízio passaram.")
@@ -54,3 +56,22 @@ func _teste_quem_e_da_rede() -> void:
 		if Rodizio.e_da_rede(posicao):
 			da_rede.append(posicao)
 	_verificar(da_rede == [2, 3, 4], "rede são as posições 2, 3 e 4")
+
+
+func _teste_comecar_com_escalacao() -> void:
+	var rodizio = Rodizio.new()
+	rodizio.comecar_com([3, 0, 5, 1, 4, 2])
+	_verificar(rodizio.atleta_na(1) == 3, "ordem[0] começa sacando")
+	_verificar(rodizio.atleta_na(4) == 1, "ordem[3] começa na posição 4")
+	_verificar(rodizio.posicao_de(2) == 6, "o atleta 2 começa na posição 6")
+	rodizio.girar()
+	_verificar(rodizio.atleta_na(1) == 0, "girando, quem estava na 2 saca")
+
+
+func _teste_reiniciar_volta_pra_escalacao() -> void:
+	var rodizio = Rodizio.new()
+	rodizio.comecar_com([5, 4, 3, 2, 1, 0])
+	rodizio.girar()
+	rodizio.girar()
+	rodizio.reiniciar()
+	_verificar(rodizio.atleta_na(1) == 5, "novo set volta pra escalação do começo")

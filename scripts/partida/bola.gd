@@ -8,6 +8,9 @@ extends Node3D
 signal tocou_chao(posicao: Vector3)
 signal tocou_rede
 signal bloqueada
+## A bola passou pro outro lado: por cima da rede ou por fora dela.
+## "ponto" é onde ela cruzou a linha da rede (veja a regra das antenas na partida).
+signal cruzou_a_rede(ponto: Vector3)
 
 const Trajetoria := preload("res://scripts/regras/trajetoria.gd")
 const VisualAnime := preload("res://scripts/visual/visual_anime.gd")
@@ -135,6 +138,8 @@ func _voar(delta: float) -> void:
 			_desviar(Vector3(cruzamento.x, cruzamento.y, lado_de_onde_veio * (RAIO + 0.3)), rebote)
 			bloqueada.emit()
 			return
+
+		cruzou_a_rede.emit(cruzamento)
 
 	if agora.y <= RAIO:
 		position = ponto_previsto

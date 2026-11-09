@@ -3,6 +3,9 @@ extends RefCounted
 ##
 ## Sets até 7 pontos, com 2 de diferença e limite em 10.
 ## Quem ganhar 2 sets vence a partida.
+##
+## Quem saca primeiro (regra da FIVB): no 1º set, sorteio. No 2º, o time que
+## não sacou primeiro no 1º. No set de desempate (3º), sorteio de novo.
 ## Não sabe nada de bola, câmera ou controle: só recebe "o time X fez ponto".
 
 signal ponto_marcado(time: int)
@@ -21,8 +24,19 @@ var pontos: Array[int] = [0, 0]
 var sets: Array[int] = [0, 0]
 var set_atual := 1
 var quem_saca := 0
+## Quem sacou primeiro no set atual (decide quem começa o próximo).
+var primeiro_saque_do_set := 0
 var encerrada := false
 var vencedor := -1
+## Sorteio (cara ou coroa): função que devolve 0 ou 1. Vazio = aleatório.
+## Os testes trocam por uma função fixa.
+var sorteio := Callable()
+
+
+## Sorteia quem saca primeiro na partida (antes do 1º ponto).
+func sortear_primeiro_saque() -> void:
+	quem_saca = _sortear()
+	primeiro_saque_do_set = quem_saca
 
 
 func marcar_ponto(time: int) -> void:
@@ -61,5 +75,16 @@ func _encerrar_set(time: int) -> void:
 
 	set_atual += 1
 	pontos = [0, 0]
-	# Quem perdeu o set começa sacando o próximo.
-	quem_saca = 1 - time
+	if set_atual == SETS_PARA_VENCER * 2 - 1:
+		# Set de desempate: sorteio de novo.
+		quem_saca = _sortear()
+	else:
+		# Começa sacando quem não sacou primeiro no set anterior.
+		quem_saca = 1 - primeiro_saque_do_set
+	primeiro_saque_do_set = quem_saca
+
+
+func _sortear() -> int:
+	if sorteio.is_valid():
+		return 1 if int(sorteio.call()) == 1 else 0
+	return randi() % 2

@@ -47,16 +47,29 @@ Se os dois escolherem o mesmo time, o Jogador 2 joga com o uniforme reserva.
 5. **3º toque:** com o atacante, aperte **Ataque** com a bola alta pra cortar. Segurar esquerda ou direita mira a cortada. **Passe** no 3º toque só devolve a bola de graça.
 6. **Ataque** com a bola alta funciona em qualquer toque (por exemplo, o levantador pode atacar de surpresa).
 7. **Bloqueio:** quando o adversário levanta, os 3 atletas da rede sobem sozinhos e acompanham a bola. Aperte **Bloqueio** pra eles pularem; segurar esquerda ou direita desloca o bloqueio. Acertar o tempo do pulo devolve a cortada.
-8. Bola no chão dentro da quadra: ponto pra quem mandou a bola. Fora: ponto pra quem não tocou por último. 4 toques seguidos do mesmo time é falta.
+8. Bola no chão dentro da quadra: ponto pra quem mandou a bola. Fora: ponto pra quem não tocou por último. As outras faltas estão em **Regras do vôlei**, logo abaixo.
 
 Os atletas que você não controla se posicionam sozinhos, e o time gira o **rodízio** quando recupera o saque. A tela é **dividida**: o Jogador 1 vê de trás do time dele na metade esquerda, o Jogador 2 na metade direita. "Cima" é sempre na direção da rede pra cada um. Pra voltar pra uma câmera só, abra `cenas/partida.tscn`, selecione o nó `Partida` e desmarque **Tela Dividida** no Inspetor (lá também dá pra ajustar a altura, a distância e o foco da câmera, e ligar ou desligar o **Visual Anime**: sombra "chapada" e contorno escuro nos atletas e na bola).
+
+### Regras do vôlei
+
+O jogo segue as regras oficiais (FIVB). Só o placar é do jogo: sets até 7, com 2 de diferença e limite em 10, melhor de 3. Quando sai uma falta, a mensagem do ponto diz qual foi.
+
+- **Escalação:** 6 atletas por time, sem líbero, no sistema 5-1 (um levantador). Na ordem de saque: levantador, ponteiro, central, oposto, ponteiro, central. O levantador fica sempre do lado oposto do oposto, e sempre tem 1 ponteiro e 1 central na rede. A função de cada atleta vem do campo `posicao` em `dados/elenco.json`.
+- **Rodízio:** posições 1 a 6 (2, 3 e 4 na rede; 1, 6 e 5 no fundo). Quem ganha o saque de volta gira no sentido horário, e quem vai pra posição 1 saca. Cada set começa com a escalação do começo.
+- **Posição no saque:** na hora em que a bola é sacada, cada time tem que estar na ordem do rodízio (cada um da rede na frente do colega de fundo da mesma coluna; da esquerda pra direita, 4-3-2 na rede e 5-6-1 no fundo). Fora de ordem: **posição errada no saque**. O atleta que você controla antes do saque não consegue sair da ordem. Depois do saque, cada um vai pro lado da sua função e o levantador do fundo infiltra pra levantar.
+- **Saque:** 8 segundos pra sacar (**demorou pra sacar**; os 3 últimos aparecem na tela). Quem sacou não toca no próprio saque. Quem saca primeiro: sorteio no 1º set, o outro time no 2º, sorteio de novo no 3º.
+- **Toques:** até 3 por time (**4 toques**). O mesmo atleta não toca duas vezes seguidas (**dois toques**). O bloqueio não conta como toque, e quem bloqueou pode tocar de novo.
+- **Ataque e bloqueio:** só os 3 da rede bloqueiam. Atleta do fundo só ataca com a bola acima da rede se pular de trás da linha de 3 m (**ataque do fundo**). Não pode bloquear o saque (**bloqueio no saque**) nem atacá-lo com a bola acima da rede, perto dela (**ataque no saque**).
+- **Rede:** pular colado na rede é **toque na rede**. A bola tem que passar entre as antenas, que ficam em cima das linhas laterais (**fora da antena**).
+- **Quem vai na bola:** o jogo passa o controle pro atleta certo: o 1º toque é de quem estiver mais perto (o levantador evita, pra poder levantar), o 2º é do levantador e o 3º é de quem pode atacar dali (da rede na frente da linha de 3 m, do fundo atrás dela).
 
 ## Pastas
 
 | Pasta | O que tem |
 | --- | --- |
 | `cenas/` | Cenas do Godot (`.tscn`): `menu_principal.tscn` (abre primeiro), `selecao_de_times.tscn` e `partida.tscn`. Com a partida aberta no editor, **F6** roda só ela (Karasuno x Nekoma no Ginásio Japonês). |
-| `scripts/regras/` | Regras puras, sem gráfico: placar, sets, rodízio, toques, trajetória da bola, escolha do atacante. |
+| `scripts/regras/` | Regras puras, sem gráfico: placar, sets, rodízio, escalação (`escalacao.gd`), formação no saque (`formacao.gd`), toques, trajetória da bola, escolha do atacante. |
 | `scripts/entrada/` | Teclado e controle viram "comandos". A lógica do jogo não sabe se o comando veio do teclado ou da internet, o que facilita o online depois. |
 | `scripts/partida/` | O que acontece na quadra. |
 | `scripts/menus/` | Menu principal, seleção de times (`selecao.gd` tem as regras, `selecao_de_times.gd` desenha a tela), pausa e fim de jogo. `estilo.gd` guarda as cores e fontes de todos os menus. `configuracao.gd` guarda os times e o estádio escolhidos. |
@@ -79,6 +92,9 @@ godot --headless --script res://testes/teste_trajetoria.gd
 godot --headless --script res://testes/teste_toques.gd
 godot --headless --script res://testes/teste_escolha_ataque.gd
 godot --headless --script res://testes/teste_rodizio.gd
+godot --headless --script res://testes/teste_escalacao.gd
+godot --headless --script res://testes/teste_formacao.gd
+godot --headless --script res://testes/teste_regras_na_partida.gd
 godot --headless --script res://testes/teste_selecao.gd
 godot --headless --script res://testes/teste_dados.gd
 godot --headless --script res://testes/teste_animacoes.gd
@@ -87,7 +103,7 @@ godot --headless --script res://testes/teste_animador.gd
 
 Cada um deve terminar com uma linha começando com `OK:`.
 
-Todos os testes passam no Godot 4.7.2 (antes, 4.3), e a partida, os menus e a seleção de times rodam sem erros (testado em 09/11/2026).
+Todos os testes passam no Godot 4.7.2 (antes, 4.3), e a partida, os menus e a seleção de times rodam sem erros (testado em 09/11/2026). Com as regras oficiais, um robô jogou partidas inteiras dos dois lados (3 sets) sem erro.
 
 ## Próximos passos
 
