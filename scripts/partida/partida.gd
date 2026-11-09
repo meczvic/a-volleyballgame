@@ -51,6 +51,13 @@ const Dados := preload("res://scripts/comum/dados.gd")
 const MenuDePausa := preload("res://scripts/menus/menu_de_pausa.gd")
 const Estilo := preload("res://scripts/menus/estilo.gd")
 const Animador := preload("res://scripts/visual/animador.gd")
+const TempoDoToque := preload("res://scripts/regras/tempo_do_toque.gd")
+const Trajetoria := preload("res://scripts/regras/trajetoria.gd")
+const AnelDeTempo := preload("res://scripts/partida/anel_de_tempo.gd")
+const AvisoDeToque := preload("res://scripts/partida/aviso_de_toque.gd")
+const Impacto := preload("res://scripts/visual/impacto.gd")
+const Rastro := preload("res://scripts/visual/rastro.gd")
+const Qualidade := TempoDoToque.Qualidade
 
 enum Estado { SAQUE, RALLY, PONTO, FIM }
 
@@ -106,8 +113,6 @@ const PONTO_DO_LEVANTADOR := Vector2(1.0, 1.0)
 ## Giro do personagem .vrm pro time do Jogador 1 olhar pra rede (-z).
 ## VRM 1.0 olha pra +z, por isso meia volta. Conferir com o primeiro personagem (Hinata).
 const GIRO_DO_PERSONAGEM := PI
-## Erro máximo do passe, em metros.
-const ERRO_DO_PASSE := 0.6
 
 ## Pra onde o levantador pode mandar a bola.
 const ATAQUES := [
@@ -118,6 +123,15 @@ const ATAQUES := [
 ]
 ## Sem direção apertada, o levantamento vai pro meio.
 const ATAQUE_PADRAO := 1
+## Tempo entre apertar Ataque e a mão bater na bola. Hoje a bola sai na hora
+## do botão (0); quando a cortada bater no alto do pulo, vira esse tempo.
+const ATRASO_DA_CORTADA := 0.0
+## O anel de tempo só aparece se o atleta estiver a menos disso (m) de onde
+## a bola vai estar na hora certa.
+const DISTANCIA_DO_ANEL_DE_TEMPO := 3.5
+## Camada de desenho do anel de tempo de cada time: na tela dividida, cada
+## jogador só vê o próprio anel.
+const CAMADA_DO_ANEL_DE_TEMPO := [11, 12]
 
 ## Câmera atrás do próprio time, baixa e de longe, como numa transmissão de TV
 ## (referência: Spike Volleyball). Ajuste aqui ou no Inspetor.
@@ -174,6 +188,14 @@ var caixa_da_mensagem: PanelContainer
 ## Espera depois de cada ponto. É um nó (e não um "await") pra parar junto
 ## quando o jogo pausa e sumir junto quando a cena fecha.
 var temporizador_do_ponto: Timer
+## Câmeras (uma por jogador na tela dividida), pro tremor do impacto.
+var cameras: Array[Camera3D] = []
+## Anel que mostra a hora de apertar, um por time.
+var aneis_de_tempo: Array = [null, null]
+## Qualidade do último passe de cada time (decide o levantamento).
+var qualidade_do_passe: Array = [Qualidade.BOM, Qualidade.BOM]
+var impacto
+var rastro
 
 
 func _ready() -> void:
@@ -197,6 +219,22 @@ func _ready() -> void:
 	bola.tocou_chao.connect(_ao_bola_tocar_chao)
 	bola.bloqueada.connect(_ao_bola_ser_bloqueada)
 	bola.cruzou_a_rede.connect(_ao_bola_cruzar_a_rede)
+
+	# Toque no tempo certo: anel de tempo de cada time, impacto e rastro.
+	for time in 2:
+		var anel_de_tempo = AnelDeTempo.new()
+		anel_de_tempo.name = "AnelDeTempo%d" % time
+		add_child(anel_de_tempo)
+		anel_de_tempo.usar_camada(CAMADA_DO_ANEL_DE_TEMPO[time])
+		aneis_de_tempo[time] = anel_de_tempo
+	impacto = Impacto.new()
+	impacto.name = "Impacto"
+	impacto.cameras = cameras
+	add_child(impacto)
+	rastro = Rastro.new()
+	rastro.name = "RastroDaBola"
+	rastro.alvo = bola
+	add_child(rastro)
 
 	marcador = MarcadorQueda.new()
 	marcador.name = "MarcadorQueda"
@@ -249,6 +287,7 @@ func _physics_process(delta: float) -> void:
 		for atleta in atletas[time]:
 			_atualizar_pulo(atleta, delta)
 		aneis[time].position = Vector3(controlado.position.x, 0.03, controlado.position.z)
+		_atualizar_anel_de_tempo(time)
 
 	# Antes do saque, a bola fica na mão de quem saca.
 	if estado == Estado.SAQUE:
@@ -495,46 +534,89 @@ func _tentar_tocar(time: int, atacando: bool) -> void:
 	_mostrar_marcas_de_ataque(-1)
 
 	var numero: int = toques.toques
+	var tipo := _tipo_do_toque(numero, atacando)
+	var qualidade := _qualidade_do_toque(tipo)
+	if atacando or numero <= 2:
+		_avisar_qualidade(controlados[time], qualidade)
 	if atacando:
-		_cortar(time)
+		_cortar(time, qualidade)
 	elif numero == 1:
-		_passar_pro_levantador(time)
+		_passar_pro_levantador(time, qualidade)
 	elif numero == 2:
-		_levantar(time)
+		_levantar(time, qualidade)
 	else:
 		_devolver_de_graca(time)
 
 
-func _passar_pro_levantador(time: int) -> void:
+## 1º toque. A qualidade decide o quanto a bola erra o levantador e o que
+## ele vai poder levantar.
+func _passar_pro_levantador(time: int, qualidade: Qualidade) -> void:
 	_animar(controlados[time], "manchete")
-	var erro := Vector2(randf_range(-ERRO_DO_PASSE, ERRO_DO_PASSE), randf_range(-0.3, ERRO_DO_PASSE))
-	var alvo := _no_mundo(time, PONTO_DO_LEVANTADOR + erro)
-	bola.lancar(alvo, 4.0)
+	qualidade_do_passe[time] = qualidade
+	var raio: float = TempoDoToque.ERRO_DO_PASSE[qualidade]
+	var erro := Vector2.from_angle(randf() * TAU) * raio * sqrt(randf())
+	# O passe nunca passa da rede nem sai pela lateral.
+	var lugar := PONTO_DO_LEVANTADOR + erro
+	lugar.x = clampf(lugar.x, -LARGURA / 2.0 + 0.5, LARGURA / 2.0 - 0.5)
+	lugar.y = maxf(lugar.y, 0.6)
+	bola.lancar(_no_mundo(time, lugar), TempoDoToque.ALTURA_DO_PASSE[qualidade])
 	_ao_lancar_bola()
 	_mostrar_marcas_de_ataque(time)
 
 
-func _levantar(time: int) -> void:
+## 2º toque. Passe ruim só deixa levantar alto (ponta ou fundo); passe e
+## levantamento perfeitos dão o levantamento rápido, que chega antes do bloqueio.
+func _levantar(time: int, qualidade: Qualidade) -> void:
 	_animar(controlados[time], "levantamento")
-	var direcao := _direcao_no_mundo(time)
-	var escolhido := EscolhaAtaque.escolher(alvos_de_ataque[time], direcao, ATAQUE_PADRAO)
-	var alvo: Vector3 = alvos_de_ataque[time][escolhido]
-	bola.lancar(alvo, 4.4)
+	var passe: Qualidade = qualidade_do_passe[time]
+	var escolhido := _ataque_escolhido(time, passe)
+	var raio: float = TempoDoToque.ERRO_DO_LEVANTAMENTO[qualidade]
+	var erro := Vector2.from_angle(randf() * TAU) * raio * sqrt(randf())
+	var alvo: Vector3 = alvos_de_ataque[time][escolhido] + Vector3(erro.x, 0.0, erro.y)
+	var altura := TempoDoToque.altura_do_levantamento(passe, qualidade)
+	bola.lancar(alvo, altura)
 	_ao_lancar_bola()
-	_mostrar_mensagem("Levantamento: %s" % ATAQUES[escolhido]["nome"])
+	var nome: String = ATAQUES[escolhido]["nome"]
+	if altura == TempoDoToque.ALTURA_DO_LEVANTAMENTO_RAPIDO:
+		_mostrar_mensagem("Levantamento rápido: %s" % nome)
+	elif altura == TempoDoToque.ALTURA_DO_LEVANTAMENTO_ALTO:
+		_mostrar_mensagem("Levantamento alto: %s" % nome)
+	else:
+		_mostrar_mensagem("Levantamento: %s" % nome)
 
 
-func _cortar(time: int) -> void:
+## Pra onde o levantador manda: a direção apertada, só entre os ataques que
+## o passe deixou. Sem direção, o meio (ou a ponta, se o meio não der).
+func _ataque_escolhido(time: int, passe: Qualidade) -> int:
+	var liberados: Array[int] = []
+	var alvos: Array = []
+	for i in ATAQUES.size():
+		if TempoDoToque.ataque_liberado(passe, ATAQUES[i]["nome"]):
+			liberados.append(i)
+			alvos.append(alvos_de_ataque[time][i])
+	var padrao := liberados.find(ATAQUE_PADRAO)
+	if padrao < 0:
+		padrao = 0
+	var escolhido := EscolhaAtaque.escolher(alvos, _direcao_no_mundo(time), padrao)
+	return liberados[escolhido]
+
+
+## Cortada. A qualidade decide a força (quanto a bola sobe), o erro da
+## mira e a profundidade. Cortada ruim sai fraca e torta.
+func _cortar(time: int, qualidade: Qualidade = Qualidade.BOM) -> void:
 	_pular(controlados[time])
 	_animar(controlados[time], "cortada")
+	var jeito: Dictionary = TempoDoToque.CORTADA[qualidade]
 	# A direção mira pra esquerda ou direita da quadra adversária.
 	var direcao := _direcao_no_mundo(time)
-	var mira_x := clampf(direcao.x * 3.0 + randf_range(-0.8, 0.8), -LARGURA / 2.0 + 0.5, LARGURA / 2.0 - 0.5)
-	var profundidade := randf_range(4.0, 8.5)
+	var erro_da_mira: float = jeito["erro_da_mira"]
+	var mira_x := clampf(direcao.x * 3.0 + randf_range(-erro_da_mira, erro_da_mira), -LARGURA / 2.0 + 0.3, LARGURA / 2.0 - 0.3)
+	var profundidade := randf_range(jeito["fundo_min"], jeito["fundo_max"])
 	var destino := Vector3(mira_x, 0.0, profundidade * _lado(1 - time))
-	# Cortada: forte, quase sem subir.
-	bola.lancar(destino, bola.position.y + 0.3)
+	bola.lancar(destino, bola.position.y + float(jeito["subida"]))
 	_ao_lancar_bola()
+	if qualidade != Qualidade.RUIM:
+		impacto.cortada(qualidade == Qualidade.PERFEITO)
 
 
 func _devolver_de_graca(time: int) -> void:
@@ -590,6 +672,59 @@ func _quem_vai_na_bola(time: int, queda: Vector3) -> Node3D:
 	if quem_ataca:
 		return quem_ataca
 	return _mais_perto(time, queda, quem_tocou)
+
+
+# --- Toque no tempo certo ---
+
+## Tipo do toque pra medir o tempo: o 1º é passe, o 2º levantamento, o 3º
+## (ou qualquer ataque) cortada.
+func _tipo_do_toque(numero: int, atacando: bool) -> String:
+	if atacando or numero >= 3:
+		return "cortada"
+	return "levantamento" if numero == 2 else "passe"
+
+
+## Qualidade do toque feito agora, pelo tempo do botão.
+func _qualidade_do_toque(tipo: String) -> Qualidade:
+	var erro := TempoDoToque.erro_do_botao(tipo, bola.position, bola.velocidade_atual(), _atraso_do_toque(tipo))
+	return TempoDoToque.qualidade(erro)
+
+
+## Tempo entre o botão e a mão encostar na bola.
+func _atraso_do_toque(tipo: String) -> float:
+	return ATRASO_DA_CORTADA if tipo == "cortada" else 0.0
+
+
+## Mostra o anel de tempo pro atleta controlado do "time" quando a bola está
+## vindo pra ele e é a vez dele tocar.
+func _atualizar_anel_de_tempo(time: int) -> void:
+	var anel = aneis_de_tempo[time]
+	if estado != Estado.RALLY or not bola.em_voo or _lado_da_queda() != time \
+			or (saque_em_jogo and time == placar.quem_saca):
+		anel.esconder()
+		return
+	var numero := 1
+	if toques.time_com_a_bola == time:
+		numero = toques.toques + 1
+	var tipo := _tipo_do_toque(numero, false)
+	var velocidade: Vector3 = bola.velocidade_atual()
+	var segundos := TempoDoToque.erro_do_botao(tipo, bola.position, velocidade, _atraso_do_toque(tipo))
+	var atleta := controlados[time]
+	# Longe de onde a bola vai estar na hora certa, o anel só atrapalha.
+	var na_hora := Trajetoria.posicao_em(bola.position, velocidade, maxf(segundos, 0.0))
+	if _distancia_no_chao(atleta, na_hora) > DISTANCIA_DO_ANEL_DE_TEMPO:
+		anel.esconder()
+		return
+	anel.mostrar(atleta.position, segundos)
+
+
+func _avisar_qualidade(atleta: Node3D, qualidade: Qualidade) -> void:
+	var cor := Color("#FF6B5B")
+	if qualidade == Qualidade.PERFEITO:
+		cor = AnelDeTempo.COR_PERFEITO
+	elif qualidade == Qualidade.BOM:
+		cor = AnelDeTempo.COR_BOM
+	AvisoDeToque.mostrar(self, atleta.position + Vector3(0.0, 2.3, 0.0), TempoDoToque.nome(qualidade), cor)
 
 
 # --- Regras (faltas) ---
@@ -706,6 +841,7 @@ func _depois_do_ponto() -> void:
 func _preparar_saque() -> void:
 	estado = Estado.SAQUE
 	ultimo_toque = -1
+	qualidade_do_passe = [Qualidade.BOM, Qualidade.BOM]
 	saque_em_jogo = false
 	tempo_no_saque = 0.0
 	_segundos_mostrados = -1
@@ -1121,6 +1257,10 @@ func _adicionar_camera(onde: Node, time: int) -> void:
 		Vector3(0.0, 0.0, foco_da_camera * lado)
 	)
 	camera.current = true
+	if tela_dividida:
+		# Esconde o anel de tempo do outro jogador.
+		camera.set_cull_mask_value(CAMADA_DO_ANEL_DE_TEMPO[1 - time], false)
+	cameras.append(camera)
 
 
 func _criar_interface() -> void:
