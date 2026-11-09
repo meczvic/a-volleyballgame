@@ -58,6 +58,15 @@ Se os dois escolherem o mesmo time, o Jogador 2 joga com o uniforme reserva.
 - Passe e levantamento perfeitos dão o **levantamento rápido** (bola baixa, que chega antes do bloqueio).
 - Na cortada, aperte um pouco antes: o atleta pula e bate no alto do pulo. Cortada perfeita é forte e funda (a tela congela por um instante e treme); ruim sai fraca e torta.
 
+**Mergulho:** aperte **Mergulho** quando a bola estiver baixa (até 1,4 m) e longe demais pro passe normal. O atleta se joga e alcança até uns 3,2 m, bem mais que o passe (1,8 m). Mas a bola sai pior: no máximo **Bom**, e **Ruim** quando ela estava fora do alcance normal. Depois ele fica **no chão** por 0,8 s, sem andar. Mergulhar sem bola por perto também derruba o atleta, então não mergulhe à toa.
+
+**Atributos dos times** (1 a 5, em `dados/times.json`; 3 é o normal):
+- **Ataque:** janela de tempo da cortada maior e cortada mais forte.
+- **Defesa:** janela de tempo do passe maior e mergulho mais longo.
+- **Saque:** o saque erra menos (círculo da mira menor).
+- **Bloqueio:** o bloqueio cobre mais rede.
+- **Velocidade:** os atletas correm mais rápido.
+
 Os atletas que você não controla se posicionam sozinhos, e o time gira o **rodízio** quando recupera o saque. A tela é **dividida**: o Jogador 1 vê de trás do time dele na metade esquerda, o Jogador 2 na metade direita. "Cima" é sempre na direção da rede pra cada um. Pra voltar pra uma câmera só, abra `cenas/partida.tscn`, selecione o nó `Partida` e desmarque **Tela Dividida** no Inspetor (lá também dá pra ajustar a altura, a distância e o foco da câmera, e ligar ou desligar o **Visual Anime**: sombra "chapada" e contorno escuro nos atletas e na bola).
 
 ### Regras do vôlei
@@ -108,6 +117,12 @@ godot --headless --script res://testes/teste_selecao.gd
 godot --headless --script res://testes/teste_dados.gd
 godot --headless --script res://testes/teste_animacoes.gd
 godot --headless --script res://testes/teste_animador.gd
+```
+
+Ou todos de uma vez (19 arquivos, incluindo tempo do toque, mira, cortada, atributos e mergulho):
+
+```
+for t in testes/teste_*.gd; do godot --headless --script res://$t; done
 ```
 
 Cada um deve terminar com uma linha começando com `OK:`.

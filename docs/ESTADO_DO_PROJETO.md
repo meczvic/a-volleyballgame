@@ -28,7 +28,7 @@ Material de apoio (privado, no Claude): [documento de design](https://claude.ai/
 
 ## 2. O que já foi feito
 
-Tudo abaixo está neste repositório. Segundo os registros de 09/11/2026, os **17 testes automáticos** (pasta `testes/`) passam no Godot 4.7.2, e um robô jogou partidas completas (3 sets) dos dois lados sem erro.
+Tudo abaixo está neste repositório. Segundo os registros de 09/11/2026, os **19 testes automáticos** (pasta `testes/`) passam no Godot 4.7.2, e um robô jogou partidas completas (3 sets) dos dois lados sem erro.
 
 ### Menus e telas
 - Menu principal (Partida rápida, Controles, Sair; Modo Caos e Online aparecem como "em breve").
@@ -56,6 +56,10 @@ Tudo abaixo está neste repositório. Segundo os registros de 09/11/2026, os **1
 - **Mira na cortada**: a direção escolhe paralela, diagonal, funda ou curta.
 - Na cortada, o atleta pula no botão e **a mão bate na bola no alto do pulo** (0,3 s depois).
 
+### Defesa, mergulho e atributos
+- **Mergulho**: alcança bola baixa (até 1,4 m) a até 3,2 m do atleta (o passe normal alcança 1,8 m). A bola sai no máximo **Bom**, e **Ruim** se estava fora do alcance normal. O atleta fica 0,8 s no chão sem andar (mergulho no vazio também).
+- **Atributos dos times valendo** (`scripts/regras/atributos.gd`, 3 = normal): ataque (janela e força da cortada), defesa (janela do passe e alcance do mergulho), saque (erro do saque), bloqueio (largura do bloqueio) e velocidade (corrida dos atletas).
+
 ### Personagens e animações
 - O jogo carrega um personagem do VRoid (`.vrm`) quando o arquivo existe em `personagens/<time>/<número>_<nome>.vrm`. Sem o arquivo, o atleta continua sendo uma cápsula. Testado com modelos de exemplo do VRoid.
 - Plugin VRM para Godot já incluído em `addons/`.
@@ -80,8 +84,6 @@ Tudo abaixo está neste repositório. Segundo os registros de 09/11/2026, os **1
 
 ### Jogabilidade
 - **Jogadas e leitura do bloqueio**: rápida do central, largada, bloqueio tentando adivinhar o ataque.
-- **Defesa e mergulho de verdade**: hoje o mergulho é só a animação, não alcança mais longe.
-- **Atributos dos times valendo na partida**: hoje eles só aparecem na seleção de times.
 - **Mais impacto visual**: efeitos de cortada, bloqueio e ponto.
 
 ### Interface
@@ -115,7 +117,7 @@ Em ordem sugerida:
 
 1. **Hoje à noite (PC de casa):** instalar o Godot 4.7.2 e o VRoid Studio, abrir o projeto e fazer um **personagem piloto** (um atleta do time Brasil) para conferir o caminho completo VRoid → jogo.
 2. **Personagens:** Victor e o amigo modelam os atletas no VRoid e colocam os `.vrm` em `personagens/<time>/`.
-3. **Jogabilidade:** jogadas e leitura do bloqueio → defesa e mergulho → atributos dos times valendo → impacto visual.
+3. **Jogabilidade:** jogadas e leitura do bloqueio → impacto visual (defesa, mergulho e atributos já feitos).
 4. **Placar com efeito** e polimento da interface. Com isso, a **partida rápida local fica completa** (meta do 1º mês, até 06/12/2026).
 5. **Modo Caos** com as cartas.
 6. **Online**: primeiro por IP, depois procurar partida.
@@ -143,7 +145,7 @@ Leia esta seção inteira antes de mexer no código.
 ### Como o código está organizado
 - **Fluxo das cenas:** `cenas/menu_principal.tscn` → `cenas/selecao_de_times.tscn` → `cenas/partida.tscn`. Com a partida aberta, **F6** roda só ela (Karasuno x Nekoma no Ginásio Japonês).
 - **Autoloads** (em `project.godot`): `Teclas` (`scripts/entrada/teclas.gd`, cria as ações `p1_passe`, `p2_ataque` etc. de teclado e controle) e `Configuracao` (`scripts/menus/configuracao.gd`, guarda os times e o estádio escolhidos).
-- **`scripts/regras/`:** regras **puras**, sem nós nem gráfico, fáceis de testar: `placar`, `rodizio`, `escalacao`, `formacao`, `toques`, `trajetoria`, `escolha_ataque`, `tempo_do_toque`, `mira`. Regra nova vai aqui, com teste.
+- **`scripts/regras/`:** regras **puras**, sem nós nem gráfico, fáceis de testar: `placar`, `rodizio`, `escalacao`, `formacao`, `toques`, `trajetoria`, `escolha_ataque`, `tempo_do_toque`, `mira`, `atributos`. Regra nova vai aqui, com teste.
 - **`scripts/entrada/`:** teclado e controle viram **comandos**. A partida não sabe de onde o comando veio. É isso que vai permitir o online: basta criar outra fonte de comandos que venha da rede.
 - **`scripts/partida/partida.gd`:** o centro da partida (~1.550 linhas): monta quadra, times e câmeras, liga regras, IA, bloqueio, rodízio, faltas, placar e animações. É o arquivo mais arriscado de mexer; separe partes novas em scripts próprios (como foi feito com `bola.gd`, `anel_de_tempo.gd`, `mira_visual.gd`).
 - **`scripts/visual/`:** `visual_anime.gd` (materiais anime), `animador.gd` (animações dos personagens), `impacto.gd` (congelar e tremer a tela), `rastro.gd` (rastro da bola).
@@ -169,7 +171,7 @@ Leia esta seção inteira antes de mexer no código.
 - Passo a passo completo em `animacoes/LEIA-ME.md`.
 
 ### Testes
-- São 17 arquivos em `testes/`. Rode todos, dentro da pasta do projeto:
+- São 19 arquivos em `testes/`. Rode todos, dentro da pasta do projeto:
 
 ```
 for t in testes/teste_*.gd; do godot --headless --script res://$t; done

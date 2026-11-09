@@ -58,6 +58,7 @@ const AvisoDeToque := preload("res://scripts/partida/aviso_de_toque.gd")
 const Impacto := preload("res://scripts/visual/impacto.gd")
 const Rastro := preload("res://scripts/visual/rastro.gd")
 const Mira := preload("res://scripts/regras/mira.gd")
+const Atributos := preload("res://scripts/regras/atributos.gd")
 const MiraVisual := preload("res://scripts/partida/mira_visual.gd")
 const Qualidade := TempoDoToque.Qualidade
 
@@ -110,6 +111,13 @@ const PULO_MAXIMO_DA_CORTADA := 1.2
 const ALTURA_DAS_MAOS := 2.35
 ## Até quantos metros pro lado da mão o bloqueio alcança a bola.
 const LARGURA_DO_BLOQUEIO := 0.6
+## Mergulho: alcança bola mais longe e mais baixa, mas a bola sai pior e o
+## atleta fica no chão um instante.
+const ALCANCE_DO_MERGULHO := 3.2
+const ALTURA_MAXIMA_DO_MERGULHO := 1.4
+const TEMPO_NO_CHAO := 0.8
+## Quanto o atleta se joga quando o mergulho não alcança a bola (m).
+const MERGULHO_NO_VAZIO := 1.5
 ## Só bloqueia quem está até essa distância da rede.
 const DISTANCIA_MAXIMA_DO_BLOQUEIO := 1.2
 ## Quanto a direção desloca o bloqueio na hora do pulo (m).
@@ -173,6 +181,8 @@ var saque_em_jogo := false
 ## Segundos desde que o saque foi liberado (limite: TEMPO_PARA_SACAR).
 var tempo_no_saque := 0.0
 var _segundos_mostrados := -1
+## Relógio da partida (s), pra saber até quando o atleta fica no chão.
+var _relogio := 0.0
 
 var times_em_jogo: Array = []
 ## Estádio escolhido (cores da quadra, do fundo e da luz). Veja dados/estadios.json.
@@ -294,12 +304,13 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_relogio += delta
 	for time in 2:
 		var controlado := controlados[time]
 		var sacando: bool = estado == Estado.SAQUE and time == placar.quem_saca
 		if not cortadas[time].is_empty():
 			_atualizar_cortada(time, delta)
-		elif not sacando:
+		elif not sacando and not _esta_no_chao(controlado):
 			_mover(controlado, time, _direcao_no_mundo(time), delta)
 			if estado == Estado.SAQUE:
 				_manter_na_ordem(time, controlado)
@@ -309,7 +320,7 @@ func _physics_process(delta: float) -> void:
 			for i in 6:
 				var atleta: Node3D = atletas[time][i]
 				if atleta != controlado:
-					_mover_ia(atleta, _alvo_da_ia(time, i), delta)
+					_mover_ia(atleta, _alvo_da_ia(time, i), delta, _atributo(time, "velocidade"))
 
 		for atleta in atletas[time]:
 			_atualizar_pulo(atleta, delta)
@@ -326,7 +337,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _mover(atleta: Node3D, time: int, direcao: Vector2, delta: float) -> void:
-	atleta.position += Vector3(direcao.x, 0.0, direcao.y) * VELOCIDADE * delta
+	atleta.position += Vector3(direcao.x, 0.0, direcao.y) * VELOCIDADE * _atributo(time, "velocidade") * delta
 	# Cada time fica no próprio lado da rede (com um pouco de área livre).
 	var limite_x := LARGURA / 2.0 + 2.0
 	atleta.position.x = clampf(atleta.position.x, -limite_x, limite_x)
@@ -403,9 +414,11 @@ func _lugares_do_time(time: int) -> Dictionary:
 	return lugares
 
 
-func _mover_ia(atleta: Node3D, alvo: Vector3, delta: float) -> void:
+func _mover_ia(atleta: Node3D, alvo: Vector3, delta: float, fator := 1.0) -> void:
+	if _esta_no_chao(atleta):
+		return
 	var atual := Vector2(atleta.position.x, atleta.position.z)
-	var novo := atual.move_toward(Vector2(alvo.x, alvo.z), VELOCIDADE_IA * delta)
+	var novo := atual.move_toward(Vector2(alvo.x, alvo.z), VELOCIDADE_IA * fator * delta)
 	atleta.position.x = novo.x
 	atleta.position.z = novo.y
 
@@ -466,7 +479,7 @@ func _tem_bloqueio(ponto_na_rede: Vector3, lado_destino: float) -> bool:
 			continue
 		if absf(atleta.position.z) > DISTANCIA_MAXIMA_DO_BLOQUEIO:
 			continue
-		if absf(atleta.position.x - ponto_na_rede.x) > LARGURA_DO_BLOQUEIO:
+		if absf(atleta.position.x - ponto_na_rede.x) > LARGURA_DO_BLOQUEIO * Atributos.largura_do_bloqueio(times_em_jogo[time]):
 			continue
 		if ponto_na_rede.y <= ALTURA_DAS_MAOS + atleta.position.y + Bola.RAIO:
 			return true
@@ -518,8 +531,7 @@ func _ao_receber_comando(jogador: int, tipo: String) -> void:
 			elif tipo == "bloqueio":
 				_bloquear(time)
 			elif tipo == "mergulho":
-				# Por enquanto só a animação: o mergulho ainda não alcança mais longe.
-				_animar(controlados[time], "mergulho")
+				_mergulhar(time)
 
 
 func _ao_soltar_botao(jogador: int, tipo: String) -> void:
@@ -547,7 +559,7 @@ func _sacar(time: int, flutuante: bool, forca := 0.4, alvo := Mira.ALVO_INICIAL)
 	toques.reiniciar()
 	toques.registrar(time, atletas[time].find(controlados[time]))
 	saque_em_jogo = true
-	var ponto := Mira.com_erro(alvo, Mira.erro_do_saque(forca), Vector2(randf(), randf()))
+	var ponto := Mira.com_erro(alvo, _erro_do_saque(time, forca), Vector2(randf(), randf()))
 	var destino := Vector3(ponto.x, 0.0, ponto.y * _lado(1 - time))
 	# Provisório: o flutuante só sai mais baixo. O balanço vem depois.
 	bola.lancar(destino, Mira.altura_do_saque(forca, flutuante))
@@ -558,9 +570,11 @@ func _sacar(time: int, flutuante: bool, forca := 0.4, alvo := Mira.ALVO_INICIAL)
 
 
 ## Passe (atacando = false) ou ataque (atacando = true) do atleta controlado.
-func _tentar_tocar(time: int, atacando: bool) -> void:
+func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> void:
 	var alcancou: bool
-	if atacando:
+	if mergulho:
+		alcancou = true
+	elif atacando:
 		alcancou = _alcanca_bola(time, ALTURA_MINIMA_CORTADA, ALTURA_MAXIMA_CORTADA)
 	else:
 		alcancou = _alcanca_bola(time, 0.0, ALTURA_MAXIMA_PASSE)
@@ -585,11 +599,15 @@ func _tentar_tocar(time: int, atacando: bool) -> void:
 
 	var numero: int = toques.toques
 	var tipo := _tipo_do_toque(numero, atacando)
-	var qualidade := _qualidade_do_toque(tipo)
+	var qualidade := _qualidade_do_toque(tipo, time)
 	var atleta_que_tocou := controlados[time]
 	if atacando and atleta_que_tocou.has_meta("qualidade_da_cortada"):
 		qualidade = atleta_que_tocou.get_meta("qualidade_da_cortada")
 		atleta_que_tocou.remove_meta("qualidade_da_cortada")
+	if mergulho:
+		# Mergulho: no máximo "bom"; de longe (fora do alcance normal), ruim.
+		var longe := _distancia_no_chao(atleta_que_tocou, bola.position) > ALCANCE
+		qualidade = Qualidade.RUIM if longe else TempoDoToque.pior(qualidade, Qualidade.BOM)
 	if atacando or numero <= 2:
 		_avisar_qualidade(controlados[time], qualidade)
 	if atacando:
@@ -675,7 +693,7 @@ func _comecar_cortada(time: int) -> void:
 	_pular(atleta, clampf(prevista.y - mao_acima_dos_pes, PULO_MINIMO_DA_CORTADA, PULO_MAXIMO_DA_CORTADA))
 	_animar(atleta, "cortada")
 	# O tempo da cortada vale no botão: a batida vem TEMPO_ATE_A_BATIDA depois.
-	atleta.set_meta("qualidade_da_cortada", _qualidade_do_toque("cortada"))
+	atleta.set_meta("qualidade_da_cortada", _qualidade_do_toque("cortada", time))
 	cortadas[time] = {
 		"atleta": atleta, "tempo": 0.0,
 		"de": Vector2(atleta.position.x, atleta.position.z),
@@ -754,7 +772,8 @@ func _cortar(time: int, qualidade: Qualidade = Qualidade.BOM) -> void:
 	ponto.x = clampf(ponto.x, -LARGURA / 2.0 + 0.2, LARGURA / 2.0 - 0.2)
 	var destino := Vector3(ponto.x, 0.0, ponto.y * _lado(1 - time))
 	miras[time].esconder()
-	bola.lancar(destino, bola.position.y + float(jeito["subida"]))
+	var subida := maxf(float(jeito["subida"]) - Atributos.cortada_mais_forte(times_em_jogo[time]), 0.05)
+	bola.lancar(destino, bola.position.y + subida)
 	_ao_lancar_bola()
 	if qualidade != Qualidade.RUIM:
 		impacto.cortada(qualidade == Qualidade.PERFEITO)
@@ -826,9 +845,9 @@ func _tipo_do_toque(numero: int, atacando: bool) -> String:
 
 
 ## Qualidade do toque feito agora, pelo tempo do botão.
-func _qualidade_do_toque(tipo: String) -> Qualidade:
+func _qualidade_do_toque(tipo: String, time: int) -> Qualidade:
 	var erro := TempoDoToque.erro_do_botao(tipo, bola.position, bola.velocidade_atual(), _atraso_do_toque(tipo))
-	return TempoDoToque.qualidade(erro)
+	return TempoDoToque.qualidade(erro, Atributos.escala_da_janela(times_em_jogo[time], tipo))
 
 
 ## Tempo entre o botão e a mão encostar na bola (a cortada bate no alto do pulo).
@@ -868,6 +887,54 @@ func _avisar_qualidade(atleta: Node3D, qualidade: Qualidade) -> void:
 	AvisoDeToque.mostrar(self, atleta.position + Vector3(0.0, 2.3, 0.0), TempoDoToque.nome(qualidade), cor)
 
 
+# --- Atributos e mergulho ---
+
+## Multiplicador de um atributo do "time" (só velocidade usa este atalho).
+func _atributo(time: int, nome: String) -> float:
+	if times_em_jogo.size() <= time:
+		return 1.0
+	if nome == "velocidade":
+		return Atributos.velocidade(times_em_jogo[time])
+	return 1.0
+
+
+func _erro_do_saque(time: int, forca: float) -> float:
+	return Mira.erro_do_saque(forca) * Atributos.erro_do_saque(times_em_jogo[time])
+
+
+func _esta_no_chao(atleta: Node3D) -> bool:
+	return atleta != null and float(atleta.get_meta("no_chao_ate", -1.0)) > _relogio
+
+
+## Mergulho do atleta controlado: se a bola está baixa e ao alcance do
+## mergulho, ele se joga e toca (bola pior). Se não, se joga no vazio.
+## Nos dois casos fica no chão TEMPO_NO_CHAO segundos.
+func _mergulhar(time: int) -> void:
+	var atleta := controlados[time]
+	if atleta == null or _esta_no_chao(atleta) or _esta_pulando(atleta):
+		return
+	_animar(atleta, "mergulho")
+	atleta.set_meta("no_chao_ate", _relogio + TEMPO_NO_CHAO)
+	var alcance := ALCANCE_DO_MERGULHO + Atributos.alcance_extra_do_mergulho(times_em_jogo[time])
+	var ate_a_bola := Vector2(bola.position.x - atleta.position.x, bola.position.z - atleta.position.z)
+	var alcanca: bool = bola.em_voo and bola.position.y <= ALTURA_MAXIMA_DO_MERGULHO \
+		and ate_a_bola.length() <= alcance
+	if alcanca:
+		_tentar_tocar(time, false, true)
+		# Se joga até perto da bola.
+		var passo := ate_a_bola.limit_length(maxf(ate_a_bola.length() - 0.5, 0.0))
+		_deslocar(atleta, time, passo)
+		return
+	var rumo := ate_a_bola.normalized() if bola.em_voo else _direcao_no_mundo(time).normalized()
+	_deslocar(atleta, time, rumo * MERGULHO_NO_VAZIO)
+
+
+## Move o atleta "passo" metros no chão, sem passar da rede nem sair da área.
+func _deslocar(atleta: Node3D, time: int, passo: Vector2) -> void:
+	atleta.position += Vector3(passo.x, 0.0, passo.y)
+	_mover(atleta, time, Vector2.ZERO, 0.0)
+
+
 # --- Mira ---
 
 ## Alvo da cortada do "time" pela direção apertada agora (na quadra do outro).
@@ -885,7 +952,7 @@ func _atualizar_mira(time: int, delta: float) -> void:
 		alvo_do_saque = Mira.mover_alvo(alvo_do_saque, _direcao_no_mundo(time), lado_do_alvo, delta)
 		var forca := Mira.forca(carga_do_saque)
 		var ponto := Vector3(alvo_do_saque.x, 0.0, alvo_do_saque.y * lado_do_alvo)
-		mira.mostrar(ponto, Mira.erro_do_saque(forca), forca, forca >= Mira.FORCA_ARRISCADA)
+		mira.mostrar(ponto, _erro_do_saque(time, forca), forca, forca >= Mira.FORCA_ARRISCADA)
 		return
 	var vai_atacar: bool = estado == Estado.RALLY and (not cortadas[time].is_empty() \
 		or (toques.time_com_a_bola == time and toques.toques == 2 and bola.em_voo and _lado_da_queda() == time))
