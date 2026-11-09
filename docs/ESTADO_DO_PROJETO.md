@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em **09/11/2026**. Este documento resume o que é o jogo, o que já foi feito, o que falta, o que precisa melhorar e os próximos passos. Os detalhes de como jogar e rodar estão no [README](../README.md). A [seção 6](#6-para-devs-e-agentes-de-ia) é o guia técnico para quem for mexer no código (pessoa ou agente de IA).
+Atualizado em **09/11/2026** (à noite, depois do polimento da partida). Este documento resume o que é o jogo, o que já foi feito, o que falta, o que precisa melhorar e os próximos passos. Os detalhes de como jogar e rodar estão no [README](../README.md). A [seção 6](#6-para-devs-e-agentes-de-ia) é o guia técnico para quem for mexer no código (pessoa ou agente de IA).
 
 ---
 
@@ -28,7 +28,7 @@ Material de apoio (privado, no Claude): [documento de design](https://claude.ai/
 
 ## 2. O que já foi feito
 
-Tudo abaixo está neste repositório. Segundo os registros de 09/11/2026, os **21 testes automáticos** (pasta `testes/`) passam no Godot 4.7.2, e um robô jogou partidas completas (3 sets) dos dois lados sem erro.
+Tudo abaixo está neste repositório. Em 09/11/2026, os **23 testes automáticos** (pasta `testes/`) passam no Godot 4.7.2, e um robô jogou partidas completas (3 sets) dos dois lados, passando pelos menus, pausa e fim de jogo, sem erro.
 
 ### Menus e telas
 - Menu principal (Partida rápida, Controles, Sair; Modo Caos e Online aparecem como "em breve").
@@ -68,6 +68,20 @@ Tudo abaixo está neste repositório. Segundo os registros de 09/11/2026, os **2
 ### Defesa, mergulho e atributos
 - **Mergulho**: alcança bola baixa (até 1,4 m) a até 3,2 m do atleta (o passe normal alcança 1,8 m). A bola sai no máximo **Bom**, e **Ruim** se estava fora do alcance normal. O atleta fica 0,8 s no chão sem andar (mergulho no vazio também).
 - **Atributos dos times valendo** (`scripts/regras/atributos.gd`, 3 = normal): ataque (janela e força da cortada), defesa (janela do passe e alcance do mergulho), saque (erro do saque), bloqueio (largura do bloqueio) e velocidade (corrida dos atletas).
+
+### Polimento da partida (09/11/2026)
+Feito depois de um robô jogar partidas inteiras e listar o que parecia estranho:
+- **Botão guardado**: Passe ou Cortada apertados um pouco cedo (bola fora do alcance) valem por 0,15 s e saem assim que a bola chega. Se não dá, o **anel do atleta pisca** (`scripts/partida/anel_do_controlado.gd`), pra nenhum botão ficar "sem resposta".
+- **Toque no bloqueio**: só o bloqueio no alto do pulo e bem na frente da bola devolve a cortada. Cedo, tarde ou na ponta da mão, a bola **raspa e segue** pro lado de quem bloqueou, mais devagar (não conta toque; se sair, a falta é do bloqueio). O bloqueio ficou menos "muro" (largura 0,5 m).
+- **Cortada mais decisiva**: a cortada perfeita sai mais rápida e pode cair mais curta (4,5 m), em vez de sempre em cima da defesa.
+- **Saque com risco de verdade**: o erro cresce mais com a força e, no talo, a bola pode sair mesmo mirando no meio. O saque fraco sobe um pouco mais (mais fácil de receber).
+- **Câmera viva** (`scripts/partida/camera_da_partida.gd`): fica no lugar, mas vira de leve pra acompanhar a bola, com suavização.
+- **Depois do ponto, os atletas andam** até a formação do saque (1,8 s) em vez de teleportar.
+- **Transições**: cortina preta na entrada da partida e nas saídas pelo menu de pausa (`scripts/menus/cortina.gd`); o painel da pausa e do fim de jogo entra crescendo.
+- **Bola mais visível**: desenho maior que o raio das regras e rastro mais forte.
+- **Mensagens por metade da tela**: saque, recepção, levantamento e largada aparecem na metade do time; só o ponto fica no meio. "(dentro)" sumiu do texto do ponto e "fora" virou "bola fora".
+- **Barra de força do saque** na tela (`scripts/partida/barra_de_forca.gd`), no lugar do texto 3D na quadra do outro lado.
+- Avisos "Perfeito!"/"Bloqueio!" no mesmo lugar **empilham** em vez de se sobrepor. A ajuda embaixo cita mergulho e largada; a tela de Controles também.
 
 ### Personagens e animações
 - O jogo carrega um personagem do VRoid (`.vrm`) quando o arquivo existe em `personagens/<time>/<número>_<nome>.vrm`. Sem o arquivo, o atleta continua sendo uma cápsula. Testado com modelos de exemplo do VRoid.
@@ -110,7 +124,8 @@ Tudo abaixo está neste repositório. Segundo os registros de 09/11/2026, os **2
 - **Times e nomes**: os dados ainda usam os times inspirados em Haikyuu (Karasuno, Nekoma etc.). Isso serve só para jogar entre amigos; se o jogo for publicado, precisam virar times próprios. Todos ficam em `dados/times.json` e `dados/elenco.json` para facilitar a troca.
 - **Escala dos personagens**: os modelos de exemplo do VRoid são pequenos (~1,25 m) e não alcançam a bola; nos vídeos foram aumentados pra 1,75 m. Com os personagens de verdade, conferir altura e o giro (`GIRO_DO_PERSONAGEM`).
 - **Animações**: o Mixamo não tem animações de vôlei, então várias são adaptadas (de goleiro, por exemplo). Vale gravar mais lances no DeepMotion, como foi feito com a cortada.
-- **Ajuste fino**: velocidade da bola, janelas do tempo certo, força do saque e posição da câmera ainda são valores iniciais e precisam ser testados jogando.
+- **Ajuste fino**: velocidade da bola, janelas do tempo certo, força do saque, largura do bloqueio e o quanto a câmera acompanha a bola ainda são valores iniciais e precisam ser testados jogando. O robô (que acerta o tempo do bloqueio quase sempre) ainda bloqueia ou toca em quase metade das cortadas: vale olhar isso com gente de verdade.
+- **Cenas e menus** ainda são montados por código (`_criar_*`), sem `.tscn` com nós. Funciona, mas dificulta mexer no visual pelo editor.
 - **README**: a lista de testes e a seção "Próximos passos" do README estão um pouco desatualizadas; este documento é a referência atual.
 - **Organização dos branches**: o repositório não tem um branch `main`. O trabalho principal está em `claude/project-thread-o4s5hf`. Vale criar um `main` quando o jogo estiver estável.
 
@@ -123,7 +138,7 @@ Em ordem sugerida:
 1. **Hoje à noite (PC de casa):** instalar o Godot 4.7.2 e o VRoid Studio, abrir o projeto e fazer um **personagem piloto** (um atleta do time Brasil) para conferir o caminho completo VRoid → jogo.
 2. **Personagens:** Victor e o amigo modelam os atletas no VRoid e colocam os `.vrm` em `personagens/<time>/`.
 3. **Jogabilidade:** feita a base (tempo, mira, jogadas, leitura do bloqueio, defesa, mergulho, atributos, placar e impacto visual). Falta jogar com os amigos e ajustar.
-4. **Polimento da interface** (placar com efeito já feito). Com isso, a **partida rápida local fica completa** (meta do 1º mês, até 06/12/2026).
+4. **Polimento da interface** (placar com efeito, mensagens por metade, barra de força e transições já feitos). Com isso, a **partida rápida local fica completa** (meta do 1º mês, até 06/12/2026).
 5. **Modo Caos** com as cartas.
 6. **Online**: primeiro por IP, depois procurar partida.
 
@@ -152,11 +167,12 @@ Leia esta seção inteira antes de mexer no código.
 - **Autoloads** (em `project.godot`): `Teclas` (`scripts/entrada/teclas.gd`, cria as ações `p1_passe`, `p2_ataque` etc. de teclado e controle) e `Configuracao` (`scripts/menus/configuracao.gd`, guarda os times e o estádio escolhidos).
 - **`scripts/regras/`:** regras **puras**, sem nós nem gráfico, fáceis de testar: `placar`, `rodizio`, `escalacao`, `formacao`, `toques`, `trajetoria`, `escolha_ataque`, `tempo_do_toque`, `mira`, `atributos`. Regra nova vai aqui, com teste.
 - **`scripts/entrada/`:** teclado e controle viram **comandos**. A partida não sabe de onde o comando veio. É isso que vai permitir o online: basta criar outra fonte de comandos que venha da rede.
-- **`scripts/partida/partida.gd`:** o centro da partida (~1.550 linhas): monta quadra, times e câmeras, liga regras, IA, bloqueio, rodízio, faltas, placar e animações. É o arquivo mais arriscado de mexer; separe partes novas em scripts próprios (como foi feito com `bola.gd`, `anel_de_tempo.gd`, `mira_visual.gd`).
+- **`scripts/partida/partida.gd`:** o centro da partida (~1.900 linhas): monta quadra, times e câmeras, liga regras, IA, bloqueio, rodízio, faltas, placar e animações. É o arquivo mais arriscado de mexer; separe partes novas em scripts próprios (como foi feito com `bola.gd`, `anel_de_tempo.gd`, `mira_visual.gd`, `anel_do_controlado.gd`, `camera_da_partida.gd`, `barra_de_forca.gd`). Pedaços que se repetem já têm ajudantes: `_distancia_no_chao`, `_animador_de`, `_erro_aleatorio`, `_destino_na_quadra_do_outro`, `_mostrar_mensagem(texto, time)`.
+- **Bloqueio:** `_tipo_do_bloqueio` devolve `Bloqueio.NENHUM`, `DEVOLVE` ou `TOQUE`; a bola (`bola.gd`) usa isso pra voltar ou raspar e seguir. Botões apertados cedo ficam em `pedidos[time]` por `TEMPO_DO_PEDIDO`.
 - **`scripts/visual/`:** `visual_anime.gd` (materiais anime), `animador.gd` (animações dos personagens), `impacto.gd` (congelar e tremer a tela), `rastro.gd` (rastro da bola).
-- **`scripts/menus/`:** `estilo.gd` guarda cores e fontes de todos os menus; `selecao.gd` tem a lógica da seleção e `selecao_de_times.gd` desenha a tela.
+- **`scripts/menus/`:** `estilo.gd` guarda cores, fontes e peças de interface de todos os menus (inclusive `rotulo_com_contorno`, usado na partida); `selecao.gd` tem a lógica da seleção e `selecao_de_times.gd` desenha a tela; `cortina.gd` é a cortina preta das trocas de cena.
 - **`dados/*.json`:** tudo que é ajustável sem código (times, elenco, estádios, cartas), lido por `scripts/comum/dados.gd`. A escalação depende do campo `posicao` em `dados/elenco.json` (levantador, ponteiro, central, oposto): mantenha 1 levantador, 2 ponteiros, 2 centrais e 1 oposto por time.
-- **Câmera e visual:** ajustáveis no Inspetor do nó `Partida` em `cenas/partida.tscn` (tela dividida, altura, distância, foco, visual anime). Valores atuais: altura 14,5, distância 29,5, foco 1,5, abertura 27°.
+- **Câmera e visual:** ajustáveis no Inspetor do nó `Partida` em `cenas/partida.tscn` (tela dividida, altura, distância, foco, visual anime). Valores atuais: altura 14,5, distância 29,5, foco 1,5, abertura 27°. O quanto a câmera acompanha a bola fica nas constantes de `scripts/partida/camera_da_partida.gd`.
 
 ### Personagens (`.vrm`)
 - Caminho: `personagens/<id do time>/<número com 2 dígitos>_<nome>.vrm`, tudo minúsculo, sem acento nem espaço (ex.: `personagens/brasil/01_nome.vrm`). Sem o arquivo, o atleta vira cápsula.
@@ -176,7 +192,7 @@ Leia esta seção inteira antes de mexer no código.
 - Passo a passo completo em `animacoes/LEIA-ME.md`.
 
 ### Testes
-- São 21 arquivos em `testes/`. Rode todos, dentro da pasta do projeto:
+- São 23 arquivos em `testes/`. Rode todos, dentro da pasta do projeto:
 
 ```
 for t in testes/teste_*.gd; do godot --headless --script res://$t; done
@@ -184,7 +200,7 @@ for t in testes/teste_*.gd; do godot --headless --script res://$t; done
 
   Cada um precisa terminar com uma linha começando com `OK:`.
 - Teste de regra pura: script que estende `SceneTree` e roda no `_init`.
-- Teste que abre a partida (`teste_regras_na_partida.gd`, `teste_tempo_na_partida.gd`, `teste_mira_na_partida.gd`...): use `_initialize` e espere o **1º quadro**, porque a partida precisa dos autoloads. **Não** use `preload` da cena nesses testes; carregue com `load` dentro do `_initialize`.
+- Teste que abre a partida (`teste_regras_na_partida.gd`, `teste_tempo_na_partida.gd`, `teste_mira_na_partida.gd`, `teste_sensacao_na_partida.gd`, `teste_interface_na_partida.gd`...): use `_initialize` e espere o **1º quadro**, porque a partida precisa dos autoloads. **Não** use `preload` da cena nesses testes; carregue com `load` dentro do `_initialize`.
 - Depois de mexer em código: rode **todos** os testes e jogue (ou rode o robô) uma partida antes de subir. Atualize o README e este documento se algo mudar.
 
 ### Rodar o Godot num servidor Linux sem tela (agentes)
@@ -197,7 +213,7 @@ VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json xvfb-run -a -s "-screen 0 
 ```
 
 - Os testes rodam com `--headless`, sem precisar disso.
-- **Robô e prints:** copie o projeto pra uma pasta temporária, troque `run/main_scene` pra `res://cenas/partida.tscn`, registre um autoload que aperta ações (`InputEventAction`) e salva `get_viewport().get_texture().get_image()`. Não suba essas mudanças.
+- **Robô e prints:** copie o projeto pra uma pasta temporária e registre um autoload que joga. Pra ações dos jogadores (`p1_passe` etc.) use `Input.action_press`/`action_release` (o autoload roda antes da partida no mesmo quadro de física, então `is_action_just_pressed` enxerga); pra menus e pausa (`ui_accept`, `pausa`) use `InputEventAction` com `Input.parse_input_event`. Salve prints com `get_viewport().get_texture().get_image()`. Não suba essas mudanças. O robô de 09/11/2026 jogou pelos menus (menu → controles → seleção → partida → pausa → fim) e anotou tempos e motivos dos pontos num log.
 - A mensagem `ERR_CANT_OPEN ... audio_driver_alsa` só quer dizer que não há placa de som. Pode ignorar.
 - Na primeira abertura o Godot cria `.godot/`, que fica fora do Git. A importação dos `.fbx` e `.vrm` demora na primeira vez.
 

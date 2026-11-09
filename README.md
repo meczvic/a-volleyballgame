@@ -2,7 +2,7 @@
 
 Vôlei de quadra 6 contra 6 em 3D, estilo anime cel-shaded, para 2 jogadores (no mesmo PC ou online). Feito em Godot 4.
 
-Por enquanto o projeto tem: menu principal, seleção de times e estádio, a partida com 3 toques, bloqueio, rodízio, tela dividida e visual anime, pausa e tela de fim de jogo. Os atletas ainda são cápsulas no lugar dos personagens (6 por time, sem líbero). Quando o `.vrm` de um atleta existir em `personagens/`, o jogo usa ele no lugar da cápsula (veja `producao/LEIA-ME.md`), já animado: corre, para e faz cada lance (veja `animacoes/LEIA-ME.md`).
+Por enquanto o projeto tem: menu principal, seleção de times e estádio, a partida com 3 toques, bloqueio, rodízio, tela dividida e visual anime, pausa e tela de fim de jogo, com câmera que acompanha a bola, botão guardado quando você aperta um pouco cedo e toque no bloqueio. Os atletas ainda são cápsulas no lugar dos personagens (6 por time, sem líbero). Quando o `.vrm` de um atleta existir em `personagens/`, o jogo usa ele no lugar da cápsula (veja `producao/LEIA-ME.md`), já animado: corre, para e faz cada lance (veja `animacoes/LEIA-ME.md`).
 
 **Estado do projeto** (o que foi feito, o que falta e próximos passos): [docs/ESTADO_DO_PROJETO.md](docs/ESTADO_DO_PROJETO.md)
 
@@ -24,7 +24,8 @@ Na primeira vez o Godot cria a pasta `.godot/`. Ela é interna e não vai pro Gi
 | Ataque (cortada / saque forte) | K | 2 (numérico) | X |
 | Bloqueio | L | 3 (numérico) | Y |
 | Saque flutuante | I | 5 (numérico) | RB |
-| Mergulho (ainda sem efeito) | Espaço | 0 (numérico) | B |
+| Mergulho | Espaço | 0 (numérico) | B |
+| Largada | J no pulo da cortada | 1 (numérico) no pulo | A no pulo |
 | Pausa | Esc | Esc | Start |
 
 O 1º controle conectado é do Jogador 1, o 2º do Jogador 2. O direcional do controle também move.
@@ -48,7 +49,9 @@ Se os dois escolherem o mesmo time, o Jogador 2 joga com o uniforme reserva.
 4. **2º toque:** com o levantador, aperte **Passe** segurando uma direção pra escolher o atacante. As setas aparecem no chão (`< Ponta`, `^ Meio`, `> Oposto`, `v Fundo`). Sem direção, vai pro meio.
 5. **3º toque:** com o atacante, aperte **Ataque** com a bola alta pra cortar. Segurar esquerda ou direita mira a cortada. **Passe** no 3º toque só devolve a bola de graça.
 6. **Ataque** com a bola alta funciona em qualquer toque (por exemplo, o levantador pode atacar de surpresa).
-7. **Bloqueio:** quando o adversário levanta, os 3 atletas da rede sobem sozinhos e acompanham a bola. Aperte **Bloqueio** pra eles pularem; segurar esquerda ou direita desloca o bloqueio. Acertar o tempo do pulo devolve a cortada.
+7. **Bloqueio:** quando o adversário levanta, os 3 atletas da rede sobem sozinhos e acompanham a bola. Aperte **Bloqueio** pra eles pularem; segurar esquerda ou direita desloca o bloqueio. No alto do pulo e bem na frente da bola, o bloqueio **devolve** a cortada. Cedo ou tarde demais, ou só com a ponta da mão, a bola **raspa no bloqueio** e segue pro seu lado, mais devagar: aí a sua defesa tem que pegar (o toque no bloqueio não conta como toque).
+
+**Apertou cedo?** Se você aperta Passe ou Cortada com a bola ainda longe, o jogo guarda o botão por um instante e toca assim que der. Se a bola não chega, o anel embaixo do seu atleta pisca pra avisar que não deu.
 8. Bola no chão dentro da quadra: ponto pra quem mandou a bola. Fora: ponto pra quem não tocou por último. As outras faltas estão em **Regras do vôlei**, logo abaixo.
 
 **Mira:** no saque, **segure** Ataque (ou Flutuante) pra encher a força e **solte** pra sacar. Enquanto segura, a direção move o X vermelho na quadra do outro lado; o círculo mostra onde a bola pode cair. Mais força: bola mais baixa e rápida, mas o círculo cresce, e no máximo (vermelho forte) o risco de sair é grande. A força enche e esvazia, então o tempo de soltar importa. Na cortada, a direção na hora da batida escolhe o lugar: esquerda ou direita, e pra frente (bola funda) ou pra trás (bola curta). A mira aparece quando o levantamento está no ar.
@@ -73,7 +76,7 @@ Se os dois escolherem o mesmo time, o Jogador 2 joga com o uniforme reserva.
 - **Bloqueio:** o bloqueio cobre mais rede.
 - **Velocidade:** os atletas correm mais rápido.
 
-Os atletas que você não controla se posicionam sozinhos, e o time gira o **rodízio** quando recupera o saque. A tela é **dividida**: o Jogador 1 vê de trás do time dele na metade esquerda, o Jogador 2 na metade direita. "Cima" é sempre na direção da rede pra cada um. Pra voltar pra uma câmera só, abra `cenas/partida.tscn`, selecione o nó `Partida` e desmarque **Tela Dividida** no Inspetor (lá também dá pra ajustar a altura, a distância e o foco da câmera, e ligar ou desligar o **Visual Anime**: sombra "chapada" e contorno escuro nos atletas e na bola).
+Os atletas que você não controla se posicionam sozinhos, e o time gira o **rodízio** quando recupera o saque. A tela é **dividida**: o Jogador 1 vê de trás do time dele na metade esquerda, o Jogador 2 na metade direita. "Cima" é sempre na direção da rede pra cada um. A câmera fica parada atrás do time, mas vira de leve pra acompanhar a bola, como numa transmissão. As mensagens de cada time (saque, recepção, levantamento) aparecem na metade dele; as do ponto, no meio. Pra voltar pra uma câmera só, abra `cenas/partida.tscn`, selecione o nó `Partida` e desmarque **Tela Dividida** no Inspetor (lá também dá pra ajustar a altura, a distância e o foco da câmera, e ligar ou desligar o **Visual Anime**: sombra "chapada" e contorno escuro nos atletas e na bola).
 
 ### Regras do vôlei
 
