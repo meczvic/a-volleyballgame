@@ -2,7 +2,7 @@
 
 Vôlei de quadra 6 contra 6 em 3D, estilo anime cel-shaded, para 2 jogadores (no mesmo PC ou online). Feito em Godot 4.
 
-Por enquanto o projeto tem só a base: uma quadra de teste com cápsulas no lugar dos atletas, controles dos 2 jogadores e as regras do placar.
+Por enquanto o projeto tem a base: uma quadra de teste com cápsulas no lugar dos atletas, controles dos 2 jogadores, regras do placar e a bola com física, rede e marcador de queda.
 
 ## Como abrir
 
@@ -24,7 +24,16 @@ Na primeira vez o Godot cria a pasta `.godot/`. Ela é interna e não vai pro Gi
 | Saque flutuante | I | 5 (numérico) | RB |
 | Mergulho | Espaço | 0 (numérico) | B |
 
-O 1º controle conectado é do Jogador 1, o 2º do Jogador 2. Na cena de teste, o botão de ataque marca um ponto pro seu time, só pra ver o placar funcionando.
+O 1º controle conectado é do Jogador 1, o 2º do Jogador 2.
+
+### Como jogar a cena de teste
+
+1. Quem saca aperta **Ataque**. A bola vai pro outro lado.
+2. Um **anel amarelo** no chão mostra onde a bola vai cair, e o jogo passa o controle pro atleta mais perto dele (o atleta controlado tem um anel da cor do time).
+3. Corra até a bola e aperte **Passe** pra devolver, ou **Ataque** com a bola alta pra cortar.
+4. Bola no chão dentro da quadra: ponto pra quem mandou a bola. Fora: ponto pra quem não tocou por último.
+
+Ainda não tem 3 toques, levantador nem IA dos outros atletas: isso vem nas próximas fases. Por enquanto a câmera é só do lado do Jogador 1; a tela dividida vem depois.
 
 ## Pastas
 
@@ -43,16 +52,17 @@ No terminal, dentro da pasta do projeto:
 
 ```
 godot --headless --script res://testes/teste_placar.gd
+godot --headless --script res://testes/teste_trajetoria.gd
 ```
 
-Deve aparecer `OK: todos os testes do placar passaram.`
+Cada um deve terminar com uma linha começando com `OK:`.
 
 ## Próximos passos
 
 Seguindo as fases do documento de design:
 
 1. Aprender Godot (trilha de tutoriais no documento).
-2. Bola e quadra: física da bola, marcador de queda.
+2. ~~Bola e quadra: física da bola, marcador de queda.~~ Feito.
 3. Um time controlado: troca automática de atleta, passe, levantamento, cortada.
 4. IA de posicionamento dos 5 atletas sem controle.
 5. Partida completa local (MVP).
