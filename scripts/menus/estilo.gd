@@ -76,6 +76,19 @@ static func rotulo(texto: String, tamanho: int, cor: Color = TEXTO, titulo := fa
 	return novo
 
 
+## Texto da partida, com contorno escuro pra ler bem em cima da quadra.
+## "titulo" = fonte grossa e inclinada.
+static func rotulo_com_contorno(tamanho: int, titulo: bool, texto := "") -> Label:
+	var novo := Label.new()
+	novo.text = texto
+	novo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	novo.add_theme_font_override("font", FONTE_TITULO if titulo else FONTE_TEXTO)
+	novo.add_theme_font_size_override("font_size", tamanho)
+	novo.add_theme_color_override("font_outline_color", Color(0.05, 0.05, 0.07))
+	novo.add_theme_constant_override("outline_size", 6)
+	return novo
+
+
 ## Etiqueta colorida com texto centralizado (por exemplo "JOGADOR 1").
 static func etiqueta(texto: String, cor: Color, tamanho: int, cor_do_texto: Color = FUNDO) -> Label:
 	var nova := rotulo(texto, tamanho, cor_do_texto, true)

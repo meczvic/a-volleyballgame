@@ -64,8 +64,8 @@ const ATAQUES_LIBERADOS := {
 ## Cortada: força (quanto a bola sobe acima do ponto de contato, menos é
 ## mais forte), erro da mira (m) e profundidade mínima/máxima (m da rede).
 const CORTADA := {
-	Qualidade.PERFEITO: { "subida": 0.2, "erro_da_mira": 0.3, "fundo_min": 5.5, "fundo_max": 8.5 },
-	Qualidade.BOM: { "subida": 0.4, "erro_da_mira": 0.8, "fundo_min": 4.0, "fundo_max": 8.5 },
+	Qualidade.PERFEITO: { "subida": 0.12, "erro_da_mira": 0.3, "fundo_min": 4.5, "fundo_max": 8.5 },
+	Qualidade.BOM: { "subida": 0.3, "erro_da_mira": 0.8, "fundo_min": 4.0, "fundo_max": 8.5 },
 	Qualidade.RUIM: { "subida": 1.6, "erro_da_mira": 2.0, "fundo_min": 2.5, "fundo_max": 7.0 },
 }
 

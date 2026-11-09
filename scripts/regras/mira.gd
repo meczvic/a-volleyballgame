@@ -60,15 +60,17 @@ static func limitar(alvo: Vector2) -> Vector2:
 ## Altura máxima do saque: fraco sobe bastante (fácil de receber), forte
 ## vem baixo e rápido. O flutuante é sempre um pouco mais baixo.
 static func altura_do_saque(f: float, flutuante: bool) -> float:
-	var altura := lerpf(5.2, 3.0, clampf(f, 0.0, 1.0))
+	var altura := lerpf(5.6, 3.2, clampf(f, 0.0, 1.0))
 	return altura - (0.3 if flutuante else 0.0)
 
 
-## Erro do saque (m, raio): cresce com a força e salta no talo.
+## Erro do saque (m, raio): cresce com a força e salta no talo. Com força
+## alta, mesmo mirando no meio a bola pode sair.
 static func erro_do_saque(f: float) -> float:
-	var erro := lerpf(0.3, 1.0, clampf(f, 0.0, 1.0))
+	var erro := lerpf(0.3, 1.5, clampf(f, 0.0, 1.0))
 	if f >= FORCA_ARRISCADA:
-		erro += 1.0
+		# Grande o bastante pra bola poder sair mesmo mirando no meio da quadra.
+		erro += 2.2
 	return erro
 
 

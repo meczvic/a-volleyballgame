@@ -46,7 +46,7 @@ func mostrar(titulo: String, subtitulo: String, cor: Color) -> void:
 	_titulo.text = titulo
 	_subtitulo.text = subtitulo
 	var fundo := cor
-	fundo.a = 0.9
+	fundo.a = 0.97
 	_caixa.add_theme_stylebox_override("panel", Estilo.caixa(fundo, Estilo.INCLINACAO, 30.0, 6.0, 4, Color(1, 1, 1, 0.85)))
 	visible = true
 	var tela := get_viewport_rect().size

@@ -7,7 +7,10 @@ extends Node3D
 
 signal tocou_chao(posicao: Vector3)
 signal tocou_rede
+## Bloqueio no alto e na frente da bola: ela voltou pra quem atacou.
 signal bloqueada
+## A bola raspou no bloqueio e seguiu, mais devagar, pro lado de quem bloqueou.
+signal tocou_bloqueio
 ## A bola passou pro outro lado: por cima da rede ou por fora dela.
 ## "ponto" é onde ela cruzou a linha da rede (veja a regra das antenas na partida).
 signal cruzou_a_rede(ponto: Vector3)
@@ -17,6 +20,9 @@ const VisualAnime := preload("res://scripts/visual/visual_anime.gd")
 
 ## Um pouco maior que a bola real (0,105 m) pra enxergar bem de cima.
 const RAIO := 0.18
+## O desenho é maior ainda que o raio das regras, pra bola não sumir atrás
+## dos atletas do outro lado na câmera de longe.
+const RAIO_DO_DESENHO := 0.22
 const ALTURA_REDE := 2.43
 ## A rede passa 0,5 m pra fora de cada lateral da quadra.
 const LARGURA_REDE := 10.0
@@ -33,8 +39,9 @@ var _ima_ponto := Vector3.ZERO
 var _ima_peso := 0.0
 ## Onde a bola vai tocar o chão (válido enquanto está em voo).
 var ponto_previsto := Vector3.ZERO
-## Quem cuida do bloqueio: função(ponto_na_rede: Vector3, lado_destino: float) -> bool.
-## Devolve true se tem alguém pulando no lugar certo pra bloquear.
+## Quem cuida do bloqueio: função(ponto_na_rede: Vector3, lado_destino: float) -> int.
+## Devolve 0 (ninguém encosta), 1 (bloqueio devolve a bola) ou 2 (a bola
+## raspa no bloqueio e segue). Veja Bloqueio em partida.gd.
 var verificar_bloqueio := Callable()
 ## Visual anime (contorno escuro). Defina antes de colocar a bola na cena.
 var usar_visual_anime := true
@@ -47,8 +54,8 @@ var _sombra: MeshInstance3D
 
 func _ready() -> void:
 	var esfera := SphereMesh.new()
-	esfera.radius = RAIO
-	esfera.height = RAIO * 2.0
+	esfera.radius = RAIO_DO_DESENHO
+	esfera.height = RAIO_DO_DESENHO * 2.0
 	var visual := MeshInstance3D.new()
 	visual.mesh = esfera
 	var cor := Color("#F7F3E8")
@@ -157,13 +164,23 @@ func _voar(delta: float) -> void:
 			tocou_rede.emit()
 			return
 
-		# Acima da fita, mas com alguém bloqueando ali: volta pra quem atacou.
-		if na_largura_da_rede and verificar_bloqueio.is_valid() \
-				and verificar_bloqueio.call(cruzamento, signf(agora.z)):
+		# Acima da fita, mas com alguém bloqueando ali.
+		var bloqueio := 0
+		if na_largura_da_rede and verificar_bloqueio.is_valid():
+			bloqueio = int(verificar_bloqueio.call(cruzamento, signf(agora.z)))
+		if bloqueio == 1:
+			# Bloqueio em cheio: volta pra quem atacou.
 			var v := velocidade_atual()
 			var rebote := Vector3(v.x * 0.3, -absf(v.y) * 0.3 - 1.5, -v.z * 0.35)
 			_desviar(Vector3(cruzamento.x, cruzamento.y, lado_de_onde_veio * (RAIO + 0.3)), rebote)
 			bloqueada.emit()
+			return
+		if bloqueio == 2:
+			# Raspou: sobe um pouco e segue devagar pro lado de quem bloqueou.
+			var v := velocidade_atual()
+			var desvio := Vector3(v.x * 0.5, absf(v.y) * 0.4 + 2.0, v.z * 0.4)
+			_desviar(Vector3(cruzamento.x, cruzamento.y, -lado_de_onde_veio * (RAIO + 0.3)), desvio)
+			tocou_bloqueio.emit()
 			return
 
 		cruzou_a_rede.emit(cruzamento)

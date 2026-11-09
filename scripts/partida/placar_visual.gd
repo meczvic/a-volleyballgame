@@ -160,11 +160,6 @@ func _pintar(bolinha: Panel, cor: Color, borda: Color) -> void:
 
 
 func _rotulo(texto: String, tamanho: int, titulo: bool) -> Label:
-	var rotulo := Label.new()
-	rotulo.text = texto
-	rotulo.add_theme_font_override("font", Estilo.FONTE_TITULO if titulo else Estilo.FONTE_TEXTO)
-	rotulo.add_theme_font_size_override("font_size", tamanho)
-	rotulo.add_theme_color_override("font_outline_color", Color(0.05, 0.05, 0.07))
-	rotulo.add_theme_constant_override("outline_size", 6)
+	var rotulo := Estilo.rotulo_com_contorno(tamanho, titulo, texto)
 	rotulo.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	return rotulo

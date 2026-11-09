@@ -3,17 +3,17 @@ extends Node3D
 ## está rápida (cortada, saque forte). Fica no mundo (top_level), seguindo
 ## o nó "alvo".
 
-const QUANTIDADE := 14
+const QUANTIDADE := 18
 ## A cada quantos segundos guarda um ponto do caminho.
 const INTERVALO := 0.012
 ## Abaixo dessa velocidade (m/s) o rastro some.
-const VELOCIDADE_MINIMA := 11.0
+const VELOCIDADE_MINIMA := 8.0
 const COR := Color("#FFF4D6")
 
 ## Nó que o rastro segue (a bola).
 var alvo: Node3D
 ## Raio da primeira bolinha (a mais perto da bola).
-var raio := 0.16
+var raio := 0.2
 
 var _multimesh: MultiMesh
 var _pontos: Array[Vector3] = []
@@ -74,7 +74,7 @@ func _desenhar() -> void:
 			var fracao := 1.0 - float(i) / QUANTIDADE
 			var tamanho := raio * (0.35 + 0.65 * fracao)
 			_multimesh.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3.ONE * tamanho), _pontos[i]))
-			_multimesh.set_instance_color(i, Color(COR, 0.55 * fracao))
+			_multimesh.set_instance_color(i, Color(COR, 0.8 * fracao))
 		else:
 			_multimesh.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3.ZERO), Vector3.ZERO))
 
