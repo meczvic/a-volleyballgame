@@ -1,0 +1,4 @@
+{
+	"_sobre": "Status verificado de cada atleta, chave <time>/<nn>_<nome>. Só marcar depois de conferir de verdade (no VRoid, no PC de casa ou no Godot). Valores: pendente, em andamento, ok, ou uma frase curta. Campos: modelagem, vroid, godot, animacao, pendencias.",
+	"atletas": {}
+}

@@ -78,6 +78,9 @@ const FORMACAO := {
 const POSICAO_DO_SACADOR := Vector2(2.5, 10.0)
 ## Onde o passe deve chegar: perto da rede, um pouco à direita.
 const PONTO_DO_LEVANTADOR := Vector2(1.0, 1.0)
+## Giro do personagem .vrm pro time do Jogador 1 olhar pra rede (-z).
+## VRM 1.0 olha pra +z, por isso meia volta. Conferir com o primeiro personagem (Hinata).
+const GIRO_DO_PERSONAGEM := PI
 ## Erro máximo do passe, em metros.
 const ERRO_DO_PASSE := 0.6
 
@@ -615,6 +618,7 @@ func _com_uniforme_reserva(time: Dictionary) -> Dictionary:
 	var cores: Array = reserva["cores"]
 	if cores.size() >= 3:
 		reserva["cores"] = [cores[2], cores[0], cores[1]]
+		reserva["cores_libero"] = [cores[1], cores[2]]
 	return reserva
 
 
@@ -690,34 +694,24 @@ func _criar_rede() -> void:
 
 func _criar_atletas(time: int) -> void:
 	var dados_time: Dictionary = times_em_jogo[time]
-	var cor_uniforme := Color.from_string(str(dados_time["cores"][0]), Color.GRAY)
+	var id_time := str(dados_time["id"])
+	var elenco := Dados.elenco(id_time)
 	var cor_detalhe := Color.from_string(str(dados_time["cores"][1]), Color.WHITE)
 
 	for i in 6:
 		var atleta := Node3D.new()
-		atleta.name = "Time%d_%s_%d" % [time + 1, dados_time["id"], i + 1]
+		atleta.name = "Time%d_%s_%d" % [time + 1, id_time, i + 1]
 		atleta.position = _no_mundo(time, FORMACAO[rodizios[time].posicao_de(i)])
 		atleta.set_meta("tempo_do_pulo", -1.0)
+		var dados_atleta: Dictionary = elenco[i] if i < elenco.size() else {}
+		atleta.set_meta("dados", dados_atleta)
 
-		var corpo := MeshInstance3D.new()
-		var capsula := CapsuleMesh.new()
-		capsula.radius = 0.35
-		capsula.height = 1.8
-		corpo.mesh = capsula
-		corpo.material_override = _material_do_atleta(cor_uniforme, 0.03)
-		corpo.position.y = 0.9
-		atleta.add_child(corpo)
-
-		# Faixa no peito com a cor de detalhe do uniforme.
-		var faixa := MeshInstance3D.new()
-		var anel_do_peito := CylinderMesh.new()
-		anel_do_peito.top_radius = 0.36
-		anel_do_peito.bottom_radius = 0.36
-		anel_do_peito.height = 0.12
-		faixa.mesh = anel_do_peito
-		faixa.material_override = _material_do_atleta(cor_detalhe, 0.0)
-		faixa.position.y = 1.15
-		atleta.add_child(faixa)
+		var personagem := _carregar_personagem(id_time, dados_atleta)
+		if personagem:
+			personagem.rotation.y = GIRO_DO_PERSONAGEM if time == 0 else GIRO_DO_PERSONAGEM + PI
+			atleta.add_child(personagem)
+		else:
+			_criar_capsula(atleta, _cores_do_atleta(dados_time, dados_atleta))
 		add_child(atleta)
 		atletas[time].append(atleta)
 
@@ -734,6 +728,54 @@ func _criar_atletas(time: int) -> void:
 	add_child(anel)
 	aneis[time] = anel
 	controlados[time] = atletas[time][rodizios[time].atleta_na(6)]
+
+
+## Personagem do VRoid (.vrm) do atleta, ou null se o arquivo ainda não existe
+## (ou se o plugin VRM não está instalado). Aí o atleta continua sendo cápsula.
+func _carregar_personagem(id_time: String, dados_atleta: Dictionary) -> Node3D:
+	if dados_atleta.is_empty():
+		return null
+	var caminho := Dados.caminho_do_personagem(id_time, dados_atleta)
+	if not ResourceLoader.exists(caminho):
+		return null
+	var cena = load(caminho)
+	if not cena is PackedScene:
+		push_warning("O arquivo %s não virou uma cena (o plugin VRM está ativo?)." % caminho)
+		return null
+	return cena.instantiate() as Node3D
+
+
+## Cores [camisa, detalhe] do atleta: o líbero usa cores_libero, os outros o uniforme do time.
+func _cores_do_atleta(dados_time: Dictionary, dados_atleta: Dictionary) -> Array:
+	var cores: Array = dados_time["cores"]
+	if dados_atleta.get("libero", false) and dados_time.has("cores_libero"):
+		cores = dados_time["cores_libero"]
+	return [
+		Color.from_string(str(cores[0]), Color.GRAY),
+		Color.from_string(str(cores[1]), Color.WHITE),
+	]
+
+
+## Cápsula de teste (1,8 m) com uma faixa no peito na cor de detalhe.
+func _criar_capsula(atleta: Node3D, cores: Array) -> void:
+	var corpo := MeshInstance3D.new()
+	var capsula := CapsuleMesh.new()
+	capsula.radius = 0.35
+	capsula.height = 1.8
+	corpo.mesh = capsula
+	corpo.material_override = _material_do_atleta(cores[0], 0.03)
+	corpo.position.y = 0.9
+	atleta.add_child(corpo)
+
+	var faixa := MeshInstance3D.new()
+	var anel_do_peito := CylinderMesh.new()
+	anel_do_peito.top_radius = 0.36
+	anel_do_peito.bottom_radius = 0.36
+	anel_do_peito.height = 0.12
+	faixa.mesh = anel_do_peito
+	faixa.material_override = _material_do_atleta(cores[1], 0.0)
+	faixa.position.y = 1.15
+	atleta.add_child(faixa)
 
 
 ## Cria as marcas no chão (círculo + seta + nome) dos 4 ataques do time.

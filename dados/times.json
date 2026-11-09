@@ -1,5 +1,5 @@
 {
-	"_sobre": "Atributos de 1 a 5, cada time soma 17. Cores do uniforme: [principal, detalhe, terceira]; quando os dois jogadores escolhem o mesmo time, o segundo usa o uniforme reserva (terceira cor com detalhe da principal). A cor_do_menu pinta o cartão e as barras na seleção de times. Nomes ficam aqui para serem trocados facilmente se o jogo for publicado.",
+	"_sobre": "Atributos de 1 a 5, cada time soma 17. Cores do uniforme: [principal, detalhe, terceira]; quando os dois jogadores escolhem o mesmo time, o segundo usa o uniforme reserva (terceira cor com detalhe da principal). O líbero usa cores_libero [camisa, detalhe]: as duas primeiras cores invertidas, pra destacar dos colegas como manda a regra. A cor_do_menu pinta o cartão e as barras na seleção de times. Nomes ficam aqui para serem trocados facilmente se o jogo for publicado.",
 	"times": [
 		{
 			"id": "karasuno",
@@ -8,6 +8,7 @@
 			"atributos": { "ataque": 4, "defesa": 2, "saque": 3, "bloqueio": 3, "velocidade": 5 },
 			"jogada": "Ataque rápido do meio",
 			"cores": ["#1F1F24", "#F28C28", "#FFFFFF"],
+			"cores_libero": ["#F28C28", "#1F1F24"],
 			"cor_do_menu": "#F28C28"
 		},
 		{
@@ -17,6 +18,7 @@
 			"atributos": { "ataque": 4, "defesa": 3, "saque": 5, "bloqueio": 2, "velocidade": 3 },
 			"jogada": "Saque com salto do levantador",
 			"cores": ["#F2F4F3", "#2E9E93", "#1E3A5C"],
+			"cores_libero": ["#2E9E93", "#F2F4F3"],
 			"cor_do_menu": "#2E9E93"
 		},
 		{
@@ -26,6 +28,7 @@
 			"atributos": { "ataque": 5, "defesa": 3, "saque": 4, "bloqueio": 3, "velocidade": 2 },
 			"jogada": "Cortada do ás canhoto",
 			"cores": ["#6A3E9E", "#FFFFFF", "#C9B4EC"],
+			"cores_libero": ["#FFFFFF", "#6A3E9E"],
 			"cor_do_menu": "#8155C7"
 		},
 		{
@@ -35,6 +38,7 @@
 			"atributos": { "ataque": 2, "defesa": 5, "saque": 3, "bloqueio": 3, "velocidade": 4 },
 			"jogada": "Recepção perfeita em sequência",
 			"cores": ["#C62A31", "#FFFFFF", "#1A1A1E"],
+			"cores_libero": ["#FFFFFF", "#C62A31"],
 			"cor_do_menu": "#D3343B"
 		},
 		{
@@ -44,6 +48,7 @@
 			"atributos": { "ataque": 5, "defesa": 3, "saque": 3, "bloqueio": 3, "velocidade": 3 },
 			"jogada": "Ás que fica mais forte quando faz ponto",
 			"cores": ["#2F333B", "#E3B23C", "#FFFFFF"],
+			"cores_libero": ["#E3B23C", "#2F333B"],
 			"cor_do_menu": "#E3B23C"
 		},
 		{
@@ -53,6 +58,7 @@
 			"atributos": { "ataque": 4, "defesa": 3, "saque": 4, "bloqueio": 3, "velocidade": 3 },
 			"jogada": "Jogada copiada do adversário",
 			"cores": ["#ECEDEF", "#23252B", "#D9582B"],
+			"cores_libero": ["#23252B", "#ECEDEF"],
 			"cor_do_menu": "#9AA3AE"
 		},
 		{
@@ -62,6 +68,7 @@
 			"atributos": { "ataque": 4, "defesa": 3, "saque": 3, "bloqueio": 3, "velocidade": 4 },
 			"jogada": "Ataque pelas pontas com pipe",
 			"cores": ["#F6CF1B", "#13924A", "#1D4E9E"],
+			"cores_libero": ["#13924A", "#F6CF1B"],
 			"cor_do_menu": "#18A957"
 		}
 	]
