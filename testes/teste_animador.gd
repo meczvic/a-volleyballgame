@@ -25,6 +25,8 @@ func _init() -> void:
 			var trecho: Array = Animador.TRECHOS[nome]
 			_verificar(trecho[0] < trecho[1] and trecho[1] <= animacao.length + 0.01,
 				"o trecho de %s cabe na animação (%.2f s)" % [nome, animacao.length])
+			_verificar(trecho.size() == 2 or (trecho.size() == 3 and trecho[2] > 0.0),
+				"o trecho de %s é [início, fim] ou [início, fim, velocidade]" % nome)
 		_teste_no_lugar(nome, animacao)
 
 	# Carregar de novo não refaz o trabalho.

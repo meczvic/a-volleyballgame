@@ -15,7 +15,7 @@ const ARQUIVOS := {
 	"lateral_direita": "res://animacoes/lateral_direita.fbx",
 	"manchete": "res://animacoes/manchete.fbx",
 	"levantamento": "res://animacoes/levantamento.tres",
-	"cortada": "res://animacoes/cortada.tres",
+	"cortada": "res://animacoes/cortada_deepmotion.tres",
 	"bloqueio": "res://animacoes/bloqueio.fbx",
 	"saque": "res://animacoes/saque.fbx",
 	"mergulho": "res://animacoes/mergulho.fbx",
@@ -24,13 +24,16 @@ const ARQUIVOS := {
 }
 const EM_LOOP := ["parado", "correr", "lateral_esquerda", "lateral_direita", "comemoracao_palmas", "comemoracao_torcida"]
 
-## Trecho de cada lance que vale (em segundos da animação): o resto é preparo
-## ou volta. Medido num modelo do VRoid. Na cortada e no bloqueio, o alto do
-## pulo da animação (0,85 s) cai junto com o alto do pulo do jogo (0,3 s depois).
+## Trecho de cada lance que vale: [início, fim] em segundos da animação, e
+## opcionalmente a velocidade (1 = normal). O resto é preparo ou volta.
+## Medido num modelo do VRoid. O jogo faz o pulo em 0,6 s, com o alto em 0,3 s:
+## - bloqueio: o alto do pulo da animação (0,85 s) cai no alto do pulo do jogo;
+## - cortada (do DeepMotion): começa já no ar com o braço armado (1,1 s), a
+##   batida (1,5 s) cai no alto do pulo e a queda (2,0 s) perto do fim do pulo.
 const TRECHOS := {
 	"manchete": [0.2, 1.2],
 	"levantamento": [0.2, 1.0],
-	"cortada": [0.55, 1.6],
+	"cortada": [1.1, 2.0, 1.3],
 	"bloqueio": [0.55, 1.6],
 	"saque": [1.0, 2.0],
 	"mergulho": [0.3, 2.8],
@@ -88,8 +91,9 @@ func tocar(lance: String) -> void:
 	var trecho: Array = TRECHOS.get(lance, [0.0, _player.get_animation(nome).length])
 	_player.play(nome, MISTURA)
 	_player.seek(trecho[0], true)
-	_player.speed_scale = 1.0
-	_tempo_do_lance = trecho[1] - trecho[0]
+	var velocidade: float = trecho[2] if trecho.size() > 2 else 1.0
+	_player.speed_scale = velocidade
+	_tempo_do_lance = (trecho[1] - trecho[0]) / velocidade
 	_em_loop = ""
 	_personagem.rotation.y = giro_da_rede
 

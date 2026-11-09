@@ -21,7 +21,9 @@ serve pros 42 atletas.
 
 | `cortada.tres` | (montada) | Pulo do bloqueio + braço do saque batendo no alto do pulo |
 | `levantamento.tres` | (montada) | Pernas paradas + tronco e braços do bloqueio subindo acima da cabeça |
+| `cortada_deepmotion.tres` | (DeepMotion, gravada pelo Victor) | **Cortada usada no jogo.** Sai de `deepmotion/cortada.fbx` |
 
+A `cortada.tres` montada ficou guardada, mas o jogo usa a do DeepMotion.
 As duas montadas saem de `ferramentas/animacoes_combinadas.gd` (rodar de novo se mudar
 `bloqueio.fbx`, `saque.fbx` ou `parado.fbx`). O Mixamo não tem nada de vôlei, então todas
 essas são adaptadas de outros esportes.
@@ -45,6 +47,20 @@ essas são adaptadas de outros esportes.
 
 Pra ajustar um lance (ex.: a cortada começa cedo demais), mude os números em `TRECHOS`.
 `defesa_lateral` e `comemoracao_vitoria` ainda não estão em uso.
+
+## Animações do DeepMotion
+
+O DeepMotion transforma um vídeo em animação. O `.fbx` dele usa outros nomes de osso
+(`hips_JNT`, `l_arm_JNT`...), então fica em `animacoes/deepmotion/` com o próprio
+`deepmotion_bone_map.tres` (mesmos passos do Mixamo abaixo, trocando o Bone Map, o nome
+da animação no `.import` e com Embedded Image Handling = Discard, pra não extrair a
+textura do boneco do DeepMotion). Depois, `ferramentas/converte_deepmotion.gd` gira
+meia volta (o DeepMotion entrega o atleta de costas) e salva o `.tres` usado no jogo:
+
+    godot --headless --script res://ferramentas/converte_deepmotion.gd
+
+O quadril da cortada sobe ~1,4 m no vídeo e não volta (erro comum de captura por
+vídeo); como na cortada o pulo é do jogo, o animador trava essa altura e não aparece.
 
 ## Como adicionar uma animação nova
 
