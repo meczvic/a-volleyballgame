@@ -31,7 +31,7 @@ Material de apoio (privado, no Claude): [documento de design](https://claude.ai/
 Tudo abaixo está neste repositório. Em 09/11/2026, os **23 testes automáticos** (pasta `testes/`) passam no Godot 4.7.2, e um robô jogou partidas completas (3 sets) dos dois lados, passando pelos menus, pausa e fim de jogo, sem erro.
 
 ### Menus e telas
-- Menu principal (Partida rápida, Controles, Sair; Modo Caos e Online aparecem como "em breve").
+- Menu principal (Partida rápida, Modo Caos, Controles, Sair; Online aparece como "em breve").
 - Seleção de times com cursor de cada jogador e atributos do time na tela; escolha entre **4 estádios** (Ginásio Japonês, Arena Nacional, Arena Brasileira, Arena Neon).
 - Pausa (continuar, recomeçar, trocar times, menu) e tela de fim de jogo.
 - Uniforme reserva quando os dois escolhem o mesmo time.
@@ -95,7 +95,7 @@ Feito depois de um robô jogar partidas inteiras e listar o que parecia estranho
 - `dados/times.json`: times, atributos (1 a 5, somando 17) e cores.
 - `dados/elenco.json`: atletas de cada time (nome, número, posição).
 - `dados/estadios.json`: cores da quadra, do fundo, das placas e da luz.
-- `dados/cartas.json`: cartas do Modo Caos (ainda não usadas no jogo).
+- `dados/cartas.json`: cartas do Modo Caos (usadas no Modo Caos, só as de `IMPLEMENTADAS` em `scripts/regras/cartas.gd`).
 
 ---
 
@@ -110,7 +110,7 @@ Feito depois de um robô jogar partidas inteiras e listar o que parecia estranho
 - A base está feita. Falta testar com gente de verdade e ajustar números (janelas de tempo, alcance, força).
 
 ### Modos
-- **Modo Caos**: as cartas estão em `dados/cartas.json`, mas o modo não existe ainda. Falta a tela de escolha na pausa depois do ponto (limite de 1 minuto, senão a carta é sorteada) e o efeito de cada carta.
+- **Modo Caos (primeira versão, 10/11/2026, ainda NÃO testada no Godot):** menu → seleção → partida com cartas. Os dois jogadores escolhem 1 de 3 cartas antes do 1º saque e a cada 3 pontos (`pontos_por_escolha` em `dados/cartas.json`), com limite de 60 s (depois sorteia). Regras em `scripts/regras/cartas.gd`, tela em `scripts/partida/escolha_de_cartas.gd`, efeitos em `scripts/regras/atributos.gd` (`time["modificadores"]`). Só 8 das 21 cartas têm efeito e entram no sorteio (lista `IMPLEMENTADAS`): Mãos Firmes, Pés Leves, Tapete Vermelho, Saque Firme, Levantador Preciso, Muro, Ataque Rápido e Troca de Lugar; os bônus de conjunto de 2 cartas (ataque, defesa, saque, velocidade) e o de 3 de velocidade também valem. Falta o efeito das outras 13, balancear e testar com gente. Testes novos: `teste_cartas.gd` e `teste_cartas_na_partida.gd`.
 - **Online**: ainda não foi construído. O código já separa a entrada (teclado/controle) da lógica do jogo pra facilitar isso. Plano: um computador é o "dono" da partida, primeiro conexão por IP, depois procurar partida.
 
 ### Arte e som

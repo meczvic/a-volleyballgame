@@ -8,7 +8,7 @@ extends Node
 var times := ["karasuno", "nekoma"]
 ## Id do estádio (veja dados/estadios.json).
 var estadio := "ginasio_japones"
-## "rapida" por enquanto. O Modo Caos vem depois.
+## "rapida" (partida normal) ou "caos" (com cartas, veja scripts/regras/cartas.gd).
 var modo := "rapida"
 
 

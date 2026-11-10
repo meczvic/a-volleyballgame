@@ -52,6 +52,11 @@ func _partida_rapida() -> void:
 	_trocar_de_cena(CENA_SELECAO)
 
 
+func _modo_caos() -> void:
+	Configuracao.modo = "caos"
+	_trocar_de_cena(CENA_SELECAO)
+
+
 func _mostrar_controles() -> void:
 	_tela_de_controles.visible = true
 	_botao_voltar.grab_focus()
@@ -136,7 +141,7 @@ func _criar_botoes() -> void:
 	# [texto, ação]. Sem ação = ainda não existe (aparece apagado).
 	var opcoes := [
 		["PARTIDA RÁPIDA", _partida_rapida],
-		["MODO CAOS  ·  EM BREVE", Callable()],
+		["MODO CAOS", _modo_caos],
 		["ONLINE  ·  EM BREVE", Callable()],
 		["CONTROLES", _mostrar_controles],
 		["SAIR", _sair],
