@@ -8,6 +8,7 @@ const ARQUIVO_TIMES := "res://dados/times.json"
 const ARQUIVO_ESTADIOS := "res://dados/estadios.json"
 const ARQUIVO_ELENCO := "res://dados/elenco.json"
 const ARQUIVO_APARENCIA := "res://dados/aparencia.json"
+const ARQUIVO_CARTAS := "res://dados/cartas.json"
 const PASTA_PERSONAGENS := "res://personagens"
 const GeradorDeAtleta := preload("res://scripts/visual/gerador_de_atleta.gd")
 
@@ -18,6 +19,11 @@ static func times() -> Array:
 
 static func estadios() -> Array:
 	return _ler(ARQUIVO_ESTADIOS).get("estadios", [])
+
+
+## Cartas e conjuntos do Modo Caos (dados/cartas.json).
+static func cartas() -> Dictionary:
+	return _ler(ARQUIVO_CARTAS)
 
 
 ## Os 6 atletas do time, na ordem do rodízio inicial (vazio se o time não tiver elenco).

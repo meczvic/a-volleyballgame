@@ -67,6 +67,8 @@ const AnelDoControlado := preload("res://scripts/partida/anel_do_controlado.gd")
 const CameraDaPartida := preload("res://scripts/partida/camera_da_partida.gd")
 const Cortina := preload("res://scripts/menus/cortina.gd")
 const BarraDeForca := preload("res://scripts/partida/barra_de_forca.gd")
+const Cartas := preload("res://scripts/regras/cartas.gd")
+const EscolhaDeCartas := preload("res://scripts/partida/escolha_de_cartas.gd")
 const Qualidade := TempoDoToque.Qualidade
 
 enum Estado { SAQUE, RALLY, PONTO, FIM }
@@ -280,6 +282,17 @@ var alvo_do_saque := Mira.ALVO_INICIAL
 ## (vazio = nenhuma). Ver _comecar_cortada.
 var cortadas: Array = [{}, {}]
 
+## Modo Caos: cartas de cada time (ids), a última que cada um pegou, os dados
+## das cartas, quantos pontos já saíram e a tela de escolha (null = fechada).
+var modo_caos := false
+var cartas_dos_times: Array = [[], []]
+var ultima_carta: Array = ["", ""]
+var dados_das_cartas: Dictionary = {}
+var pontos_jogados := 0
+var escolha_de_cartas = null
+## Texto das cartas de cada time, no canto da quadra (só no Modo Caos).
+var rotulos_de_cartas: Array[Label] = []
+
 
 func _ready() -> void:
 	_carregar_escolhas()
@@ -359,6 +372,9 @@ func _ready() -> void:
 	_conectar_placar()
 	_preparar_saque()
 	cortina.abrir()
+	# Modo Caos: os dois escolhem a primeira carta antes do 1º saque.
+	if modo_caos:
+		_abrir_escolha_de_cartas(Callable())
 
 
 func _physics_process(delta: float) -> void:
@@ -369,7 +385,7 @@ func _physics_process(delta: float) -> void:
 		var em_jogo: bool = estado == Estado.SAQUE or estado == Estado.RALLY
 		if not cortadas[time].is_empty():
 			_atualizar_cortada(time, delta)
-		elif em_jogo and not sacando and not _esta_no_chao(controlado):
+		elif em_jogo and not _escolhendo_cartas() and not sacando and not _esta_no_chao(controlado):
 			_mover(controlado, time, _direcao_no_mundo(time), delta)
 			if estado == Estado.SAQUE:
 				_manter_na_ordem(time, controlado)
@@ -397,7 +413,8 @@ func _physics_process(delta: float) -> void:
 		var sacador := controlados[placar.quem_saca]
 		var frente := -_lado(placar.quem_saca) * 0.5
 		bola.segurar_em(sacador.position + Vector3(0.0, 2.2, frente))
-		_contar_tempo_do_saque(delta)
+		if not _escolhendo_cartas():
+			_contar_tempo_do_saque(delta)
 
 
 func _mover(atleta: Node3D, time: int, direcao: Vector2, delta: float) -> void:
@@ -646,6 +663,8 @@ func _animador_de(atleta: Node3D):
 # --- Comandos ---
 
 func _ao_receber_comando(jogador: int, tipo: String) -> void:
+	if _escolhendo_cartas():
+		return
 	var time := jogador - 1
 	match estado:
 		Estado.SAQUE:
@@ -695,6 +714,8 @@ func _atender_pedido(time: int) -> void:
 
 
 func _ao_soltar_botao(jogador: int, tipo: String) -> void:
+	if _escolhendo_cartas():
+		return
 	var time := jogador - 1
 	if estado != Estado.SAQUE or time != placar.quem_saca or carga_do_saque < 0.0:
 		return
@@ -807,6 +828,8 @@ func _levantar(time: int, qualidade: Qualidade) -> void:
 	var erro := _erro_aleatorio(TempoDoToque.ERRO_DO_LEVANTAMENTO[qualidade])
 	var alvo: Vector3 = alvos_de_ataque[time][escolhido] + Vector3(erro.x, 0.0, erro.y)
 	var altura := TempoDoToque.altura_do_levantamento(passe, qualidade)
+	if Atributos.levantamento_rapido(times_em_jogo[time]):
+		altura = TempoDoToque.ALTURA_DO_LEVANTAMENTO_RAPIDO
 	bola.lancar(alvo, altura)
 	_ao_lancar_bola()
 	var nome: String = ATAQUES[escolhido]["nome"]
@@ -1047,6 +1070,8 @@ func _tipo_do_toque(numero: int, atacando: bool) -> String:
 
 ## Qualidade do toque feito agora, pelo tempo do botão.
 func _qualidade_do_toque(tipo: String, time: int) -> Qualidade:
+	if tipo == "levantamento" and Atributos.levantamento_perfeito(times_em_jogo[time]):
+		return Qualidade.PERFEITO
 	var erro := TempoDoToque.erro_do_botao(tipo, bola.position, bola.velocidade_atual(), _atraso_do_toque(tipo))
 	return TempoDoToque.qualidade(erro, Atributos.escala_da_janela(times_em_jogo[time], tipo))
 
@@ -1115,7 +1140,7 @@ func _mergulhar(time: int) -> void:
 	if atleta == null or _esta_no_chao(atleta) or _esta_pulando(atleta):
 		return
 	_animar(atleta, "mergulho")
-	atleta.set_meta("no_chao_ate", _relogio + TEMPO_NO_CHAO)
+	atleta.set_meta("no_chao_ate", _relogio + TEMPO_NO_CHAO * Atributos.escala_do_tempo_no_chao(times_em_jogo[time]))
 	var alcance := ALCANCE_DO_MERGULHO + Atributos.alcance_extra_do_mergulho(times_em_jogo[time])
 	var ate_a_bola := Vector2(bola.position.x - atleta.position.x, bola.position.z - atleta.position.z)
 	var alcanca: bool = bola.em_voo and bola.position.y <= ALTURA_MAXIMA_DO_MERGULHO \
@@ -1304,7 +1329,86 @@ func _depois_do_ponto() -> void:
 			"%d sets a %d" % [placar.sets[vencedor], placar.sets[1 - vencedor]]
 		)
 	elif estado == Estado.PONTO:
-		_preparar_saque()
+		pontos_jogados += 1
+		if modo_caos and Cartas.deve_escolher(dados_das_cartas, pontos_jogados):
+			_abrir_escolha_de_cartas(_preparar_saque)
+		else:
+			_preparar_saque()
+
+
+# --- Modo Caos ---
+
+## A tela de escolha está aberta? (Os botões do jogo ficam parados.)
+func _escolhendo_cartas() -> bool:
+	return escolha_de_cartas != null and is_instance_valid(escolha_de_cartas)
+
+
+## Sorteia as cartas de cada jogador e abre a tela de escolha. Quando os dois
+## escolhem, as cartas valem e "depois" é chamado (por exemplo, preparar o saque).
+func _abrir_escolha_de_cartas(depois: Callable) -> void:
+	var opcoes: Array = []
+	var nomes_das_maos: Array = []
+	for time in 2:
+		var ids := Cartas.sortear(dados_das_cartas, cartas_dos_times[time], RandomNumberGenerator.new(),
+			Cartas.cartas_por_escolha(dados_das_cartas), ultima_carta[1 - time])
+		var cartas: Array = []
+		for id in ids:
+			cartas.append(Cartas.por_id(dados_das_cartas, id))
+		opcoes.append(cartas)
+		nomes_das_maos.append(_nomes_das_cartas(time))
+	# Sem carta nova pra oferecer (já pegaram todas): segue o jogo.
+	if (opcoes[0] as Array).is_empty() or (opcoes[1] as Array).is_empty():
+		if depois.is_valid():
+			depois.call()
+		return
+	escolha_de_cartas = EscolhaDeCartas.new()
+	escolha_de_cartas.name = "EscolhaDeCartas"
+	add_child(escolha_de_cartas)
+	escolha_de_cartas.configurar(
+		opcoes,
+		[times_em_jogo[0]["nome"], times_em_jogo[1]["nome"]],
+		[_cor_do_time(0), _cor_do_time(1)],
+		cartas_dos_times, nomes_das_maos,
+		Cartas.tempo_limite(dados_das_cartas))
+	escolha_de_cartas.terminou.connect(func(escolhas: Array) -> void:
+		escolha_de_cartas = null
+		_ao_escolher_cartas(escolhas)
+		if depois.is_valid():
+			depois.call())
+
+
+## As duas cartas escolhidas entram na mão de cada time. As duas escolhas
+## valem ao mesmo tempo (a Troca de Lugar copia a carta que o outro já tinha).
+func _ao_escolher_cartas(escolhas: Array) -> void:
+	var anteriores: Array = ultima_carta.duplicate()
+	for time in 2:
+		var id := str(escolhas[time])
+		var mao_antes: Array = cartas_dos_times[time]
+		cartas_dos_times[time] = Cartas.adicionar(mao_antes, id, str(anteriores[1 - time]))
+		# A última carta é a que entrou na mão (a cópia, no caso da Troca de Lugar).
+		if cartas_dos_times[time].size() > mao_antes.size():
+			ultima_carta[time] = cartas_dos_times[time][cartas_dos_times[time].size() - 1]
+	_aplicar_cartas()
+
+
+## Passa o efeito das cartas de cada time pro jogo (time["modificadores"]).
+func _aplicar_cartas() -> void:
+	for time in 2:
+		times_em_jogo[time]["modificadores"] = Cartas.modificadores(dados_das_cartas, cartas_dos_times[time])
+		if rotulos_de_cartas.size() > time:
+			var nomes := _nomes_das_cartas(time)
+			var texto := ", ".join(PackedStringArray(nomes)) if not nomes.is_empty() else ""
+			var bonus := Cartas.bonus_ativos(dados_das_cartas, cartas_dos_times[time])
+			if not bonus.is_empty():
+				texto += "\n" + " · ".join(PackedStringArray(bonus))
+			rotulos_de_cartas[time].text = texto
+
+
+func _nomes_das_cartas(time: int) -> Array:
+	var nomes: Array = []
+	for id in cartas_dos_times[time]:
+		nomes.append(str(Cartas.por_id(dados_das_cartas, id).get("nome", id)))
+	return nomes
 
 
 func _preparar_saque() -> void:
@@ -1491,6 +1595,9 @@ func _carregar_escolhas() -> void:
 	if times_em_jogo[0]["id"] == times_em_jogo[1]["id"]:
 		times_em_jogo[1] = _com_uniforme_reserva(times_em_jogo[1])
 	estadio = Dados.por_id(Dados.estadios(), Configuracao.estadio)
+	modo_caos = Configuracao.modo == "caos"
+	if modo_caos:
+		dados_das_cartas = Dados.cartas()
 
 
 ## Uniforme reserva: a 3ª cor vira a principal, e a principal vira o detalhe.
@@ -1801,6 +1908,15 @@ func _criar_interface() -> void:
 		barra.name = "BarraDeForca%d" % time
 		centro_da_barra.add_child(barra)
 		barras_de_forca[time] = barra
+
+		# Modo Caos: as cartas do time, no canto da metade dele.
+		if modo_caos:
+			var cartas_do_time := _rotulo_da_interface(18, false)
+			cartas_do_time.position = Vector2(20.0 + 800.0 * time, 700.0)
+			cartas_do_time.size = Vector2(360.0, 50.0)
+			cartas_do_time.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			camada.add_child(cartas_do_time)
+			rotulos_de_cartas.append(cartas_do_time)
 
 	faixa = FaixaDePonto.new()
 	camada.add_child(faixa)
