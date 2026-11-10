@@ -84,7 +84,8 @@ Feito depois de um robô jogar partidas inteiras e listar o que parecia estranho
 - Avisos "Perfeito!"/"Bloqueio!" no mesmo lugar **empilham** em vez de se sobrepor. A ajuda embaixo cita mergulho e largada; a tela de Controles também.
 
 ### Personagens e animações
-- O jogo carrega um personagem do VRoid (`.vrm`) quando o arquivo existe em `personagens/<time>/<número>_<nome>.vrm`. Sem o arquivo, o atleta continua sendo uma cápsula. Testado com modelos de exemplo do VRoid.
+- O jogo carrega um personagem do VRoid (`.vrm`) quando o arquivo existe em `personagens/<time>/<número>_<nome>.vrm`. Sem o arquivo, usa o **personagem gerado por código** (`scripts/visual/gerador_de_atleta.gd`, 10/11/2026): malha, esqueleto humanoide e pesos feitos no próprio Godot a partir de `dados/aparencia.json` (altura, porte, pele, cabelo, uniforme com número). Só vira cápsula se não houver nem `.vrm` nem entrada em `aparencia.json`. Os 42 atletas do elenco têm entrada e passam no `teste_elenco_em_quadra.gd`.
+- Ferramentas: `ferramentas/capturas.gd` (folhas de contato e vistas de cada atleta, renderizadas pelo jogo) e `ferramentas/robo.gd` (robô que joga a partida sozinho, grava vídeo, prints e mede o tempo por quadro).
 - Plugin VRM para Godot já incluído em `addons/`.
 - **Animações** no esqueleto comum dos personagens (`animacoes/`): parado, correr, deslocamento lateral, defesa lateral, manchete, bloqueio, saque, mergulho e 3 comemorações, vindas do **Mixamo**; levantamento e cortada montados à mão; e a **cortada gravada pelo Victor no DeepMotion**, que é a cortada usada no jogo.
 - `scripts/visual/animador.gd` escolhe a animação pelo movimento e toca a de cada lance.
@@ -101,9 +102,9 @@ Feito depois de um robô jogar partidas inteiras e listar o que parecia estranho
 ## 3. O que falta fazer
 
 ### Personagens (Victor e amigo)
-- **Nenhum personagem real foi colocado ainda.** Hoje os atletas aparecem como cápsulas.
-- Os personagens dos times inspirados em Haikyuu serão **modelados pelo Victor e por um amigo no VRoid**, por conta própria. O Claude não cria nem prepara esses personagens; ele cuida do motor, do caminho VRoid → Godot (uniformes, animações, testes) e de conteúdo original, como o **time Brasil**.
-- Basta exportar cada `.vrm` para `personagens/<time>/` com o nome certo que o jogo usa sozinho.
+- Desde 10/11/2026 os 42 atletas aparecem como **personagens gerados por código** (humanoides estilizados, cel-shaded, diferenciados por altura, porte, pele, cabelo e uniforme). Não são retratos: a aparência vem de `dados/aparencia.json`, que o Victor pode editar.
+- Quem quiser um modelo mais detalhado exporta o `.vrm` do VRoid para `personagens/<time>/` com o nome certo: o jogo passa a usar o VRM no lugar do gerado, sem mexer em código.
+- Falta o Victor **avaliar a aparência** dos gerados em partida e dizer o que ajustar (cores, cabelos, porte) em `dados/aparencia.json`.
 
 ### Jogabilidade e interface
 - A base está feita. Falta testar com gente de verdade e ajustar números (janelas de tempo, alcance, força).
@@ -153,7 +154,7 @@ Leia esta seção inteira antes de mexer no código.
 - **Quem é o dono:** o Victor nunca tinha usado uma engine antes deste projeto. Explique as coisas em linguagem simples, sem jargão, e diga o que ele precisa fazer no Godot passo a passo.
 - **Tempo:** ~3h por dia, à noite e no fim de semana. O PC do **trabalho** dele não pode receber instalações; Godot e VRoid ficam no **PC de casa**.
 - **Peça ok antes** de qualquer coisa difícil de desfazer: instalar programas no PC dele (por exemplo o VRoid MCP Bridge, um projeto não oficial que mexe no VRoid e na configuração do Claude), apagar arquivos, mudar o histórico do Git, publicar algo.
-- **Limite de conteúdo:** agentes de IA **não criam nem preparam personagens ou times de Haikyuu** (modelos, fichas, uniformes, nomes novos). O Victor e um amigo fazem esses personagens no VRoid por conta própria. Os agentes cuidam do motor, do caminho VRoid → Godot, das animações, dos testes e de conteúdo **original** (como o time Brasil, com nomes fictícios). Não apague o que já existe nos dados; só não acrescente.
+- **Limite de conteúdo (atualizado em 10/11/2026 a pedido do Victor):** os 42 atletas dos dados são feitos pelo gerador de personagens do jogo, a partir das fichas (altura, porte, cores, estilo de cabelo); são humanoides estilizados, não retratos. Modelos detalhados (VRoid) continuam por conta do Victor e do amigo. Não apague o que já existe nos dados.
 - **Seja preciso:** só diga que algo funciona depois de rodar os testes ou o jogo.
 
 ### Branches e PRs
@@ -174,8 +175,11 @@ Leia esta seção inteira antes de mexer no código.
 - **`dados/*.json`:** tudo que é ajustável sem código (times, elenco, estádios, cartas), lido por `scripts/comum/dados.gd`. A escalação depende do campo `posicao` em `dados/elenco.json` (levantador, ponteiro, central, oposto): mantenha 1 levantador, 2 ponteiros, 2 centrais e 1 oposto por time.
 - **Câmera e visual:** ajustáveis no Inspetor do nó `Partida` em `cenas/partida.tscn` (tela dividida, altura, distância, foco, visual anime). Valores atuais: altura 14,5, distância 29,5, foco 1,5, abertura 27°. O quanto a câmera acompanha a bola fica nas constantes de `scripts/partida/camera_da_partida.gd`.
 
-### Personagens (`.vrm`)
-- Caminho: `personagens/<id do time>/<número com 2 dígitos>_<nome>.vrm`, tudo minúsculo, sem acento nem espaço (ex.: `personagens/brasil/01_nome.vrm`). Sem o arquivo, o atleta vira cápsula.
+### Personagens (`.vrm` ou gerados)
+- Ordem que a partida usa (`Dados.carregar_personagem`): `.vrm` se existir → gerado por código se tiver entrada em `dados/aparencia.json` → cápsula.
+- Caminho do VRM: `personagens/<id do time>/<número com 2 dígitos>_<nome>.vrm`, tudo minúsculo, sem acento nem espaço (ex.: `personagens/brasil/01_nome.vrm`).
+- **Gerador** (`scripts/visual/gerador_de_atleta.gd`): monta no Godot a malha (tubos, esfera da cabeça, cabelo por estilo, uniforme, joelheiras, tênis e número na camisa), o esqueleto `GeneralSkeleton` com as rotações do `SkeletonProfileHumanoid` (as mesmas que o Mixamo e o DeepMotion usam) e os pesos. Cada atleta leva ~20 ms pra gerar e tem ~2,7 mil vértices. Os ajustes por atleta ficam em `dados/aparencia.json` (campo `_sobre` explica cada chave); os números são texturas em `personagens/numeros/` (saem de `ferramentas/uniformes.py`).
+- Capturas renderizadas pelo jogo: `godot --path . --script res://ferramentas/capturas.gd -- folha=karasuno` (ou `atleta=karasuno/10_hinata`, ou `todos`); precisa de tela (ou xvfb, veja abaixo). Saída em `producao/capturas/<time>/`.
 - Plugin VRM **2.6.1** (AzPepoze) em `addons/vrm` e `addons/mtoon`. Ele **não funciona no Godot 4.3**; por isso o projeto usa o 4.7.2.
 - Importação: Bone Rename Humanoid e esqueleto `GeneralSkeleton` (já configurado em `project.godot`), pra que todas as animações sirvam em todos os atletas.
 - `GIRO_DO_PERSONAGEM = PI` em `partida.gd` faz o modelo olhar pra rede. Conferir com o primeiro personagem real.
@@ -192,7 +196,7 @@ Leia esta seção inteira antes de mexer no código.
 - Passo a passo completo em `animacoes/LEIA-ME.md`.
 
 ### Testes
-- São 23 arquivos em `testes/`. Rode todos, dentro da pasta do projeto:
+- São 24 arquivos em `testes/` (`teste_elenco_em_quadra.gd` confere os 42 atletas: malha com pesos, esqueleto, trilhas das animações e pose que se mexe). Rode todos, dentro da pasta do projeto:
 
 ```
 for t in testes/teste_*.gd; do godot --headless --script res://$t; done
@@ -213,7 +217,14 @@ VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json xvfb-run -a -s "-screen 0 
 ```
 
 - Os testes rodam com `--headless`, sem precisar disso.
-- **Robô e prints:** copie o projeto pra uma pasta temporária e registre um autoload que joga. Pra ações dos jogadores (`p1_passe` etc.) use `Input.action_press`/`action_release` (o autoload roda antes da partida no mesmo quadro de física, então `is_action_just_pressed` enxerga); pra menus e pausa (`ui_accept`, `pausa`) use `InputEventAction` com `Input.parse_input_event`. Salve prints com `get_viewport().get_texture().get_image()`. Não suba essas mudanças. O robô de 09/11/2026 jogou pelos menus (menu → controles → seleção → partida → pausa → fim) e anotou tempos e motivos dos pontos num log.
+- **Robô:** `ferramentas/robo.gd` joga a partida sozinho apertando as ações `p1_*`/`p2_*` (saque, passe, levantamento, cortada, bloqueio, erro sorteado). Exemplos:
+
+```
+godot --headless --path . --script res://ferramentas/robo.gd -- times=karasuno,nekoma segundos=300
+VK_ICD_FILENAMES=... xvfb-run -a -s "-screen 0 1600x900x24" godot --rendering-driver vulkan --path . --write-movie partida.avi --fixed-fps 30 --script res://ferramentas/robo.gd -- times=brasil,brasil estadio=arena_brasileira segundos=60 prints=/tmp/prints
+```
+
+  Opções: `estadio=`, `saque=0|1`, `erro=0..1`, `prints=<pasta>` (um PNG por segundo), `closeup=<pasta>` (recortes ampliados do atleta do J1 nos lances). No fim imprime placar, lances e o **tempo médio por quadro**. Detalhe que custou tempo: soltar e apertar a mesma ação no mesmo quadro não conta como `is_action_just_pressed`; o robô aperta num quadro e solta no seguinte. Pra menus e pausa (`ui_accept`, `pausa`) use `InputEventAction` com `Input.parse_input_event`.
 - A mensagem `ERR_CANT_OPEN ... audio_driver_alsa` só quer dizer que não há placa de som. Pode ignorar.
 - Na primeira abertura o Godot cria `.godot/`, que fica fora do Git. A importação dos `.fbx` e `.vrm` demora na primeira vez.
 

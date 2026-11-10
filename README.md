@@ -2,7 +2,7 @@
 
 Vôlei de quadra 6 contra 6 em 3D, estilo anime cel-shaded, para 2 jogadores (no mesmo PC ou online). Feito em Godot 4.
 
-Por enquanto o projeto tem: menu principal, seleção de times e estádio, a partida com 3 toques, bloqueio, rodízio, tela dividida e visual anime, pausa e tela de fim de jogo, com câmera que acompanha a bola, botão guardado quando você aperta um pouco cedo e toque no bloqueio. Os atletas ainda são cápsulas no lugar dos personagens (6 por time, sem líbero). Quando o `.vrm` de um atleta existir em `personagens/`, o jogo usa ele no lugar da cápsula (veja `producao/LEIA-ME.md`), já animado: corre, para e faz cada lance (veja `animacoes/LEIA-ME.md`).
+Por enquanto o projeto tem: menu principal, seleção de times e estádio, a partida com 3 toques, bloqueio, rodízio, tela dividida e visual anime, pausa e tela de fim de jogo, com câmera que acompanha a bola, botão guardado quando você aperta um pouco cedo e toque no bloqueio. Os 42 atletas (6 por time, sem líbero) são personagens gerados pelo próprio jogo a partir de `dados/aparencia.json`, já animados: correm, param e fazem cada lance (veja `animacoes/LEIA-ME.md`). Quando o `.vrm` de um atleta existir em `personagens/`, o jogo usa ele no lugar do gerado (veja `producao/LEIA-ME.md`).
 
 **Estado do projeto** (o que foi feito, o que falta e próximos passos): [docs/ESTADO_DO_PROJETO.md](docs/ESTADO_DO_PROJETO.md)
 
@@ -146,6 +146,6 @@ Seguindo as fases do documento de design:
 2. ~~Bola e quadra: física da bola, marcador de queda.~~ Feito.
 3. ~~Um time controlado: troca automática de atleta, passe, levantamento, cortada.~~ Feito.
 4. ~~IA de posicionamento dos 5 atletas sem controle.~~ Feito (com bloqueio e rodízio).
-5. Partida completa local (MVP): ~~menus, seleção de times e estádios~~ feito. Falta trocar as cápsulas pelos personagens (VRoid, passo a passo no [guia](https://claude.ai/artifact/NitRJ4DP8oGWkKQJLS1k6A)) e o placar com efeito.
+5. Partida completa local (MVP): ~~menus, seleção de times e estádios~~ feito. Personagens gerados por código já em quadra; modelos VRoid são opcionais (passo a passo no [guia](https://claude.ai/artifact/NitRJ4DP8oGWkKQJLS1k6A)).
 
 Os nomes e times inspirados em Haikyuu são só pra jogar entre amigos. Se um dia o jogo for publicado, eles precisam virar times próprios, por isso ficam todos em `dados/times.json`.
