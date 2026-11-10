@@ -1,4 +1,257 @@
 {
-	"_sobre": "Status verificado de cada atleta, chave <time>/<nn>_<nome>. Só marcar depois de conferir de verdade (no VRoid, no PC de casa ou no Godot). Valores: pendente, em andamento, ok, ou uma frase curta. Campos: modelagem, vroid, godot, animacao, pendencias.",
-	"atletas": {}
+ "_sobre": "Status verificado de cada atleta, chave <time>/<nn>_<nome>. Só marcar depois de conferir de verdade (teste do elenco em quadra, partida com o robô ou com gente, ou importação de VRM no Godot). Campos: gerado, importado (só VRM), animado, em_partida, pendencias. Valores: ok, pendente, ou uma frase curta.",
+ "atletas": {
+  "karasuno/09_kageyama": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "karasuno/03_azumane": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "karasuno/11_tsukishima": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "karasuno/01_sawamura": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "karasuno/10_hinata": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "karasuno/04_nishinoya": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "nekoma/05_kenma": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "nekoma/04_yamamoto": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "nekoma/01_kuroo": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "nekoma/02_kai": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "nekoma/11_lev": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "nekoma/03_yaku": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "aoba_johsai/01_oikawa": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "aoba_johsai/04_iwaizumi": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "aoba_johsai/02_matsukawa": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "aoba_johsai/03_hanamaki": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "aoba_johsai/12_kindaichi": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "aoba_johsai/07_watari": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "shiratorizawa/10_shirabu": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "shiratorizawa/01_ushijima": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "shiratorizawa/05_tendo": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "shiratorizawa/04_ohira": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "shiratorizawa/08_goshiki": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "shiratorizawa/14_yamagata": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "fukurodani/05_akaashi": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "fukurodani/04_bokuto": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "fukurodani/02_washio": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "fukurodani/07_konoha": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "fukurodani/03_sarukui": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "fukurodani/11_komi": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "inarizaki/07_atsumu": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "inarizaki/04_aran": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "inarizaki/10_suna": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "inarizaki/01_kita": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "inarizaki/11_osamu": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "inarizaki/09_akagi": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "brasil/07_ventura": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "brasil/10_rocha": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "brasil/13_paim": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "brasil/04_azevedo": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "brasil/08_barreto": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  },
+  "brasil/01_takahashi": {
+   "gerado": "ok",
+   "animado": "ok",
+   "em_partida": "ok",
+   "pendencias": "gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser"
+  }
+ }
 }

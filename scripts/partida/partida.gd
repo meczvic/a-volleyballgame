@@ -1591,7 +1591,7 @@ func _criar_atletas(time: int) -> void:
 		var dados_atleta: Dictionary = elenco[i] if i < elenco.size() else {}
 		atleta.set_meta("dados", dados_atleta)
 
-		var personagem := _carregar_personagem(id_time, dados_atleta)
+		var personagem := Dados.carregar_personagem(dados_time, dados_atleta)
 		if personagem:
 			atleta.add_child(personagem)
 			var animador := Animador.new()
@@ -1613,19 +1613,8 @@ func _criar_atletas(time: int) -> void:
 	controlados[time] = atletas[time][rodizios[time].atleta_na(6)]
 
 
-## Personagem do VRoid (.vrm) do atleta, ou null se o arquivo ainda não existe
-## (ou se o plugin VRM não está instalado). Aí o atleta continua sendo cápsula.
-func _carregar_personagem(id_time: String, dados_atleta: Dictionary) -> Node3D:
-	if dados_atleta.is_empty():
-		return null
-	var caminho := Dados.caminho_do_personagem(id_time, dados_atleta)
-	if not ResourceLoader.exists(caminho):
-		return null
-	var cena = load(caminho)
-	if not cena is PackedScene:
-		push_warning("O arquivo %s não virou uma cena (o plugin VRM está ativo?)." % caminho)
-		return null
-	return cena.instantiate() as Node3D
+## O personagem do atleta vem de Dados.carregar_personagem: .vrm do VRoid se
+## existir, senão o gerado por código (dados/aparencia.json), senão cápsula.
 
 
 ## Cores [camisa, detalhe] do atleta: o uniforme do time (não tem líbero).

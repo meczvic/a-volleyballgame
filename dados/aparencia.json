@@ -1,0 +1,61 @@
+{
+	"_sobre": "Aparência de cada atleta pro gerador de personagens (scripts/visual/gerador_de_atleta.gd). Chave <time> / <nn>_<arquivo>, igual a dados/elenco.json. Quando existe personagens/<time>/<nn>_<arquivo>.vrm, o VRM vale mais que isto. Campos: altura (m); porte (magro, esguio, atletico, forte, grande); pele (clara, clara_quente, bem_clara, bronzeada, morena_clara, morena, parda, negra ou #RRGGBB); rosto (oval, redondo, fino, quadrado); olhos (#RRGGBB); formato_dos_olhos (grandes, pequenos); palpebras (normais, caidos, estreitos, bravos); sobrancelha (fina, normal, grossa); expressao (sorrindo, neutro, serio); cabelo: cor, estilo (raspado, curto, liso, franja, tigela, espetado, bagunçado, ondulado, cacheado, topete, moicano, coque, black_power, trancas, undercut, repartido, comprido, para_tras), cor2 (segunda cor), pontas (pontas na cor2), raizes (raiz na cor2), mecha_frente (mecha na cor2), lado_da_franja (-1 a 1), mechas (quantidade), comprimento (m), volume; extras: oculos, faixa, bracadeira, barbicha; cor_da_faixa (#RRGGBB). Alturas vêm das fichas em producao/fichas/ (ainda a conferir).",
+	"times": {
+		"karasuno": {
+			"09_kageyama": { "altura": 1.81, "porte": "atletico", "pele": "clara", "rosto": "oval", "olhos": "#1F3A8A", "palpebras": "estreitos", "sobrancelha": "normal", "expressao": "serio", "cabelo": { "cor": "#1B1E26", "estilo": "franja" } },
+			"03_azumane": { "altura": 1.85, "porte": "grande", "pele": "clara_quente", "rosto": "quadrado", "olhos": "#4A3222", "palpebras": "caidos", "sobrancelha": "normal", "expressao": "neutro", "cabelo": { "cor": "#3B2A20", "estilo": "coque" }, "extras": ["barbicha"] },
+			"11_tsukishima": { "altura": 1.88, "porte": "esguio", "pele": "clara", "rosto": "fino", "olhos": "#C9A227", "palpebras": "estreitos", "sobrancelha": "fina", "expressao": "neutro", "cabelo": { "cor": "#E6C86E", "estilo": "ondulado", "volume": 0.16 }, "extras": ["oculos"] },
+			"01_sawamura": { "altura": 1.77, "porte": "forte", "pele": "morena_clara", "rosto": "quadrado", "olhos": "#3A2A1E", "sobrancelha": "grossa", "expressao": "neutro", "cabelo": { "cor": "#2A211C", "estilo": "curto", "volume": 0.07 } },
+			"10_hinata": { "altura": 1.63, "porte": "magro", "pele": "clara_quente", "rosto": "redondo", "olhos": "#C98A3A", "formato_dos_olhos": "grandes", "sobrancelha": "fina", "expressao": "sorrindo", "cabelo": { "cor": "#F07E2A", "estilo": "espetado", "mechas": 18, "comprimento": 0.08 } },
+			"04_nishinoya": { "altura": 1.59, "porte": "atletico", "pele": "clara_quente", "rosto": "redondo", "olhos": "#8A5A2A", "formato_dos_olhos": "grandes", "sobrancelha": "normal", "expressao": "sorrindo", "cabelo": { "cor": "#1E1E22", "estilo": "topete", "comprimento": 0.1, "cor2": "#E8C55A", "pontas": "sim" } }
+		},
+		"nekoma": {
+			"05_kenma": { "altura": 1.69, "porte": "magro", "pele": "clara", "rosto": "oval", "olhos": "#D9A84A", "palpebras": "caidos", "sobrancelha": "fina", "expressao": "serio", "cabelo": { "cor": "#D9B45A", "estilo": "comprido", "cor2": "#2A2522", "raizes": "sim" } },
+			"04_yamamoto": { "altura": 1.78, "porte": "forte", "pele": "clara", "rosto": "quadrado", "olhos": "#4A3222", "palpebras": "bravos", "sobrancelha": "grossa", "expressao": "serio", "cabelo": { "cor": "#3A2A22", "estilo": "moicano", "cor2": "#5E4A3C" } },
+			"01_kuroo": { "altura": 1.88, "porte": "atletico", "pele": "clara", "rosto": "fino", "olhos": "#C9A227", "palpebras": "estreitos", "sobrancelha": "normal", "expressao": "sorrindo", "cabelo": { "cor": "#1B1B20", "estilo": "bagunçado", "lado_da_franja": 1.0, "mechas": 12, "comprimento": 0.09 } },
+			"02_kai": { "altura": 1.80, "porte": "atletico", "pele": "morena_clara", "rosto": "oval", "olhos": "#3A2A1E", "palpebras": "caidos", "sobrancelha": "normal", "expressao": "neutro", "cabelo": { "cor": "#1E1C1E", "estilo": "raspado" } },
+			"11_lev": { "altura": 1.94, "porte": "esguio", "pele": "bem_clara", "rosto": "fino", "olhos": "#3FA66B", "formato_dos_olhos": "grandes", "sobrancelha": "fina", "expressao": "sorrindo", "cabelo": { "cor": "#C9CDD3", "estilo": "liso" } },
+			"03_yaku": { "altura": 1.65, "porte": "atletico", "pele": "clara", "rosto": "oval", "olhos": "#8A5A2A", "sobrancelha": "normal", "expressao": "neutro", "cabelo": { "cor": "#A97A52", "estilo": "liso" } }
+		},
+		"aoba_johsai": {
+			"01_oikawa": { "altura": 1.84, "porte": "atletico", "pele": "clara", "rosto": "oval", "olhos": "#8A5A2A", "sobrancelha": "normal", "expressao": "sorrindo", "cabelo": { "cor": "#6B4A34", "estilo": "ondulado", "lado_da_franja": 0.6 } },
+			"04_iwaizumi": { "altura": 1.79, "porte": "forte", "pele": "morena_clara", "rosto": "quadrado", "olhos": "#4F5A2A", "palpebras": "bravos", "sobrancelha": "grossa", "expressao": "serio", "cabelo": { "cor": "#1F1D1D", "estilo": "espetado", "mechas": 14, "comprimento": 0.05 } },
+			"02_matsukawa": { "altura": 1.88, "porte": "forte", "pele": "morena_clara", "rosto": "oval", "olhos": "#2A2222", "palpebras": "caidos", "sobrancelha": "grossa", "expressao": "neutro", "cabelo": { "cor": "#2B2422", "estilo": "cacheado" } },
+			"03_hanamaki": { "altura": 1.85, "porte": "atletico", "pele": "clara", "rosto": "oval", "olhos": "#6A4A32", "sobrancelha": "fina", "expressao": "neutro", "cabelo": { "cor": "#D69A8A", "estilo": "topete", "comprimento": 0.06 } },
+			"12_kindaichi": { "altura": 1.90, "porte": "esguio", "pele": "clara", "rosto": "fino", "olhos": "#2A2222", "sobrancelha": "normal", "expressao": "serio", "cabelo": { "cor": "#1C1B1F", "estilo": "topete", "comprimento": 0.14 } },
+			"07_watari": { "altura": 1.72, "porte": "atletico", "pele": "clara", "rosto": "redondo", "olhos": "#2A2222", "sobrancelha": "normal", "expressao": "neutro", "cabelo": { "cor": "#2A2523", "estilo": "raspado" } }
+		},
+		"shiratorizawa": {
+			"10_shirabu": { "altura": 1.74, "porte": "magro", "pele": "clara", "rosto": "oval", "olhos": "#6A4A32", "palpebras": "estreitos", "sobrancelha": "fina", "expressao": "serio", "cabelo": { "cor": "#6B4A36", "estilo": "franja" } },
+			"01_ushijima": { "altura": 1.90, "porte": "grande", "pele": "bronzeada", "rosto": "quadrado", "olhos": "#4F5A2A", "palpebras": "estreitos", "sobrancelha": "grossa", "expressao": "serio", "cabelo": { "cor": "#4B4436", "estilo": "curto" } },
+			"05_tendo": { "altura": 1.88, "porte": "esguio", "pele": "clara", "rosto": "fino", "olhos": "#C2312C", "formato_dos_olhos": "grandes", "sobrancelha": "fina", "expressao": "sorrindo", "cabelo": { "cor": "#C2312C", "estilo": "espetado", "mechas": 20, "comprimento": 0.11 } },
+			"04_ohira": { "altura": 1.86, "porte": "forte", "pele": "morena_clara", "rosto": "quadrado", "olhos": "#2A2222", "sobrancelha": "normal", "expressao": "neutro", "cabelo": { "cor": "#232122", "estilo": "raspado" } },
+			"08_goshiki": { "altura": 1.81, "porte": "atletico", "pele": "clara", "rosto": "oval", "olhos": "#2A2222", "palpebras": "bravos", "sobrancelha": "normal", "expressao": "serio", "cabelo": { "cor": "#202022", "estilo": "tigela" } },
+			"14_yamagata": { "altura": 1.70, "porte": "atletico", "pele": "clara", "rosto": "oval", "olhos": "#2A2222", "sobrancelha": "normal", "expressao": "neutro", "cabelo": { "cor": "#2B2421", "estilo": "para_tras" } }
+		},
+		"fukurodani": {
+			"05_akaashi": { "altura": 1.82, "porte": "esguio", "pele": "clara", "rosto": "oval", "olhos": "#2F7F8A", "palpebras": "caidos", "sobrancelha": "fina", "expressao": "neutro", "cabelo": { "cor": "#1E1F26", "estilo": "cacheado", "volume": 0.16 } },
+			"04_bokuto": { "altura": 1.85, "porte": "forte", "pele": "clara", "rosto": "oval", "olhos": "#D9A84A", "formato_dos_olhos": "grandes", "sobrancelha": "normal", "expressao": "sorrindo", "cabelo": { "cor": "#D8D8D8", "estilo": "espetado", "cor2": "#1E1E1E", "pontas": "sim", "mechas": 14, "comprimento": 0.11 } },
+			"02_washio": { "altura": 1.84, "porte": "forte", "pele": "morena_clara", "rosto": "quadrado", "olhos": "#2A2222", "palpebras": "bravos", "sobrancelha": "grossa", "expressao": "serio", "cabelo": { "cor": "#232022", "estilo": "curto" } },
+			"07_konoha": { "altura": 1.80, "porte": "magro", "pele": "clara", "rosto": "oval", "olhos": "#2A2222", "sobrancelha": "fina", "expressao": "neutro", "cabelo": { "cor": "#D9C590", "estilo": "liso", "lado_da_franja": 0.7 } },
+			"03_sarukui": { "altura": 1.77, "porte": "atletico", "pele": "clara", "rosto": "redondo", "olhos": "#2A2222", "formato_dos_olhos": "pequenos", "sobrancelha": "normal", "expressao": "sorrindo", "cabelo": { "cor": "#2A2220", "estilo": "curto" } },
+			"11_komi": { "altura": 1.67, "porte": "atletico", "pele": "clara", "rosto": "redondo", "olhos": "#2A2222", "sobrancelha": "normal", "expressao": "sorrindo", "cabelo": { "cor": "#7A5A3A", "estilo": "repartido" } }
+		},
+		"inarizaki": {
+			"07_atsumu": { "altura": 1.84, "porte": "atletico", "pele": "clara", "rosto": "oval", "olhos": "#6A4A32", "sobrancelha": "normal", "expressao": "sorrindo", "cabelo": { "cor": "#E3C35C", "estilo": "repartido", "lado_da_franja": 0.6, "cor2": "#3A2E22", "raizes": "sim" } },
+			"04_aran": { "altura": 1.84, "porte": "forte", "pele": "morena", "rosto": "quadrado", "olhos": "#2A2222", "sobrancelha": "grossa", "expressao": "serio", "cabelo": { "cor": "#1E1D20", "estilo": "raspado" } },
+			"10_suna": { "altura": 1.85, "porte": "esguio", "pele": "clara", "rosto": "fino", "olhos": "#5F7F6A", "palpebras": "estreitos", "sobrancelha": "fina", "expressao": "serio", "cabelo": { "cor": "#2D2622", "estilo": "liso" } },
+			"01_kita": { "altura": 1.75, "porte": "atletico", "pele": "clara", "rosto": "oval", "olhos": "#C9A227", "sobrancelha": "normal", "expressao": "neutro", "cabelo": { "cor": "#E2E2E2", "estilo": "curto", "cor2": "#1E1E1E", "pontas": "sim" } },
+			"11_osamu": { "altura": 1.84, "porte": "atletico", "pele": "clara", "rosto": "oval", "olhos": "#6A4A32", "sobrancelha": "normal", "expressao": "neutro", "cabelo": { "cor": "#8F8F98", "estilo": "repartido", "lado_da_franja": -0.6 } },
+			"09_akagi": { "altura": 1.70, "porte": "forte", "pele": "clara", "rosto": "redondo", "olhos": "#2A2222", "sobrancelha": "normal", "expressao": "sorrindo", "cabelo": { "cor": "#4A3A2C", "estilo": "espetado", "mechas": 12, "comprimento": 0.05 } }
+		},
+		"brasil": {
+			"07_ventura": { "altura": 1.86, "porte": "esguio", "pele": "#B98262", "rosto": "oval", "olhos": "#3A2A1E", "sobrancelha": "normal", "expressao": "neutro", "cabelo": { "cor": "#1B1714", "estilo": "cacheado", "volume": 0.14 } },
+			"10_rocha": { "altura": 1.92, "porte": "forte", "pele": "#6E4A33", "rosto": "quadrado", "olhos": "#2A1A12", "palpebras": "bravos", "sobrancelha": "grossa", "expressao": "serio", "cabelo": { "cor": "#16120F", "estilo": "black_power" }, "extras": ["faixa"], "cor_da_faixa": "#13924A" },
+			"13_paim": { "altura": 2.04, "porte": "esguio", "pele": "#9C6B4E", "rosto": "fino", "olhos": "#4A3222", "sobrancelha": "normal", "expressao": "neutro", "cabelo": { "cor": "#1A1512", "estilo": "trancas" } },
+			"04_azevedo": { "altura": 1.94, "porte": "atletico", "pele": "#D2A07E", "rosto": "oval", "olhos": "#3FA66B", "sobrancelha": "normal", "expressao": "sorrindo", "cabelo": { "cor": "#5A3E2B", "estilo": "comprido", "volume": 0.18 }, "extras": ["bracadeira"] },
+			"08_barreto": { "altura": 2.01, "porte": "grande", "pele": "#F0D2BC", "rosto": "quadrado", "olhos": "#5AA6D6", "sobrancelha": "normal", "expressao": "neutro", "cabelo": { "cor": "#EDE3B8", "estilo": "undercut", "cor2": "#7A6A4A" } },
+			"01_takahashi": { "altura": 1.76, "porte": "atletico", "pele": "#E9C9A8", "rosto": "oval", "olhos": "#3A2A1E", "palpebras": "estreitos", "sobrancelha": "normal", "expressao": "neutro", "cabelo": { "cor": "#141416", "estilo": "franja" } }
+		}
+	}
+}

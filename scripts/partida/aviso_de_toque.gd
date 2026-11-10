@@ -41,9 +41,11 @@ func _ready() -> void:
 	billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	no_depth_test = true
 	fixed_size = true
+	# Menor que antes: o texto ficava em cima da bola e do próprio lance
+	# na tela dividida (cada metade tem 800 px de largura).
 	pixel_size = 0.0007
-	font_size = 44
-	outline_size = 14
+	font_size = 30
+	outline_size = 10
 	outline_modulate = Color(0.08, 0.08, 0.1)
 	font = FONTE
 	_inicio = position

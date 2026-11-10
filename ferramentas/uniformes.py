@@ -114,5 +114,27 @@ def main():
         print(f"{time['id']}: {len(elenco)} números + prévia")
 
 
+def numeros_brancos(tamanho=512):
+    """Números brancos com fundo transparente, pintados pelo jogo com a cor do
+    uniforme (scripts/visual/gerador_de_atleta.gd). Um por número usado no elenco,
+    em personagens/numeros/<nn>.png (essa pasta o Godot importa; producao/ não)."""
+    elencos = json.loads((RAIZ / "dados" / "elenco.json").read_text(encoding="utf-8"))["times"]
+    numeros = sorted({a["numero"] for time in elencos.values() for a in time})
+    pasta = RAIZ / "personagens" / "numeros"
+    pasta.mkdir(parents=True, exist_ok=True)
+    fonte = ImageFont.truetype(str(FONTE), int(tamanho * 0.95))
+    for numero in numeros:
+        img = Image.new("RGBA", (tamanho, tamanho), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        texto = str(numero)
+        caixa = d.textbbox((0, 0), texto, font=fonte)
+        x = (tamanho - (caixa[2] - caixa[0])) / 2 - caixa[0]
+        y = (tamanho - (caixa[3] - caixa[1])) / 2 - caixa[1]
+        d.text((x, y), texto, font=fonte, fill=(255, 255, 255, 255))
+        img.save(pasta / f"{numero:02d}.png")
+    print(f"{len(numeros)} números brancos em {pasta}")
+
+
 if __name__ == "__main__":
     main()
+    numeros_brancos()

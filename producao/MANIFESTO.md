@@ -3,83 +3,84 @@
 Gerado por `python3 ferramentas/manifesto.py`. Não edite à mão: as colunas de arquivo vêm do que existe no repositório,
 e as de status vêm de `producao/status.json`, preenchido só depois de conferir de verdade.
 
-Projeto editável `.vroid`: fica fora do Git, no PC de casa, em `VoleiPersonagens/vroid/<time>/<nn>_<nome>.vroid` (depois vai pro Drive).
+Formato em jogo: **vrm** (modelo VRoid importado), **gerado** (malha, esqueleto e pesos feitos por código a partir de
+`dados/aparencia.json`) ou **cápsula** (sem personagem). O VRM vale primeiro quando os dois existem.
 
-**Resumo:** 42/42 fichas, 0/42 VRMs no repositório, 0/42 testados no Godot.
+**Resumo:** 0 VRM, 42 gerados, 0 cápsulas (de 42). Status conferido: 42 gerados, 0 importados, 42 animados, 42 vistos em partida.
 
 ## Karasuno
 
-| Nº | Atleta | Ficha | Modelagem | .vroid | VRM | Capturas | Godot | Animação | Pendências |
+| Nº | Atleta | Ficha | Formato | Capturas | Gerado | Importado | Animado | Em partida | Pendências |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 9 | Tobio Kageyama | [sim](fichas/karasuno/09_kageyama.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 3 | Asahi Azumane | [sim](fichas/karasuno/03_azumane.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 11 | Kei Tsukishima | [sim](fichas/karasuno/11_tsukishima.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 1 | Daichi Sawamura | [sim](fichas/karasuno/01_sawamura.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 10 | Shoyo Hinata | [sim](fichas/karasuno/10_hinata.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 4 | Yu Nishinoya | [sim](fichas/karasuno/04_nishinoya.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
+| 9 | Tobio Kageyama | [sim](fichas/karasuno/09_kageyama.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 3 | Asahi Azumane | [sim](fichas/karasuno/03_azumane.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 11 | Kei Tsukishima | [sim](fichas/karasuno/11_tsukishima.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 1 | Daichi Sawamura | [sim](fichas/karasuno/01_sawamura.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 10 | Shoyo Hinata | [sim](fichas/karasuno/10_hinata.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 4 | Yu Nishinoya | [sim](fichas/karasuno/04_nishinoya.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
 
 ## Aoba Johsai
 
-| Nº | Atleta | Ficha | Modelagem | .vroid | VRM | Capturas | Godot | Animação | Pendências |
+| Nº | Atleta | Ficha | Formato | Capturas | Gerado | Importado | Animado | Em partida | Pendências |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Toru Oikawa | [sim](fichas/aoba_johsai/01_oikawa.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 4 | Hajime Iwaizumi | [sim](fichas/aoba_johsai/04_iwaizumi.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 2 | Issei Matsukawa | [sim](fichas/aoba_johsai/02_matsukawa.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 3 | Takahiro Hanamaki | [sim](fichas/aoba_johsai/03_hanamaki.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 12 | Yutaro Kindaichi | [sim](fichas/aoba_johsai/12_kindaichi.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 7 | Shinji Watari | [sim](fichas/aoba_johsai/07_watari.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
+| 1 | Toru Oikawa | [sim](fichas/aoba_johsai/01_oikawa.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 4 | Hajime Iwaizumi | [sim](fichas/aoba_johsai/04_iwaizumi.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 2 | Issei Matsukawa | [sim](fichas/aoba_johsai/02_matsukawa.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 3 | Takahiro Hanamaki | [sim](fichas/aoba_johsai/03_hanamaki.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 12 | Yutaro Kindaichi | [sim](fichas/aoba_johsai/12_kindaichi.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 7 | Shinji Watari | [sim](fichas/aoba_johsai/07_watari.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
 
 ## Shiratorizawa
 
-| Nº | Atleta | Ficha | Modelagem | .vroid | VRM | Capturas | Godot | Animação | Pendências |
+| Nº | Atleta | Ficha | Formato | Capturas | Gerado | Importado | Animado | Em partida | Pendências |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 10 | Kenjiro Shirabu | [sim](fichas/shiratorizawa/10_shirabu.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 1 | Wakatoshi Ushijima | [sim](fichas/shiratorizawa/01_ushijima.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 5 | Satori Tendo | [sim](fichas/shiratorizawa/05_tendo.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 4 | Reon Ohira | [sim](fichas/shiratorizawa/04_ohira.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 8 | Tsutomu Goshiki | [sim](fichas/shiratorizawa/08_goshiki.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 14 | Hayato Yamagata | [sim](fichas/shiratorizawa/14_yamagata.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
+| 10 | Kenjiro Shirabu | [sim](fichas/shiratorizawa/10_shirabu.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 1 | Wakatoshi Ushijima | [sim](fichas/shiratorizawa/01_ushijima.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 5 | Satori Tendo | [sim](fichas/shiratorizawa/05_tendo.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 4 | Reon Ohira | [sim](fichas/shiratorizawa/04_ohira.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 8 | Tsutomu Goshiki | [sim](fichas/shiratorizawa/08_goshiki.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 14 | Hayato Yamagata | [sim](fichas/shiratorizawa/14_yamagata.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
 
 ## Nekoma
 
-| Nº | Atleta | Ficha | Modelagem | .vroid | VRM | Capturas | Godot | Animação | Pendências |
+| Nº | Atleta | Ficha | Formato | Capturas | Gerado | Importado | Animado | Em partida | Pendências |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 5 | Kenma Kozume | [sim](fichas/nekoma/05_kenma.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 4 | Taketora Yamamoto | [sim](fichas/nekoma/04_yamamoto.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 1 | Tetsuro Kuroo | [sim](fichas/nekoma/01_kuroo.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 2 | Nobuyuki Kai | [sim](fichas/nekoma/02_kai.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 11 | Lev Haiba | [sim](fichas/nekoma/11_lev.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 3 | Morisuke Yaku | [sim](fichas/nekoma/03_yaku.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
+| 5 | Kenma Kozume | [sim](fichas/nekoma/05_kenma.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 4 | Taketora Yamamoto | [sim](fichas/nekoma/04_yamamoto.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 1 | Tetsuro Kuroo | [sim](fichas/nekoma/01_kuroo.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 2 | Nobuyuki Kai | [sim](fichas/nekoma/02_kai.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 11 | Lev Haiba | [sim](fichas/nekoma/11_lev.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 3 | Morisuke Yaku | [sim](fichas/nekoma/03_yaku.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
 
 ## Fukurodani
 
-| Nº | Atleta | Ficha | Modelagem | .vroid | VRM | Capturas | Godot | Animação | Pendências |
+| Nº | Atleta | Ficha | Formato | Capturas | Gerado | Importado | Animado | Em partida | Pendências |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 5 | Keiji Akaashi | [sim](fichas/fukurodani/05_akaashi.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 4 | Kotaro Bokuto | [sim](fichas/fukurodani/04_bokuto.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 2 | Tatsuki Washio | [sim](fichas/fukurodani/02_washio.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 7 | Akinori Konoha | [sim](fichas/fukurodani/07_konoha.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 3 | Yamato Sarukui | [sim](fichas/fukurodani/03_sarukui.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 11 | Haruki Komi | [sim](fichas/fukurodani/11_komi.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
+| 5 | Keiji Akaashi | [sim](fichas/fukurodani/05_akaashi.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 4 | Kotaro Bokuto | [sim](fichas/fukurodani/04_bokuto.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 2 | Tatsuki Washio | [sim](fichas/fukurodani/02_washio.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 7 | Akinori Konoha | [sim](fichas/fukurodani/07_konoha.md) | gerado | frente, perfil, tres_quartos, costas | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 3 | Yamato Sarukui | [sim](fichas/fukurodani/03_sarukui.md) | gerado | nenhuma | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 11 | Haruki Komi | [sim](fichas/fukurodani/11_komi.md) | gerado | nenhuma | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
 
 ## Inarizaki
 
-| Nº | Atleta | Ficha | Modelagem | .vroid | VRM | Capturas | Godot | Animação | Pendências |
+| Nº | Atleta | Ficha | Formato | Capturas | Gerado | Importado | Animado | Em partida | Pendências |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 7 | Atsumu Miya | [sim](fichas/inarizaki/07_atsumu.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 4 | Aran Ojiro | [sim](fichas/inarizaki/04_aran.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 10 | Rintaro Suna | [sim](fichas/inarizaki/10_suna.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 1 | Shinsuke Kita | [sim](fichas/inarizaki/01_kita.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 11 | Osamu Miya | [sim](fichas/inarizaki/11_osamu.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 9 | Michinari Akagi | [sim](fichas/inarizaki/09_akagi.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
+| 7 | Atsumu Miya | [sim](fichas/inarizaki/07_atsumu.md) | gerado | nenhuma | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 4 | Aran Ojiro | [sim](fichas/inarizaki/04_aran.md) | gerado | nenhuma | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 10 | Rintaro Suna | [sim](fichas/inarizaki/10_suna.md) | gerado | nenhuma | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 1 | Shinsuke Kita | [sim](fichas/inarizaki/01_kita.md) | gerado | nenhuma | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 11 | Osamu Miya | [sim](fichas/inarizaki/11_osamu.md) | gerado | nenhuma | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 9 | Michinari Akagi | [sim](fichas/inarizaki/09_akagi.md) | gerado | nenhuma | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
 
 ## Brasil
 
-| Nº | Atleta | Ficha | Modelagem | .vroid | VRM | Capturas | Godot | Animação | Pendências |
+| Nº | Atleta | Ficha | Formato | Capturas | Gerado | Importado | Animado | Em partida | Pendências |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 7 | Caio Ventura | [sim](fichas/brasil/07_ventura.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 10 | Davi Rocha | [sim](fichas/brasil/10_rocha.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 13 | Lucas Paim | [sim](fichas/brasil/13_paim.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 4 | Rafael Azevedo | [sim](fichas/brasil/04_azevedo.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 8 | Thiago Barreto | [sim](fichas/brasil/08_barreto.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
-| 1 | Enzo Takahashi | [sim](fichas/brasil/01_takahashi.md) | pendente | pendente | não | nenhuma | pendente | pendente |  |
+| 7 | Caio Ventura | [sim](fichas/brasil/07_ventura.md) | gerado | nenhuma | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 10 | Davi Rocha | [sim](fichas/brasil/10_rocha.md) | gerado | frente, perfil, tres_quartos, costas, correr, cortada | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 13 | Lucas Paim | [sim](fichas/brasil/13_paim.md) | gerado | nenhuma | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 4 | Rafael Azevedo | [sim](fichas/brasil/04_azevedo.md) | gerado | nenhuma | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 8 | Thiago Barreto | [sim](fichas/brasil/08_barreto.md) | gerado | nenhuma | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
+| 1 | Enzo Takahashi | [sim](fichas/brasil/01_takahashi.md) | gerado | nenhuma | ok | — | ok | ok | gerado por código (10/11/2026): conferido no teste do elenco e em partida com o robô; avaliar aparência e trocar por VRM se quiser |
