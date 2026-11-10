@@ -16,7 +16,8 @@ const CONTROLES := [
 	["Saque / cortada", "K", "2 (numérico)", "X"],
 	["Saque flutuante", "I", "5 (numérico)", "RB"],
 	["Bloqueio", "L", "3 (numérico)", "Y"],
-	["Mergulho (em breve)", "Espaço", "0 (numérico)", "B"],
+	["Mergulho", "Espaço", "0 (numérico)", "B"],
+	["Largada (no pulo da cortada)", "J", "1 (numérico)", "A"],
 	["Pausa", "Esc", "Esc", "Start"],
 ]
 
@@ -173,8 +174,8 @@ func _criar_tela_de_controles() -> void:
 	_tela_de_controles.add_child(escurecer)
 
 	var painel := Estilo.painel(Estilo.PAINEL, 0.0, 2, Estilo.PAINEL_CLARO)
-	painel.position = Vector2(230.0, 100.0)
-	painel.size = Vector2(1140.0, 700.0)
+	painel.position = Vector2(230.0, 80.0)
+	painel.size = Vector2(1140.0, 740.0)
 	_tela_de_controles.add_child(painel)
 
 	var titulo := Estilo.rotulo("CONTROLES", 56, Estilo.TEXTO, true)
@@ -198,11 +199,11 @@ func _criar_tela_de_controles() -> void:
 		"O 1º controle é do Jogador 1 e o 2º do Jogador 2. Dá pra misturar teclado e controle.",
 		21, Estilo.TEXTO_SUAVE
 	)
-	nota.position = Vector2(44.0, 540.0)
+	nota.position = Vector2(44.0, 580.0)
 	painel.add_child(nota)
 
 	_botao_voltar = Estilo.botao("VOLTAR", 28)
-	_botao_voltar.position = Vector2(44.0, 610.0)
+	_botao_voltar.position = Vector2(44.0, 650.0)
 	_botao_voltar.size = Vector2(240.0, 58.0)
 	_botao_voltar.pressed.connect(_fechar_controles)
 	painel.add_child(_botao_voltar)

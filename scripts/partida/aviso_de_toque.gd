@@ -5,19 +5,36 @@ extends Label3D
 const FONTE := preload("res://fontes/BarlowCondensed-BoldItalic.ttf")
 const DURACAO := 0.8
 const SUBIDA := 0.9
+## Avisos a menos disso (m, no chão) de outro aviso vivo sobem um degrau,
+## pra um não escrever em cima do outro.
+const DISTANCIA_DE_EMPILHAR := 2.0
+const DEGRAU := 0.55
 
 var _tempo := 0.0
 var _inicio := Vector3.ZERO
 
 
-## Cria o aviso em "ponto" (no mundo) dentro de "pai".
+## Cria o aviso em "ponto" (no mundo) dentro de "pai". Se já tem outro
+## aviso perto, este fica em cima dele.
 static func mostrar(pai: Node, ponto: Vector3, texto: String, cor: Color) -> Label3D:
 	var aviso := new()
 	aviso.text = texto
 	aviso.modulate = cor
+	var lugar := ponto
+	lugar.y += DEGRAU * degraus_ocupados(pai, ponto, aviso.get_script())
 	pai.add_child(aviso)
-	aviso.global_position = ponto
+	aviso.global_position = lugar
 	return aviso
+
+
+## Quantos avisos vivos (nós com este "script") já estão perto de "ponto" (no chão).
+static func degraus_ocupados(pai: Node, ponto: Vector3, script: Script) -> int:
+	var ocupados := 0
+	for filho in pai.get_children():
+		if filho is Label3D and filho.get_script() == script \
+				and Vector2(filho.global_position.x - ponto.x, filho.global_position.z - ponto.z).length() < DISTANCIA_DE_EMPILHAR:
+			ocupados += 1
+	return ocupados
 
 
 func _ready() -> void:

@@ -8,6 +8,11 @@ extends CanvasLayer
 signal pausa_pedida
 
 const Estilo := preload("res://scripts/menus/estilo.gd")
+const Cortina := preload("res://scripts/menus/cortina.gd")
+
+## Quanto tempo o painel leva pra aparecer (s) e de que tamanho ele começa.
+const DURACAO_DA_ENTRADA := 0.16
+const ESCALA_INICIAL := 0.92
 
 const CENA_MENU := "res://cenas/menu_principal.tscn"
 const CENA_SELECAO := "res://cenas/selecao_de_times.tscn"
@@ -18,6 +23,8 @@ var _painel: Panel
 var _titulo: Label
 var _detalhe: Label
 var _lista: VBoxContainer
+var _cortina: ColorRect
+var _entrada: Tween
 
 
 func _ready() -> void:
@@ -59,6 +66,11 @@ func _ready() -> void:
 	_lista.custom_minimum_size = Vector2(472.0, 0.0)
 	_lista.add_theme_constant_override("separation", 12)
 	painel.add_child(_lista)
+
+	# Cortina preta por cima do menu, pra escurecer antes de trocar de cena.
+	_cortina = Cortina.nova(self)
+	_cortina.visible = false
+	_cortina.color.a = 0.0
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -133,13 +145,30 @@ func _mostrar(titulo: String, resumo: String, opcoes: Array) -> void:
 	_raiz.visible = true
 	get_tree().paused = true
 	botoes[0].grab_focus.call_deferred()
+	_animar_entrada()
+
+
+## O painel entra crescendo e aparecendo, mesmo com o jogo pausado.
+func _animar_entrada() -> void:
+	if _entrada and _entrada.is_valid():
+		_entrada.kill()
+	_painel.pivot_offset = _painel.size / 2.0
+	_painel.scale = Vector2.ONE * ESCALA_INICIAL
+	_raiz.modulate.a = 0.0
+	_entrada = create_tween().set_parallel()
+	_entrada.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	_entrada.tween_property(_painel, "scale", Vector2.ONE, DURACAO_DA_ENTRADA) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_entrada.tween_property(_raiz, "modulate:a", 1.0, DURACAO_DA_ENTRADA)
 
 
 func _recomecar() -> void:
-	get_tree().paused = false
-	get_tree().reload_current_scene()
+	_cortina.fechar(func() -> void:
+		get_tree().paused = false
+		get_tree().reload_current_scene())
 
 
 func _ir_para(caminho: String) -> void:
-	get_tree().paused = false
-	get_tree().change_scene_to_file(caminho)
+	_cortina.fechar(func() -> void:
+		get_tree().paused = false
+		get_tree().change_scene_to_file(caminho))

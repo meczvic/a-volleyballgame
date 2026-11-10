@@ -63,6 +63,10 @@ const MiraVisual := preload("res://scripts/partida/mira_visual.gd")
 const PlacarVisual := preload("res://scripts/partida/placar_visual.gd")
 const FaixaDePonto := preload("res://scripts/partida/faixa_de_ponto.gd")
 const OndaNoChao := preload("res://scripts/visual/onda_no_chao.gd")
+const AnelDoControlado := preload("res://scripts/partida/anel_do_controlado.gd")
+const CameraDaPartida := preload("res://scripts/partida/camera_da_partida.gd")
+const Cortina := preload("res://scripts/menus/cortina.gd")
+const BarraDeForca := preload("res://scripts/partida/barra_de_forca.gd")
 const Qualidade := TempoDoToque.Qualidade
 
 enum Estado { SAQUE, RALLY, PONTO, FIM }
@@ -85,8 +89,14 @@ const ALTURA_MAXIMA_PASSE := 3.0
 ## Faixa de altura da bola pra cortar (o atleta pula).
 const ALTURA_MINIMA_CORTADA := 1.6
 const ALTURA_MAXIMA_CORTADA := 3.5
-## Tempo mostrando "Ponto!" antes do próximo saque.
-const PAUSA_DEPOIS_DO_PONTO := 1.5
+## Tempo mostrando "Ponto!" antes do próximo saque. Nesse tempo os atletas
+## andam até a formação do saque (em vez de pular de lugar).
+const PAUSA_DEPOIS_DO_PONTO := 1.8
+## Depois do ponto, todo mundo anda mais rápido pra formação (multiplicador).
+const PRESSA_DEPOIS_DO_PONTO := 1.6
+## Botão apertado um pouco cedo (bola ainda fora do alcance) vale por esse
+## tempo (s): o toque sai assim que der. Depois disso o anel do atleta pisca.
+const TEMPO_DO_PEDIDO := 0.15
 ## Tempo pra sacar depois que o saque é liberado (regra: 8 s).
 const TEMPO_PARA_SACAR := 8.0
 ## Linha de ataque, a 3 m da rede. Atleta do fundo só ataca com a bola
@@ -113,7 +123,15 @@ const PULO_MAXIMO_DA_CORTADA := 1.2
 ## Altura das mãos de um atleta em pé com os braços pra cima.
 const ALTURA_DAS_MAOS := 2.35
 ## Até quantos metros pro lado da mão o bloqueio alcança a bola.
-const LARGURA_DO_BLOQUEIO := 0.6
+const LARGURA_DO_BLOQUEIO := 0.5
+## Mais pro lado que isso (até esta folga a mais), o bloqueio só raspa na
+## bola: ela segue pro lado de quem bloqueou, mais devagar ("toque no bloqueio").
+const FOLGA_DO_TOQUE_NO_BLOQUEIO := 0.3
+## O bloqueio só devolve a bola com o atleta perto do alto do pulo (fração da
+## altura do pulo). Mais baixo que isso é toque no bloqueio.
+const ALTURA_MINIMA_DO_BLOQUEIO := 0.55
+## Resultado de _tipo_do_bloqueio.
+enum Bloqueio { NENHUM, DEVOLVE, TOQUE }
 ## Mergulho: alcança bola mais longe e mais baixa, mas a bola sai pior e o
 ## atleta fica no chão um instante.
 const ALCANCE_DO_MERGULHO := 3.2
@@ -208,7 +226,11 @@ var estadio: Dictionary = {}
 ## atletas[0] = time do Jogador 1, atletas[1] = time do Jogador 2.
 var atletas: Array = [[], []]
 var controlados: Array[Node3D] = [null, null]
-var aneis: Array[Node3D] = [null, null]
+## Anel no chão de quem está sendo controlado, por time.
+var aneis_do_controlado: Array = [null, null]
+## Botão apertado cedo demais, esperando a bola chegar ao alcance, por time:
+## { "tipo": "passe" ou "ataque", "ate": relógio }. Vazio = nenhum.
+var pedidos: Array = [{}, {}]
 var entradas: Array = []
 ## Posições de ataque no mundo, por time (calculadas de ATAQUES).
 var alvos_de_ataque: Array = [[], []]
@@ -227,11 +249,20 @@ var _ponto_de_bloqueio := -1
 var rotulo_mensagem: Label
 ## Caixa escura atrás da mensagem; some quando não tem mensagem.
 var caixa_da_mensagem: PanelContainer
+## Mensagem de cada time, na metade da tela dele (saque, levantamento, largada).
+var rotulos_do_time: Array[Label] = []
+var caixas_do_time: Array[PanelContainer] = []
+## Barra de força do saque de cada time.
+var barras_de_forca: Array = [null, null]
+## Lembrete "Esc ou Start: pausa"; some no fim de jogo.
+var caixa_da_pausa: PanelContainer
 ## Espera depois de cada ponto. É um nó (e não um "await") pra parar junto
 ## quando o jogo pausa e sumir junto quando a cena fecha.
 var temporizador_do_ponto: Timer
 ## Câmeras (uma por jogador na tela dividida), pro tremor do impacto.
 var cameras: Array[Camera3D] = []
+## Cortina preta das trocas de cena.
+var cortina: ColorRect
 ## Anel que mostra a hora de apertar, um por time.
 var aneis_de_tempo: Array = [null, null]
 ## Qualidade do último passe de cada time (decide o levantamento).
@@ -267,9 +298,12 @@ func _ready() -> void:
 	bola.name = "Bola"
 	bola.usar_visual_anime = visual_anime
 	add_child(bola)
-	bola.verificar_bloqueio = _tem_bloqueio
+	bola.verificar_bloqueio = _tipo_do_bloqueio
 	bola.tocou_chao.connect(_ao_bola_tocar_chao)
 	bola.bloqueada.connect(_ao_bola_ser_bloqueada)
+	bola.tocou_bloqueio.connect(_ao_bola_tocar_bloqueio)
+	for camera in cameras:
+		camera.alvo = bola
 	bola.cruzou_a_rede.connect(_ao_bola_cruzar_a_rede)
 
 	# Toque no tempo certo: anel de tempo de cada time, impacto e rastro.
@@ -324,6 +358,7 @@ func _ready() -> void:
 
 	_conectar_placar()
 	_preparar_saque()
+	cortina.abrir()
 
 
 func _physics_process(delta: float) -> void:
@@ -331,23 +366,29 @@ func _physics_process(delta: float) -> void:
 	for time in 2:
 		var controlado := controlados[time]
 		var sacando: bool = estado == Estado.SAQUE and time == placar.quem_saca
+		var em_jogo: bool = estado == Estado.SAQUE or estado == Estado.RALLY
 		if not cortadas[time].is_empty():
 			_atualizar_cortada(time, delta)
-		elif not sacando and not _esta_no_chao(controlado):
+		elif em_jogo and not sacando and not _esta_no_chao(controlado):
 			_mover(controlado, time, _direcao_no_mundo(time), delta)
 			if estado == Estado.SAQUE:
 				_manter_na_ordem(time, controlado)
+		_atender_pedido(time)
 
 		# Os outros 5 vão sozinhos pro lugar certo.
-		if estado == Estado.SAQUE or estado == Estado.RALLY:
+		if em_jogo:
 			for i in 6:
 				var atleta: Node3D = atletas[time][i]
 				if atleta != controlado:
 					_mover_ia(atleta, _alvo_da_ia(time, i), delta, _atributo(time, "velocidade"))
+		elif estado == Estado.PONTO:
+			# Todo mundo anda até o lugar do próximo saque enquanto o ponto é mostrado.
+			for i in 6:
+				_mover_ia(atletas[time][i], _alvo_depois_do_ponto(time, i), delta, PRESSA_DEPOIS_DO_PONTO)
 
 		for atleta in atletas[time]:
 			_atualizar_pulo(atleta, delta)
-		aneis[time].position = Vector3(controlado.position.x, 0.03, controlado.position.z)
+		aneis_do_controlado[time].seguir(controlado)
 		_atualizar_anel_de_tempo(time)
 		_atualizar_mira(time, delta)
 
@@ -411,6 +452,14 @@ func _alvo_da_ia(time: int, indice: int) -> Vector3:
 	else:
 		lugar = Vector2(x_da_funcao, Formacao.Y_FUNDO)
 	return _no_mundo(time, lugar)
+
+
+## Depois do ponto: cada um vai pro lugar que vai ocupar no próximo saque
+## (quem saca vai pra trás da linha de fundo).
+func _alvo_depois_do_ponto(time: int, indice: int) -> Vector3:
+	if time == placar.quem_saca and indice == rodizios[time].atleta_na(1):
+		return _no_mundo(time, POSICAO_DO_SACADOR)
+	return _alvo_da_ia(time, indice)
 
 
 ## Leitura do bloqueio: com o levantamento no ar, o bloqueio vê onde a bola
@@ -508,11 +557,17 @@ func _bloquear(time: int) -> void:
 		_animar(atleta, "bloqueio")
 
 
-## Chamado pela bola quando ela cruza a rede por cima da fita.
-## Bloqueia se um atleta da rede do lado de destino está no ar, perto da
-## bola e com as mãos alto o bastante.
-func _tem_bloqueio(ponto_na_rede: Vector3, lado_destino: float) -> bool:
+## Chamado pela bola quando ela cruza a rede por cima da fita. Diz o que o
+## bloqueio do lado de destino faz com a bola:
+## - DEVOLVE: um atleta da rede no alto do pulo, bem na frente da bola e com
+##   as mãos acima dela. A bola volta pra quem atacou.
+## - TOQUE: alguém encosta, mas baixo (cedo ou tarde no pulo) ou só com a
+##   ponta da mão. A bola segue pro lado do bloqueio, mais devagar.
+## - NENHUM: ninguém encosta.
+func _tipo_do_bloqueio(ponto_na_rede: Vector3, lado_destino: float) -> Bloqueio:
 	var time := 0 if lado_destino > 0.0 else 1
+	var largura := LARGURA_DO_BLOQUEIO * Atributos.largura_do_bloqueio(times_em_jogo[time])
+	var resultado := Bloqueio.NENHUM
 	for i in 6:
 		if not Rodizio.e_da_rede(rodizios[time].posicao_de(i)):
 			continue
@@ -521,11 +576,21 @@ func _tem_bloqueio(ponto_na_rede: Vector3, lado_destino: float) -> bool:
 			continue
 		if absf(atleta.position.z) > DISTANCIA_MAXIMA_DO_BLOQUEIO:
 			continue
-		if absf(atleta.position.x - ponto_na_rede.x) > LARGURA_DO_BLOQUEIO * Atributos.largura_do_bloqueio(times_em_jogo[time]):
+		var distancia := absf(atleta.position.x - ponto_na_rede.x)
+		if distancia > largura + FOLGA_DO_TOQUE_NO_BLOQUEIO:
 			continue
-		if ponto_na_rede.y <= ALTURA_DAS_MAOS + atleta.position.y + Bola.RAIO:
-			return true
-	return false
+		if ponto_na_rede.y > ALTURA_DAS_MAOS + atleta.position.y + Bola.RAIO:
+			continue
+		var no_alto: bool = atleta.position.y >= ALTURA_DO_PULO * ALTURA_MINIMA_DO_BLOQUEIO
+		if distancia <= largura and no_alto:
+			return Bloqueio.DEVOLVE
+		resultado = Bloqueio.TOQUE
+	return resultado
+
+
+## Se algum bloqueador encosta na bola que cruza a rede em "ponto_na_rede".
+func _tem_bloqueio(ponto_na_rede: Vector3, lado_destino: float) -> bool:
+	return _tipo_do_bloqueio(ponto_na_rede, lado_destino) != Bloqueio.NENHUM
 
 
 func _ao_bola_ser_bloqueada() -> void:
@@ -543,17 +608,39 @@ func _ao_bola_ser_bloqueada() -> void:
 	_ponto_de_bloqueio = time_que_bloqueou
 	impacto.bloqueio()
 	AvisoDeToque.mostrar(self, bola.position + Vector3(0.0, 0.8, 0.0), "Bloqueio!", _cor_do_time(time_que_bloqueou))
-	_mostrar_mensagem("Bloqueio!")
+	_ao_lancar_bola()
+
+
+## A bola raspou no bloqueio e seguiu pro lado de quem bloqueou. Não conta
+## toque, e quem bloqueou pode tocar de novo; mas se a bola sair, a falta é
+## de quem encostou por último (o bloqueio).
+func _ao_bola_tocar_bloqueio() -> void:
+	if estado != Estado.RALLY:
+		return
+	var time_que_bloqueou := 1 - ultimo_toque
+	if saque_em_jogo:
+		_encerrar_rally(ultimo_toque, "bloqueio no saque")
+		return
+	toques.registrar_bloqueio(time_que_bloqueou)
+	ultimo_toque = time_que_bloqueou
+	_ponto_de_bloqueio = -1
+	impacto.ponto()
+	AvisoDeToque.mostrar(self, bola.position + Vector3(0.0, 0.8, 0.0), "Toque no bloqueio", Color(0.95, 0.95, 0.95))
 	_ao_lancar_bola()
 
 
 ## Toca um lance no personagem do atleta (a cápsula não tem animação).
 func _animar(atleta: Node3D, lance: String) -> void:
-	if atleta == null:
-		return
-	var animador = atleta.get_meta("animador") if atleta.has_meta("animador") else null
+	var animador = _animador_de(atleta)
 	if animador:
 		animador.tocar(lance)
+
+
+## O animador do personagem do atleta, ou null (cápsula, sem personagem).
+func _animador_de(atleta: Node3D):
+	if atleta == null or not atleta.has_meta("animador"):
+		return null
+	return atleta.get_meta("animador")
 
 
 # --- Comandos ---
@@ -573,14 +660,38 @@ func _ao_receber_comando(jogador: int, tipo: String) -> void:
 				if not cortadas[time].is_empty():
 					# Passe no ar, durante a cortada: vira largada.
 					controlados[time].set_meta("largada", true)
-				else:
-					_tentar_tocar(time, false)
+				elif not _tentar_tocar(time, false):
+					_guardar_pedido(time, tipo)
 			elif tipo == "ataque":
-				_comecar_cortada(time)
+				if not _comecar_cortada(time):
+					_guardar_pedido(time, tipo)
 			elif tipo == "bloqueio":
 				_bloquear(time)
 			elif tipo == "mergulho":
 				_mergulhar(time)
+
+
+## O botão veio cedo (a bola ainda não está ao alcance): guarda o pedido
+## por TEMPO_DO_PEDIDO e tenta de novo a cada quadro (_atender_pedido).
+func _guardar_pedido(time: int, tipo: String) -> void:
+	pedidos[time] = { "tipo": tipo, "ate": _relogio + TEMPO_DO_PEDIDO }
+
+
+## Tenta de novo o botão guardado. Se o tempo acabou e a bola não chegou,
+## o anel do atleta pisca: o jogo ouviu, mas não dava pra tocar.
+func _atender_pedido(time: int) -> void:
+	if pedidos[time].is_empty():
+		return
+	if estado != Estado.RALLY:
+		pedidos[time] = {}
+		return
+	var tipo: String = pedidos[time]["tipo"]
+	var atendido: bool = _comecar_cortada(time) if tipo == "ataque" else _tentar_tocar(time, false)
+	if atendido:
+		pedidos[time] = {}
+	elif _relogio > float(pedidos[time]["ate"]):
+		pedidos[time] = {}
+		aneis_do_controlado[time].piscar()
 
 
 func _ao_soltar_botao(jogador: int, tipo: String) -> void:
@@ -614,12 +725,13 @@ func _sacar(time: int, flutuante: bool, forca := 0.4, alvo := Mira.ALVO_INICIAL)
 	bola.lancar(destino, Mira.altura_do_saque(forca, flutuante))
 	ultimo_toque = time
 	estado = Estado.RALLY
-	_mostrar_mensagem("")
+	_limpar_mensagens()
 	_ao_lancar_bola()
 
 
 ## Passe (atacando = false) ou ataque (atacando = true) do atleta controlado.
-func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> void:
+## Devolve false se a bola estava fora do alcance (o botão não valeu).
+func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> bool:
 	var alcancou: bool
 	if mergulho:
 		alcancou = true
@@ -628,19 +740,19 @@ func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> void:
 	else:
 		alcancou = _alcanca_bola(time, 0.0, ALTURA_MAXIMA_PASSE)
 	if not alcancou:
-		return
+		return false
 	if saque_em_jogo and time == placar.quem_saca:
 		# Quem sacou não pode tocar no próprio saque: o toque é ignorado.
 		# (Se a bola não passar a rede, ela cai do lado de quem sacou e é ponto do outro.)
-		return
+		return true
 
 	var falta := _falta_no_toque(time, atacando)
 	if falta != "":
 		_encerrar_rally(1 - time, falta)
-		return
+		return true
 	if not toques.registrar(time, atletas[time].find(controlados[time])):
 		_encerrar_rally(1 - time, "4 toques")
-		return
+		return true
 	if time != placar.quem_saca:
 		saque_em_jogo = false
 	ultimo_toque = time
@@ -668,6 +780,7 @@ func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> void:
 		_levantar(time, qualidade)
 	else:
 		_devolver_de_graca(time)
+	return true
 
 
 ## 1º toque. A qualidade decide o quanto a bola erra o levantador e o que
@@ -675,8 +788,7 @@ func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> void:
 func _passar_pro_levantador(time: int, qualidade: Qualidade) -> void:
 	_animar(controlados[time], "manchete")
 	qualidade_do_passe[time] = qualidade
-	var raio: float = TempoDoToque.ERRO_DO_PASSE[qualidade]
-	var erro := Vector2.from_angle(randf() * TAU) * raio * sqrt(randf())
+	var erro := _erro_aleatorio(TempoDoToque.ERRO_DO_PASSE[qualidade])
 	# O passe nunca passa da rede nem sai pela lateral.
 	var lugar := PONTO_DO_LEVANTADOR + erro
 	lugar.x = clampf(lugar.x, -LARGURA / 2.0 + 0.5, LARGURA / 2.0 - 0.5)
@@ -692,19 +804,18 @@ func _levantar(time: int, qualidade: Qualidade) -> void:
 	_animar(controlados[time], "levantamento")
 	var passe: Qualidade = qualidade_do_passe[time]
 	var escolhido := _ataque_escolhido(time, passe)
-	var raio: float = TempoDoToque.ERRO_DO_LEVANTAMENTO[qualidade]
-	var erro := Vector2.from_angle(randf() * TAU) * raio * sqrt(randf())
+	var erro := _erro_aleatorio(TempoDoToque.ERRO_DO_LEVANTAMENTO[qualidade])
 	var alvo: Vector3 = alvos_de_ataque[time][escolhido] + Vector3(erro.x, 0.0, erro.y)
 	var altura := TempoDoToque.altura_do_levantamento(passe, qualidade)
 	bola.lancar(alvo, altura)
 	_ao_lancar_bola()
 	var nome: String = ATAQUES[escolhido]["nome"]
 	if altura == TempoDoToque.ALTURA_DO_LEVANTAMENTO_RAPIDO:
-		_mostrar_mensagem("Levantamento rápido: %s" % nome)
+		_mostrar_mensagem("Levantamento rápido: %s" % nome, time)
 	elif altura == TempoDoToque.ALTURA_DO_LEVANTAMENTO_ALTO:
-		_mostrar_mensagem("Levantamento alto: %s" % nome)
+		_mostrar_mensagem("Levantamento alto: %s" % nome, time)
 	else:
-		_mostrar_mensagem("Levantamento: %s" % nome)
+		_mostrar_mensagem("Levantamento: %s" % nome, time)
 
 
 ## Pra onde o levantador manda: a direção apertada, só entre os ataques que
@@ -726,20 +837,22 @@ func _ataque_escolhido(time: int, passe: Qualidade) -> int:
 ## Ataque apertado: se a bola vai estar ao alcance no alto do pulo, o atleta
 ## sai do chão agora e bate nela daqui a TEMPO_ATE_A_BATIDA (_atualizar_cortada).
 ## As regras (faltas, toques) são conferidas na batida, por _tentar_tocar.
-func _comecar_cortada(time: int) -> void:
+## Devolve false se a bola não vai estar ao alcance (o botão não valeu).
+func _comecar_cortada(time: int) -> bool:
 	var atleta := controlados[time]
 	if not cortadas[time].is_empty() or _esta_pulando(atleta) or not bola.em_voo:
-		return
+		return false
 	var prevista: Vector3 = bola.posicao_daqui_a(TEMPO_ATE_A_BATIDA)
 	var no_chao := Vector2(prevista.x - atleta.position.x, prevista.z - atleta.position.z)
 	if no_chao.length() > ALCANCE or prevista.y < ALTURA_MINIMA_CORTADA or prevista.y > ALTURA_MAXIMA_CORTADA:
-		return
+		return false
 	# Na regra do ataque do fundo vale de onde o atleta saiu do chão.
 	atleta.set_meta("saiu_do_chao_em", atleta.position)
 	# Pula o bastante pra mão (na pose da batida) chegar na altura da bola.
 	var mao_acima_dos_pes := ALTURA_DAS_MAOS
-	if atleta.has_meta("animador"):
-		mao_acima_dos_pes = atleta.get_meta("animador").altura_da_mao_na_batida()
+	var animador = _animador_de(atleta)
+	if animador:
+		mao_acima_dos_pes = animador.altura_da_mao_na_batida()
 	_pular(atleta, clampf(prevista.y - mao_acima_dos_pes, PULO_MINIMO_DA_CORTADA, PULO_MAXIMO_DA_CORTADA))
 	_animar(atleta, "cortada")
 	# O tempo da cortada vale no botão: a batida vem TEMPO_ATE_A_BATIDA depois.
@@ -748,6 +861,7 @@ func _comecar_cortada(time: int) -> void:
 		"atleta": atleta, "tempo": 0.0,
 		"de": Vector2(atleta.position.x, atleta.position.z),
 	}
+	return true
 
 
 func _atualizar_cortada(time: int, delta: float) -> void:
@@ -759,7 +873,7 @@ func _atualizar_cortada(time: int, delta: float) -> void:
 	var falta: float = maxf(TEMPO_ATE_A_BATIDA - cortada["tempo"], 0.0)
 	var prevista: Vector3 = bola.posicao_daqui_a(falta)
 	var alvo := Vector2(prevista.x, prevista.z)
-	var mao_agora = atleta.get_meta("animador").posicao_da_mao() if atleta.has_meta("animador") else null
+	var mao_agora = _posicao_da_mao(atleta)
 	if mao_agora != null:
 		alvo -= Vector2((mao_agora as Vector3).x - atleta.position.x, (mao_agora as Vector3).z - atleta.position.z)
 	alvo.y = _lado(time) * maxf(alvo.y * _lado(time), DISTANCIA_MINIMA_DA_REDE + 0.05)
@@ -768,11 +882,8 @@ func _atualizar_cortada(time: int, delta: float) -> void:
 	atleta.position.x = ponto.x
 	atleta.position.z = ponto.y
 	if estado != Estado.RALLY or not bola.em_voo or controlados[time] != atleta:
-		cortadas[time] = {}
-		bola.puxar_para(Vector3.ZERO, 0.0)
-		atleta.remove_meta("saiu_do_chao_em")
+		_terminar_cortada(time, atleta)
 		atleta.remove_meta("qualidade_da_cortada")
-		atleta.remove_meta("largada")
 		return
 	if cortada["tempo"] < TEMPO_ATE_A_BATIDA:
 		# Chegando na batida, a bola vai encostando na mão.
@@ -783,6 +894,12 @@ func _atualizar_cortada(time: int, delta: float) -> void:
 		return
 	cortadas[time] = {}
 	_bater_na_bola(time, atleta)
+	_terminar_cortada(time, atleta)
+
+
+## Fim da cortada (com ou sem batida): solta a bola do ímã e limpa as marcas do atleta.
+func _terminar_cortada(time: int, atleta: Node3D) -> void:
+	cortadas[time] = {}
 	bola.puxar_para(Vector3.ZERO, 0.0)
 	atleta.remove_meta("saiu_do_chao_em")
 	atleta.remove_meta("largada")
@@ -791,12 +908,16 @@ func _atualizar_cortada(time: int, delta: float) -> void:
 ## Posição da mão da cortada, se ela vai estar perto da bola daqui a
 ## "segundos" (null se longe ou se o atleta não tem personagem).
 func _mao_perto_da_bola(atleta: Node3D, segundos: float):
-	if not atleta.has_meta("animador"):
-		return null
-	var mao = atleta.get_meta("animador").posicao_da_mao()
+	var mao = _posicao_da_mao(atleta)
 	if mao == null or (mao as Vector3).distance_to(bola.posicao_daqui_a(segundos)) > ALCANCE_DA_MAO:
 		return null
 	return mao
+
+
+## Onde está a mão da cortada do personagem (null sem personagem).
+func _posicao_da_mao(atleta: Node3D):
+	var animador = _animador_de(atleta)
+	return animador.posicao_da_mao() if animador else null
 
 
 ## Batida da cortada, no alto do pulo: a bola vai pra mão (se a mão chegou
@@ -823,9 +944,7 @@ func _cortar(time: int, qualidade: Qualidade = Qualidade.BOM) -> void:
 	# A direção mira: esquerda/direita, e pra frente (funda) ou pra trás (curta).
 	var alvo := _alvo_da_cortada(time)
 	alvo.y = clampf(alvo.y, jeito["fundo_min"], jeito["fundo_max"])
-	var ponto := Mira.com_erro(alvo, jeito["erro_da_mira"], Vector2(randf(), randf()))
-	ponto.x = clampf(ponto.x, -LARGURA / 2.0 + 0.2, LARGURA / 2.0 - 0.2)
-	var destino := Vector3(ponto.x, 0.0, ponto.y * _lado(1 - time))
+	var destino := _destino_na_quadra_do_outro(time, alvo, jeito["erro_da_mira"])
 	miras[time].esconder()
 	var subida := maxf(float(jeito["subida"]) - Atributos.cortada_mais_forte(times_em_jogo[time]), 0.05)
 	bola.lancar(destino, bola.position.y + subida)
@@ -839,14 +958,27 @@ func _cortar(time: int, qualidade: Qualidade = Qualidade.BOM) -> void:
 func _largar(time: int, qualidade: Qualidade) -> void:
 	var alvo := _alvo_da_cortada(time)
 	alvo.y = (LARGADA_FUNDO_MIN + LARGADA_FUNDO_MAX) / 2.0
-	var ponto := Mira.com_erro(alvo, ERRO_DA_LARGADA[qualidade], Vector2(randf(), randf()))
-	ponto.x = clampf(ponto.x, -LARGURA / 2.0 + 0.2, LARGURA / 2.0 - 0.2)
-	ponto.y = clampf(ponto.y, LARGADA_FUNDO_MIN, LARGADA_FUNDO_MAX)
-	var destino := Vector3(ponto.x, 0.0, ponto.y * _lado(1 - time))
+	var destino := _destino_na_quadra_do_outro(time, alvo, ERRO_DA_LARGADA[qualidade], LARGADA_FUNDO_MIN, LARGADA_FUNDO_MAX)
 	miras[time].esconder()
 	bola.lancar(destino, bola.position.y + SUBIDA_DA_LARGADA)
 	_ao_lancar_bola()
-	_mostrar_mensagem("Largada!")
+	_mostrar_mensagem("Largada!", time)
+
+
+## Ponto do mundo na quadra do outro time: "alvo" (x = lado, y = distância
+## da rede) com um erro aleatório de até "erro" metros, sem sair pela
+## lateral e, se pedido, com a profundidade entre fundo_min e fundo_max.
+func _destino_na_quadra_do_outro(time: int, alvo: Vector2, erro: float, fundo_min := -1.0, fundo_max := -1.0) -> Vector3:
+	var ponto := Mira.com_erro(alvo, erro, Vector2(randf(), randf()))
+	ponto.x = clampf(ponto.x, -LARGURA / 2.0 + 0.2, LARGURA / 2.0 - 0.2)
+	if fundo_min >= 0.0:
+		ponto.y = clampf(ponto.y, fundo_min, fundo_max)
+	return Vector3(ponto.x, 0.0, ponto.y * _lado(1 - time))
+
+
+## Erro aleatório (no chão) de até "raio" metros, espalhado por igual num disco.
+func _erro_aleatorio(raio: float) -> Vector2:
+	return Vector2.from_angle(randf() * TAU) * raio * sqrt(randf())
 
 
 func _devolver_de_graca(time: int) -> void:
@@ -859,9 +991,8 @@ func _alcanca_bola(time: int, altura_minima: float, altura_maxima: float) -> boo
 	if not bola.em_voo:
 		return false
 	var atleta := controlados[time]
-	var no_chao := Vector2(bola.position.x - atleta.position.x, bola.position.z - atleta.position.z)
 	var altura: float = bola.position.y
-	return no_chao.length() <= ALCANCE and altura >= altura_minima and altura <= altura_maxima
+	return _distancia_no_chao(atleta, bola.position) <= ALCANCE and altura >= altura_minima and altura <= altura_maxima
 
 
 ## Mostra o anel e passa o controle pro atleta mais perto de onde a bola vai cair.
@@ -1022,8 +1153,11 @@ func _atualizar_mira(time: int, delta: float) -> void:
 		alvo_do_saque = Mira.mover_alvo(alvo_do_saque, _direcao_no_mundo(time), lado_do_alvo, delta)
 		var forca := Mira.forca(carga_do_saque)
 		var ponto := Vector3(alvo_do_saque.x, 0.0, alvo_do_saque.y * lado_do_alvo)
-		mira.mostrar(ponto, _erro_do_saque(time, forca), forca, forca >= Mira.FORCA_ARRISCADA)
+		var arriscada: bool = forca >= Mira.FORCA_ARRISCADA
+		mira.mostrar(ponto, _erro_do_saque(time, forca), arriscada)
+		barras_de_forca[time].mostrar(forca, arriscada)
 		return
+	barras_de_forca[time].esconder()
 	var vai_atacar: bool = estado == Estado.RALLY and (not cortadas[time].is_empty() \
 		or (toques.time_com_a_bola == time and toques.toques == 2 and bola.em_voo and _lado_da_queda() == time))
 	if not vai_atacar:
@@ -1087,7 +1221,7 @@ func _contar_tempo_do_saque(delta: float) -> void:
 		return
 	if restam <= 3 and restam != _segundos_mostrados:
 		_segundos_mostrados = restam
-		_mostrar_mensagem("%s saca: segure e solte Ataque (%d)" % [times_em_jogo[placar.quem_saca]["nome"], restam])
+		_mostrar_mensagem("Saque: segure e solte Ataque (%d)" % restam, placar.quem_saca)
 
 
 func _e_da_rede(time: int, atleta: Node3D) -> bool:
@@ -1131,8 +1265,10 @@ func _encerrar_rally(vencedor: int, motivo: String) -> void:
 	saque_em_jogo = false
 	marcador.esconder()
 	_mostrar_marcas_de_ataque(-1)
-	_mostrar_mensagem("Ponto %s! (%s)" % [times_em_jogo[vencedor]["nome"], motivo])
+	_limpar_mensagens()
 	var nome := str(times_em_jogo[vencedor]["nome"])
+	var explicacao := _explicacao_do_ponto(motivo)
+	_mostrar_mensagem("Ponto %s!%s" % [nome, " (%s)" % explicacao if explicacao != "" else ""])
 	if motivo == "dentro" and saque_do_rally_em_jogo and vencedor == placar.quem_saca:
 		faixa.mostrar("ACE!", nome, _cor_do_time(vencedor))
 	elif motivo == "dentro" and vencedor == _ponto_de_bloqueio:
@@ -1140,12 +1276,23 @@ func _encerrar_rally(vencedor: int, motivo: String) -> void:
 	elif motivo == "dentro":
 		faixa.mostrar("PONTO!", nome, _cor_do_time(vencedor))
 	else:
-		faixa.mostrar("PONTO!", "%s  ·  %s" % [nome, motivo], _cor_do_time(vencedor))
+		faixa.mostrar("PONTO!", "%s  ·  %s" % [nome, explicacao], _cor_do_time(vencedor))
 	for atleta in atletas[vencedor]:
 		_animar(atleta, "comemoracao_palmas")
 	# Se foi o último ponto, o placar chama _ao_encerrar_partida aqui dentro.
 	placar.marcar_ponto(vencedor)
 	temporizador_do_ponto.start()
+
+
+## O que aparece pro jogador como motivo do ponto. Bola dentro não precisa
+## de explicação; "fora" vira "bola fora"; as faltas ficam como são.
+func _explicacao_do_ponto(motivo: String) -> String:
+	match motivo:
+		"dentro":
+			return ""
+		"fora":
+			return "bola fora"
+	return motivo
 
 
 ## Depois da pausa do ponto: próximo saque, ou a tela de fim de jogo.
@@ -1169,13 +1316,14 @@ func _preparar_saque() -> void:
 	tempo_no_saque = 0.0
 	carga_do_saque = -1.0
 	_segundos_mostrados = -1
+	pedidos = [{}, {}]
 	toques.reiniciar()
 	marcador.esconder()
 	_mostrar_marcas_de_ataque(-1)
 	_colocar_na_formacao()
 	for lado in 2:
 		for atleta in atletas[lado]:
-			var animador = atleta.get_meta("animador") if atleta.has_meta("animador") else null
+			var animador = _animador_de(atleta)
 			if animador:
 				animador.soltar()
 	# Depois de um set, o placar zera aqui (no fim do set ele mostra o resultado).
@@ -1194,14 +1342,18 @@ func _preparar_saque() -> void:
 		passador = rodizios[outro].atleta_na(5)
 	controlados[outro] = atletas[outro][passador]
 
-	_mostrar_mensagem("%s saca: segure e solte Ataque" % times_em_jogo[time]["nome"])
+	_mostrar_mensagem("")
+	_mostrar_mensagem("Saque: segure e solte Ataque", time)
+	_mostrar_mensagem("Recepção: corra até o anel e aperte Passe", outro)
 
 
 func _ao_encerrar_partida(vencedor: int) -> void:
 	estado = Estado.FIM
 	marcador.esconder()
 	_mostrar_marcas_de_ataque(-1)
-	_mostrar_mensagem("Fim de jogo! %s venceu." % times_em_jogo[vencedor]["nome"])
+	# A tela de fim de jogo já diz quem venceu.
+	_limpar_mensagens()
+	caixa_da_pausa.visible = false
 	faixa.mostrar("JOGO!", "%s venceu" % times_em_jogo[vencedor]["nome"], _cor_do_time(vencedor))
 	for atleta in atletas[vencedor]:
 		_animar(atleta, "comemoracao_torcida")
@@ -1304,7 +1456,7 @@ func _mais_perto(time: int, ponto: Vector3, excluir: Node3D = null, filtro := Ca
 			continue
 		if filtro.is_valid() and not filtro.call(atleta):
 			continue
-		var distancia: float = Vector2(atleta.position.x - ponto.x, atleta.position.z - ponto.z).length()
+		var distancia := _distancia_no_chao(atleta, ponto)
 		if distancia < menor:
 			menor = distancia
 			melhor = atleta
@@ -1453,17 +1605,11 @@ func _criar_atletas(time: int) -> void:
 		atletas[time].append(atleta)
 
 	# Anel no chão que mostra quem está sendo controlado.
-	var anel := MeshInstance3D.new()
-	var toro := TorusMesh.new()
-	toro.inner_radius = 0.5
-	toro.outer_radius = 0.65
-	anel.mesh = toro
-	var material := _material(cor_detalhe)
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	anel.material_override = material
-	anel.scale = Vector3(1.0, 0.1, 1.0)
+	var anel := AnelDoControlado.new()
+	anel.name = "AnelDoControlado%d" % time
+	anel.cor = cor_detalhe
 	add_child(anel)
-	aneis[time] = anel
+	aneis_do_controlado[time] = anel
 	controlados[time] = atletas[time][rodizios[time].atleta_na(6)]
 
 
@@ -1580,15 +1726,16 @@ func _criar_camera() -> void:
 		_adicionar_camera(tela, time)
 
 
-## Câmera alta atrás do time, olhando pra rede.
+## Câmera alta atrás do time, olhando pra rede (e acompanhando a bola de leve).
 func _adicionar_camera(onde: Node, time: int) -> void:
 	var lado := _lado(time)
-	var camera := Camera3D.new()
-	camera.fov = abertura_da_camera
+	var camera := CameraDaPartida.new()
+	camera.name = "Camera%d" % time
 	onde.add_child(camera)
-	camera.look_at_from_position(
+	camera.preparar(
 		Vector3(0.0, altura_camera, distancia_camera * lado),
-		Vector3(0.0, 0.0, foco_da_camera * lado)
+		Vector3(0.0, 0.0, foco_da_camera * lado),
+		abertura_da_camera
 	)
 	camera.current = true
 	if tela_dividida:
@@ -1639,22 +1786,56 @@ func _criar_interface() -> void:
 	rotulo_mensagem = _rotulo_da_interface(32, true)
 	caixa_da_mensagem.add_child(rotulo_mensagem)
 
+	# Mensagem de cada time, embaixo da mensagem geral, na metade dele
+	# (sem tela dividida, as duas ficam lado a lado na mesma tela).
+	for time in 2:
+		var centro_do_time := CenterContainer.new()
+		centro_do_time.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		centro_do_time.position = Vector2(800.0 * time, 182.0)
+		centro_do_time.size = Vector2(800.0, 48.0)
+		camada.add_child(centro_do_time)
+		var caixa := _caixa_da_interface()
+		caixa.visible = false
+		centro_do_time.add_child(caixa)
+		var rotulo := _rotulo_da_interface(24, true)
+		caixa.add_child(rotulo)
+		caixas_do_time.append(caixa)
+		rotulos_do_time.append(rotulo)
+
+		# Barra de força do saque, embaixo, na metade do time.
+		var centro_da_barra := CenterContainer.new()
+		centro_da_barra.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		centro_da_barra.position = Vector2(800.0 * time, 760.0)
+		centro_da_barra.size = Vector2(800.0, 70.0)
+		camada.add_child(centro_da_barra)
+		var barra := BarraDeForca.new()
+		barra.name = "BarraDeForca%d" % time
+		centro_da_barra.add_child(barra)
+		barras_de_forca[time] = barra
+
 	faixa = FaixaDePonto.new()
 	camada.add_child(faixa)
 
+	# Cortina preta por cima de tudo (até da pausa), fechada até a cena abrir.
+	var camada_da_cortina := CanvasLayer.new()
+	camada_da_cortina.name = "CamadaDaCortina"
+	camada_da_cortina.layer = 20
+	add_child(camada_da_cortina)
+	cortina = Cortina.nova(camada_da_cortina)
+
 	# Comandos de cada jogador embaixo da metade dele (ou só do J1, sem tela dividida).
 	var ajudas := [
-		"J1 (teclado): WASD move · J passe · K saque/cortada · I flutuante · L bloqueio",
-		"J2 (teclado): setas move · 1 passe · 2 saque/cortada · 5 flutuante · 3 bloqueio (numérico)",
+		"J1 teclado: WASD move · J passe · K saque/cortada · I flutuante · L bloqueio · Espaço mergulho",
+		"J2 teclado: setas movem · 1 passe · 2 saque/cortada · 5 flutuante · 3 bloqueio · 0 mergulho (numérico)",
 	]
 	for jogador in (2 if tela_dividida else 1):
 		var ajuda := _rotulo_da_interface(16, false)
-		ajuda.text = ajudas[jogador] + "\nControle: A passe · X saque/cortada · RB flutuante · Y bloqueio"
+		ajuda.text = ajudas[jogador] + "\nControle: A passe · X saque/cortada · RB flutuante · Y bloqueio · B mergulho · Passe no pulo = largada"
 		ajuda.position = Vector2(20.0 + jogador * 800.0, 848.0)
 		camada.add_child(ajuda)
 
 	# Lembrete da pausa no canto direito, crescendo pra esquerda.
-	var caixa_da_pausa := _caixa_da_interface()
+	caixa_da_pausa = _caixa_da_interface()
 	caixa_da_pausa.anchor_left = 1.0
 	caixa_da_pausa.anchor_right = 1.0
 	caixa_da_pausa.offset_left = -18.0
@@ -1667,10 +1848,22 @@ func _criar_interface() -> void:
 	caixa_da_pausa.add_child(dica_da_pausa)
 
 
-## Mostra uma mensagem no meio da tela. Texto vazio esconde a caixa.
-func _mostrar_mensagem(texto: String) -> void:
-	rotulo_mensagem.text = texto
-	caixa_da_mensagem.visible = texto != ""
+## Mostra uma mensagem no meio da tela (time = -1) ou na metade de um time.
+## Texto vazio esconde a caixa.
+func _mostrar_mensagem(texto: String, time := -1) -> void:
+	if time < 0:
+		rotulo_mensagem.text = texto
+		caixa_da_mensagem.visible = texto != ""
+		return
+	rotulos_do_time[time].text = texto
+	caixas_do_time[time].visible = texto != ""
+
+
+## Esconde a mensagem do meio e as dos dois times.
+func _limpar_mensagens() -> void:
+	_mostrar_mensagem("")
+	for time in 2:
+		_mostrar_mensagem("", time)
 
 
 ## Caixa escura e inclinada (como as dos menus) atrás dos textos da partida.
@@ -1684,12 +1877,7 @@ func _caixa_da_interface() -> PanelContainer:
 
 ## Texto da interface com contorno escuro, pra ler bem em cima da quadra.
 func _rotulo_da_interface(tamanho: int, titulo: bool) -> Label:
-	var rotulo := Label.new()
-	rotulo.add_theme_font_override("font", Estilo.FONTE_TITULO if titulo else Estilo.FONTE_TEXTO)
-	rotulo.add_theme_font_size_override("font_size", tamanho)
-	rotulo.add_theme_color_override("font_outline_color", Color(0.05, 0.05, 0.07))
-	rotulo.add_theme_constant_override("outline_size", 6)
-	return rotulo
+	return Estilo.rotulo_com_contorno(tamanho, titulo)
 
 
 func _caixa(tamanho: Vector3, posicao: Vector3, cor: Color) -> MeshInstance3D:

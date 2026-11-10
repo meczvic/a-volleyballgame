@@ -27,7 +27,7 @@ const LARGURA_DO_PAINEL := 520.0
 const MARGEM := 48.0
 const TAMANHO_DO_CARTAO := Vector2(196.0, 116.0)
 const ESPACO_ENTRE_CARTOES := 12.0
-const ALTURA_DOS_CARTOES := 626.0
+const ALTURA_DOS_CARTOES := 612.0
 
 const DICAS := [
 	"Teclado: A/D escolhe  ·  J confirma  ·  Espaço volta\nControle 1: direcional  ·  A confirma  ·  B volta",
