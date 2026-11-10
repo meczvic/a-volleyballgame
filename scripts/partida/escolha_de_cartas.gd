@@ -62,13 +62,13 @@ func configurar(opcoes: Array, nomes: Array, cores: Array, maos: Array, nomes_da
 	raiz.add_child(escurecer)
 
 	var titulo := Estilo.rotulo("ESCOLHA SUA CARTA", 60, Estilo.TEXTO, true)
-	titulo.position = Vector2(0.0, 40.0)
+	titulo.position = Vector2(0.0, 108.0)
 	titulo.size = Vector2(METADE * 2.0, 70.0)
 	titulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	raiz.add_child(titulo)
 
 	_relogio = Estilo.rotulo("", 40, Estilo.DESTAQUE, true)
-	_relogio.position = Vector2(0.0, 112.0)
+	_relogio.position = Vector2(0.0, 170.0)
 	_relogio.size = Vector2(METADE * 2.0, 50.0)
 	_relogio.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	raiz.add_child(_relogio)
@@ -77,25 +77,25 @@ func configurar(opcoes: Array, nomes: Array, cores: Array, maos: Array, nomes_da
 		var x0 := METADE * jogador
 		var etiqueta := Estilo.etiqueta("JOGADOR %d  ·  %s" % [jogador + 1, str(nomes[jogador]).to_upper()],
 			_cores[jogador], 30)
-		etiqueta.position = Vector2(x0 + 28.0, 190.0)
+		etiqueta.position = Vector2(x0 + 28.0, 222.0)
 		etiqueta.size = Vector2(LARGURA_DA_CARTA * 3.0 + ESPACO * 2.0, 44.0)
 		raiz.add_child(etiqueta)
 
 		for i in (_opcoes[jogador] as Array).size():
 			var quadro := _criar_carta(_opcoes[jogador][i])
-			quadro.position = Vector2(x0 + 28.0 + i * (LARGURA_DA_CARTA + ESPACO), 260.0)
+			quadro.position = Vector2(x0 + 28.0 + i * (LARGURA_DA_CARTA + ESPACO), 280.0)
 			raiz.add_child(quadro)
 			_quadros[jogador].append(quadro)
 
 		var aviso := Estilo.rotulo("", 34, Estilo.PRONTO, true)
-		aviso.position = Vector2(x0 + 28.0, 596.0)
+		aviso.position = Vector2(x0 + 28.0, 606.0)
 		aviso.size = Vector2(LARGURA_DA_CARTA * 3.0 + ESPACO * 2.0, 44.0)
 		aviso.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		raiz.add_child(aviso)
 		_avisos[jogador] = aviso
 
 		var dica := Estilo.rotulo("Esquerda/direita escolhe  ·  Passe confirma", 22, Estilo.TEXTO_SUAVE)
-		dica.position = Vector2(x0 + 28.0, 646.0)
+		dica.position = Vector2(x0 + 28.0, 654.0)
 		dica.size = Vector2(LARGURA_DA_CARTA * 3.0 + ESPACO * 2.0, 30.0)
 		dica.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		raiz.add_child(dica)
@@ -104,7 +104,7 @@ func configurar(opcoes: Array, nomes: Array, cores: Array, maos: Array, nomes_da
 		var mao := Estilo.rotulo("Suas cartas: %s" % (
 			", ".join(nomes_da_mao) if not nomes_da_mao.is_empty() else "nenhuma"
 		), 22, Estilo.TEXTO_APAGADO)
-		mao.position = Vector2(x0 + 28.0, 690.0)
+		mao.position = Vector2(x0 + 28.0, 696.0)
 		mao.size = Vector2(LARGURA_DA_CARTA * 3.0 + ESPACO * 2.0, 90.0)
 		mao.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		mao.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -193,6 +193,7 @@ func _criar_carta(carta: Dictionary) -> Panel:
 	var cor: Color = COR_DA_RARIDADE.get(raridade, Estilo.TEXTO_SUAVE)
 	var quadro := Estilo.painel(Estilo.PAINEL, 0.0, 2, Estilo.PAINEL_CLARO)
 	quadro.size = Vector2(LARGURA_DA_CARTA, ALTURA_DA_CARTA)
+	quadro.clip_contents = true
 
 	var faixa := Estilo.painel(cor)
 	faixa.size = Vector2(LARGURA_DA_CARTA, 44.0)
@@ -201,19 +202,25 @@ func _criar_carta(carta: Dictionary) -> Panel:
 	nome_da_raridade.position = Vector2(14.0, 4.0)
 	faixa.add_child(nome_da_raridade)
 
+	# Os textos ficam num container: ele garante a largura e a quebra de linha.
+	var margem := MarginContainer.new()
+	margem.position = Vector2(0.0, 52.0)
+	margem.size = Vector2(LARGURA_DA_CARTA, ALTURA_DA_CARTA - 52.0)
+	for lado in ["left", "right", "top", "bottom"]:
+		margem.add_theme_constant_override("margin_" + lado, 14)
+	quadro.add_child(margem)
+	var coluna := VBoxContainer.new()
+	coluna.add_theme_constant_override("separation", 8)
+	margem.add_child(coluna)
+
 	var nome := Estilo.rotulo(str(carta.get("nome", "?")), 36, Estilo.TEXTO, true)
-	nome.position = Vector2(14.0, 58.0)
-	nome.size = Vector2(LARGURA_DA_CARTA - 28.0, 90.0)
 	nome.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	quadro.add_child(nome)
+	coluna.add_child(nome)
 
 	var conjunto := Estilo.rotulo("Conjunto: %s" % str(carta.get("conjunto", "")).capitalize(), 20, cor)
-	conjunto.position = Vector2(14.0, 150.0)
-	quadro.add_child(conjunto)
+	coluna.add_child(conjunto)
 
 	var efeito := Estilo.rotulo(str(carta.get("efeito", "")), 24, Estilo.TEXTO_SUAVE)
-	efeito.position = Vector2(14.0, 188.0)
-	efeito.size = Vector2(LARGURA_DA_CARTA - 28.0, 120.0)
 	efeito.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	quadro.add_child(efeito)
+	coluna.add_child(efeito)
 	return quadro
