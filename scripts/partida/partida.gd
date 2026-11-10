@@ -1361,6 +1361,8 @@ func _abrir_escolha_de_cartas(depois: Callable) -> void:
 		if depois.is_valid():
 			depois.call()
 		return
+	# Tira a mensagem do ponto da frente da tela de escolha.
+	_limpar_mensagens()
 	escolha_de_cartas = EscolhaDeCartas.new()
 	escolha_de_cartas.name = "EscolhaDeCartas"
 	add_child(escolha_de_cartas)
