@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<!-- Rede. -->
+<g fill="none" stroke="#FFFFFF" stroke-linecap="round">
+<rect x="6" y="12" width="52" height="34" stroke-width="5"/>
+<path stroke-width="3" d="M19 12 V46 M32 12 V46 M45 12 V46 M6 23 H58 M6 35 H58"/>
+<path stroke-width="5" d="M6 12 V60 M58 12 V60"/>
+</g>
+</svg>

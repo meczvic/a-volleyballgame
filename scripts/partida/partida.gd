@@ -62,6 +62,7 @@ const Atributos := preload("res://scripts/regras/atributos.gd")
 const MiraVisual := preload("res://scripts/partida/mira_visual.gd")
 const PlacarVisual := preload("res://scripts/partida/placar_visual.gd")
 const FaixaDePonto := preload("res://scripts/partida/faixa_de_ponto.gd")
+const Cenario := preload("res://scripts/cenario/cenario.gd")
 const OndaNoChao := preload("res://scripts/visual/onda_no_chao.gd")
 const AnelDoControlado := preload("res://scripts/partida/anel_do_controlado.gd")
 const CameraDaPartida := preload("res://scripts/partida/camera_da_partida.gd")
@@ -188,16 +189,18 @@ const DISTANCIA_DO_ANEL_DE_TEMPO := 3.5
 ## jogador só vê o próprio anel.
 const CAMADA_DO_ANEL_DE_TEMPO := [11, 12]
 
-## Câmera atrás do próprio time, baixa e de longe, como numa transmissão de TV
-## (referência: Spike Volleyball). Ajuste aqui ou no Inspetor.
-## Altura e distância da rede, em metros.
-@export var altura_camera := 14.5
-@export var distancia_camera := 29.5
+## Câmera atrás do próprio time, como numa transmissão de TV (referência:
+## Spike Volleyball). Desde a Fase 04 ela fica mais baixa e mais perto, com a
+## lente um pouco mais aberta, pra mostrar o ginásio em volta e deixar os
+## atletas maiores (antes: altura 14,5, distância 29,5, foco 1,5, abertura 27).
+## Ajuste aqui ou no Inspetor. Altura e distância da rede, em metros.
+@export var altura_camera := 10.5
+@export var distancia_camera := 24.0
 ## Pra onde a câmera aponta: metros antes da rede, do lado do próprio time.
 ## Mais alto mostra mais o fundo da sua quadra (onde fica quem saca).
-@export var foco_da_camera := 1.5
+@export var foco_da_camera := 0.0
 ## Abertura vertical da câmera, em graus. Menor = mais "zoom" e menos distorção.
-@export var abertura_da_camera := 27.0
+@export var abertura_da_camera := 37.0
 ## Tela dividida: cada jogador vê de trás do próprio time.
 ## Desligado: uma câmera só, do lado do Jogador 1.
 @export var tela_dividida := true
@@ -243,6 +246,8 @@ var bola
 var marcador
 var menu
 var placar_visual: PanelContainer
+## Quadra, rede e ginásio em volta (scripts/cenario/cenario.gd).
+var cenario: Node3D
 ## Faixa grande do ponto ("PONTO!", "ACE!", "BLOQUEIO!", "SET!").
 var faixa: Control
 ## Time que bloqueou por último no rally (pra saber se o ponto foi de
@@ -286,6 +291,8 @@ var cortadas: Array = [{}, {}]
 ## das cartas, quantos pontos já saíram e a tela de escolha (null = fechada).
 var modo_caos := false
 var cartas_dos_times: Array = [[], []]
+## Trocas de cartas (TROCAR) que cada time ainda tem na partida.
+var trocas_restantes: Array = [0, 0]
 var ultima_carta: Array = ["", ""]
 var dados_das_cartas: Dictionary = {}
 var pontos_jogados := 0
@@ -297,10 +304,7 @@ var rotulos_de_cartas: Array[Label] = []
 func _ready() -> void:
 	_carregar_escolhas()
 
-	_criar_ambiente()
-	_criar_quadra()
-	_criar_placas()
-	_criar_rede()
+	_criar_cenario()
 	for time in 2:
 		_criar_atletas(time)
 		_criar_marcas_de_ataque(time)
@@ -1295,13 +1299,16 @@ func _encerrar_rally(vencedor: int, motivo: String) -> void:
 	var explicacao := _explicacao_do_ponto(motivo)
 	_mostrar_mensagem("Ponto %s!%s" % [nome, " (%s)" % explicacao if explicacao != "" else ""])
 	if motivo == "dentro" and saque_do_rally_em_jogo and vencedor == placar.quem_saca:
-		faixa.mostrar("ACE!", nome, _cor_do_time(vencedor))
+		faixa.mostrar("ACE!", nome, _cor_do_time(vencedor), vencedor)
 	elif motivo == "dentro" and vencedor == _ponto_de_bloqueio:
-		faixa.mostrar("BLOQUEIO!", nome, _cor_do_time(vencedor))
+		faixa.mostrar("BLOQUEIO!", nome, _cor_do_time(vencedor), vencedor)
 	elif motivo == "dentro":
-		faixa.mostrar("PONTO!", nome, _cor_do_time(vencedor))
+		faixa.mostrar("PONTO!", nome, _cor_do_time(vencedor), vencedor)
 	else:
-		faixa.mostrar("PONTO!", "%s  ·  %s" % [nome, explicacao], _cor_do_time(vencedor))
+		faixa.mostrar("PONTO!", "%s  ·  %s" % [nome, explicacao], _cor_do_time(vencedor), vencedor)
+	# A faixa já diz quem pontuou e o motivo: a caixa do meio fica escondida
+	# (o texto continua lá, pros testes e pro robô).
+	caixa_da_mensagem.visible = false
 	for atleta in atletas[vencedor]:
 		_animar(atleta, "comemoracao_palmas")
 	# Se foi o último ponto, o placar chama _ao_encerrar_partida aqui dentro.
@@ -1371,12 +1378,39 @@ func _abrir_escolha_de_cartas(depois: Callable) -> void:
 		[times_em_jogo[0]["nome"], times_em_jogo[1]["nome"]],
 		[_cor_do_time(0), _cor_do_time(1)],
 		cartas_dos_times, nomes_das_maos,
-		Cartas.tempo_limite(dados_das_cartas))
+		Cartas.tempo_limite(dados_das_cartas),
+		[str(times_em_jogo[0]["id"]), str(times_em_jogo[1]["id"])],
+		times_em_jogo, trocas_restantes.duplicate(), _trocar_cartas)
 	escolha_de_cartas.terminou.connect(func(escolhas: Array) -> void:
 		escolha_de_cartas = null
 		_ao_escolher_cartas(escolhas)
 		if depois.is_valid():
 			depois.call())
+
+
+## Botão TROCAR da tela de cartas: gasta uma troca do time e sorteia outras
+## cartas (tenta não repetir as que estavam na tela). Sem troca, devolve [].
+func _trocar_cartas(time: int, atuais: Array) -> Array:
+	if trocas_restantes[time] <= 0:
+		return []
+	var quantidade := Cartas.cartas_por_escolha(dados_das_cartas)
+	var ids: Array = []
+	for tentativa in 8:
+		ids = Cartas.sortear(dados_das_cartas, cartas_dos_times[time], RandomNumberGenerator.new(),
+			quantidade, ultima_carta[1 - time])
+		var repetidas := 0
+		for id in ids:
+			if atuais.has(id):
+				repetidas += 1
+		if repetidas < ids.size():
+			break
+	if ids.is_empty():
+		return []
+	trocas_restantes[time] -= 1
+	var cartas: Array = []
+	for id in ids:
+		cartas.append(Cartas.por_id(dados_das_cartas, id))
+	return cartas
 
 
 ## As duas cartas escolhidas entram na mão de cada time. As duas escolhas
@@ -1460,7 +1494,7 @@ func _ao_encerrar_partida(vencedor: int) -> void:
 	# A tela de fim de jogo já diz quem venceu.
 	_limpar_mensagens()
 	caixa_da_pausa.visible = false
-	faixa.mostrar("JOGO!", "%s venceu" % times_em_jogo[vencedor]["nome"], _cor_do_time(vencedor))
+	faixa.mostrar("JOGO!", "%s venceu" % times_em_jogo[vencedor]["nome"], _cor_do_time(vencedor), vencedor)
 	for atleta in atletas[vencedor]:
 		_animar(atleta, "comemoracao_torcida")
 
@@ -1484,11 +1518,12 @@ func _ao_encerrar_set(vencedor: int) -> void:
 	_atualizar_placar()
 	faixa.mostrar("SET!", "%s  %d x %d" % [
 		str(times_em_jogo[vencedor]["nome"]), placar.pontos[vencedor], placar.pontos[1 - vencedor],
-	], _cor_do_time(vencedor))
+	], _cor_do_time(vencedor), vencedor)
 	_mostrar_mensagem("Set %d: %s venceu! (%d x %d)" % [
 		placar.set_atual, times_em_jogo[vencedor]["nome"],
 		placar.pontos[vencedor], placar.pontos[1 - vencedor],
 	])
+	caixa_da_mensagem.visible = false
 
 
 func _atualizar_placar() -> void:
@@ -1599,16 +1634,13 @@ func _carregar_escolhas() -> void:
 	estadio = Dados.por_id(Dados.estadios(), Configuracao.estadio)
 	modo_caos = Configuracao.modo == "caos"
 	if modo_caos:
+		trocas_restantes = [Cartas.trocas_por_partida(Dados.cartas()), Cartas.trocas_por_partida(Dados.cartas())]
 		dados_das_cartas = Dados.cartas()
 
 
-## Uniforme reserva: a 3ª cor vira a principal, e a principal vira o detalhe.
+## Uniforme reserva: a regra fica em Dados (a seleção de times usa a mesma).
 func _com_uniforme_reserva(time: Dictionary) -> Dictionary:
-	var reserva := time.duplicate(true)
-	var cores: Array = reserva["cores"]
-	if cores.size() >= 3:
-		reserva["cores"] = [cores[2], cores[0], cores[1]]
-	return reserva
+	return Dados.com_uniforme_reserva(time)
 
 
 ## Cor do estádio (veja dados/estadios.json), ou "padrao" se faltar.
@@ -1616,69 +1648,17 @@ func _cor_do_estadio(chave: String, padrao: Color) -> Color:
 	return Dados.cor(estadio.get("cores", {}), chave, padrao)
 
 
-# --- Construção da cena (provisória) ---
+# --- Construção da cena ---
 
-func _criar_ambiente() -> void:
-	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = _cor_do_estadio("fundo", Color("#1B2A3A"))
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = _cor_do_estadio("luz", Color(1.0, 0.95, 0.9))
-	# A sombra "chapada" do visual anime fica melhor com mais luz ambiente.
-	env.ambient_light_energy = 0.8 if visual_anime else 0.6
-	var mundo := WorldEnvironment.new()
-	mundo.environment = env
-	add_child(mundo)
-
-	var sol := DirectionalLight3D.new()
-	sol.rotation_degrees = Vector3(-55.0, 30.0, 0.0)
-	sol.shadow_enabled = true
-	add_child(sol)
-
-
-func _criar_quadra() -> void:
-	# Zona livre em volta e a quadra, nas cores do estádio.
-	_caixa(Vector3(LARGURA_ZONA_LIVRE, 0.1, COMPRIMENTO_ZONA_LIVRE), Vector3(0, -0.05, 0),
-		_cor_do_estadio("zona_livre", Color("#2D6A9A")))
-	_caixa(Vector3(LARGURA, 0.1, COMPRIMENTO), Vector3(0, -0.04, 0),
-		_cor_do_estadio("quadra", Color("#E39A55")))
-
-	# Linhas: laterais, fundos, centro e linhas de ataque (3 m da rede).
-	var cor_das_linhas := _cor_do_estadio("linhas", Color.WHITE)
-	var y := 0.015
-	for x in [-LARGURA / 2.0, LARGURA / 2.0]:
-		_caixa(Vector3(0.05, 0.01, COMPRIMENTO), Vector3(x, y, 0), cor_das_linhas)
-	for z in [-COMPRIMENTO / 2.0, -3.0, 0.0, 3.0, COMPRIMENTO / 2.0]:
-		_caixa(Vector3(LARGURA, 0.01, 0.05), Vector3(0, y, z), cor_das_linhas)
-
-
-## Placas de propaganda em volta da zona livre, na cor do estádio.
-func _criar_placas() -> void:
-	var cor := _cor_do_estadio("placas", Color("#8E2B2B"))
-	var altura := 1.0
-	var espessura := 0.3
-	var x := LARGURA_ZONA_LIVRE / 2.0 + espessura / 2.0
-	var z := COMPRIMENTO_ZONA_LIVRE / 2.0 + espessura / 2.0
-	for lado in [-1.0, 1.0]:
-		_caixa(Vector3(espessura, altura, COMPRIMENTO_ZONA_LIVRE), Vector3(x * lado, altura / 2.0, 0.0), cor)
-		_caixa(Vector3(LARGURA_ZONA_LIVRE + espessura * 2.0, altura, espessura), Vector3(0.0, altura / 2.0, z * lado), cor)
-
-
-func _criar_rede() -> void:
-	var rede := _caixa(Vector3(LARGURA + 1.0, 1.0, 0.03), Vector3(0, ALTURA_REDE - 0.5, 0), Color(1, 1, 1, 0.45))
-	var material := rede.material_override as StandardMaterial3D
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-
-	for x in [-(LARGURA / 2.0 + 0.5), LARGURA / 2.0 + 0.5]:
-		var poste := MeshInstance3D.new()
-		var cilindro := CylinderMesh.new()
-		cilindro.top_radius = 0.05
-		cilindro.bottom_radius = 0.05
-		cilindro.height = ALTURA_REDE + 0.1
-		poste.mesh = cilindro
-		poste.material_override = _material(Color("#D8D8D8"))
-		poste.position = Vector3(x, cilindro.height / 2.0, 0)
-		add_child(poste)
+## Quadra, rede, árbitros e o ginásio ou arena em volta (scripts/cenario/).
+func _criar_cenario() -> void:
+	cenario = Cenario.new()
+	cenario.name = "Cenario"
+	add_child(cenario)
+	cenario.montar(estadio, times_em_jogo, {
+		"largura": LARGURA, "comprimento": COMPRIMENTO, "altura_da_rede": ALTURA_REDE,
+		"zona_livre": Vector2(LARGURA_ZONA_LIVRE, COMPRIMENTO_ZONA_LIVRE),
+	})
 
 
 func _criar_atletas(time: int) -> void:
@@ -1836,6 +1816,8 @@ func _adicionar_camera(onde: Node, time: int) -> void:
 		abertura_da_camera
 	)
 	camera.current = true
+	# O fundo atrás do próprio time fica entre a câmera e a quadra: não desenha.
+	camera.set_cull_mask_value(Cenario.CAMADA_ATRAS_DO_TIME[0 if lado > 0.0 else 1], false)
 	if tela_dividida:
 		# Esconde o anel de tempo do outro jogador.
 		camera.set_cull_mask_value(CAMADA_DO_ANEL_DE_TEMPO[1 - time], false)
@@ -1868,9 +1850,10 @@ func _criar_interface() -> void:
 	camada.add_child(topo)
 	placar_visual = PlacarVisual.new()
 	topo.add_child(placar_visual)
+	var ids_dos_times := [str(times_em_jogo[0]["id"]), str(times_em_jogo[1]["id"])]
 	placar_visual.configurar(
 		[times_em_jogo[0]["nome"], times_em_jogo[1]["nome"]],
-		[_cor_do_time(0), _cor_do_time(1)])
+		[_cor_do_time(0), _cor_do_time(1)], ids_dos_times)
 
 	# Mensagem no meio, em cima. O CenterContainer mantém a caixa centralizada
 	# e do tamanho do texto.
@@ -1922,6 +1905,7 @@ func _criar_interface() -> void:
 
 	faixa = FaixaDePonto.new()
 	camada.add_child(faixa)
+	faixa.configurar(ids_dos_times)
 
 	# Cortina preta por cima de tudo (até da pausa), fechada até a cena abrir.
 	var camada_da_cortina := CanvasLayer.new()

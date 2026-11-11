@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<!-- Duas pessoas. -->
+<g fill="#FFFFFF">
+<circle cx="23" cy="20" r="10"/><path d="M4 54 C4 40 12 34 23 34 C34 34 42 40 42 54 Z"/>
+<circle cx="44" cy="17" r="8"/><path d="M40 30 C51 29 60 34 60 48 H46 C46 40 44 34 40 30 Z"/>
+</g>
+</svg>

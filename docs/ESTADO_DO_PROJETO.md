@@ -32,7 +32,7 @@ Tudo abaixo está neste repositório. Em 09/11/2026, os **23 testes automáticos
 
 ### Menus e telas
 - Menu principal (Partida rápida, Modo Caos, Controles, Sair; Online aparece como "em breve").
-- Seleção de times com cursor de cada jogador e atributos do time na tela; escolha entre **4 estádios** (Ginásio Japonês, Arena Nacional, Arena Brasileira, Arena Neon).
+- Seleção de times com cursor de cada jogador, emblema de cada time, atributos com ícone e o atleta destaque em 3D que comemora ao confirmar (Fase 01, 10/11/2026); escolha entre **4 estádios** (Ginásio Japonês, Arena Nacional, Arena Brasileira, Arena Neon).
 - Pausa (continuar, recomeçar, trocar times, menu) e tela de fim de jogo.
 - Uniforme reserva quando os dois escolhem o mesmo time.
 
@@ -57,8 +57,8 @@ Tudo abaixo está neste repositório. Em 09/11/2026, os **23 testes automáticos
 - Na cortada, o atleta pula no botão e **a mão bate na bola no alto do pulo** (0,3 s depois).
 
 ### Placar e impacto visual
-- **Placar novo** (`scripts/partida/placar_visual.gd`), em cima e no meio: cores dos times, sets em bolinhas, quem saca, número que pula no ponto e aviso de SET POINT / MATCH POINT / PONTO DECISIVO (regra em `placar.gd`: `ponto_de_set`, `ponto_de_partida`, `aviso`).
-- **Faixa do ponto** (`faixa_de_ponto.gd`): PONTO!, ACE!, BLOQUEIO!, SET! e JOGO!, na cor do time.
+- **Placar de transmissão** (`scripts/partida/placar_visual.gd`, Fase 02, 10/11/2026), em cima e no meio: emblema e nome em blocos inclinados, caixas de pontos com a borda na cor do time, set atual com uma bolinha por set na cor de quem ganhou, bola de quem saca, efeito de ponto (corte de luz dourado, faíscas, brilho, número amarelo, tremor), FIM e brilho do vencedor, e aviso de SET POINT / MATCH POINT / PONTO DECISIVO (regra em `placar.gd`: `ponto_de_set`, `ponto_de_partida`, `aviso`).
+- **Faixa do ponto** (`faixa_de_ponto.gd`): PONTO!, ACE!, BLOQUEIO!, SET! e JOGO!, escura com a ponta na cor do time e o emblema de quem pontuou; menor que a antiga (680 x 104) pra cobrir menos a quadra.
 - **Efeitos**: onda no chão onde a bola cai (`scripts/visual/onda_no_chao.gd`) com tremor; bloqueio congela, treme e mostra "Bloqueio!".
 
 ### Jogadas e leitura do bloqueio
@@ -94,7 +94,7 @@ Feito depois de um robô jogar partidas inteiras e listar o que parecia estranho
 ### Dados editáveis (sem mexer em código)
 - `dados/times.json`: times, atributos (1 a 5, somando 17) e cores.
 - `dados/elenco.json`: atletas de cada time (nome, número, posição).
-- `dados/estadios.json`: cores da quadra, do fundo, das placas e da luz.
+- `dados/estadios.json`: estilo (ginásio ou arena), cores (piso, quadra, linhas, placas, proteção dos postes, luz, sol), textos das faixas (ginásio), letreiro e cores do público (arena).
 - `dados/cartas.json`: cartas do Modo Caos (usadas no Modo Caos, só as de `IMPLEMENTADAS` em `scripts/regras/cartas.gd`).
 
 ---
@@ -110,12 +110,12 @@ Feito depois de um robô jogar partidas inteiras e listar o que parecia estranho
 - A base está feita. Falta testar com gente de verdade e ajustar números (janelas de tempo, alcance, força).
 
 ### Modos
-- **Modo Caos (primeira versão, 10/11/2026, ainda NÃO testada no Godot):** menu → seleção → partida com cartas. Os dois jogadores escolhem 1 de 3 cartas antes do 1º saque e a cada 3 pontos (`pontos_por_escolha` em `dados/cartas.json`), com limite de 60 s (depois sorteia). Regras em `scripts/regras/cartas.gd`, tela em `scripts/partida/escolha_de_cartas.gd`, efeitos em `scripts/regras/atributos.gd` (`time["modificadores"]`). Só 8 das 21 cartas têm efeito e entram no sorteio (lista `IMPLEMENTADAS`): Mãos Firmes, Pés Leves, Tapete Vermelho, Saque Firme, Levantador Preciso, Muro, Ataque Rápido e Troca de Lugar; os bônus de conjunto de 2 cartas (ataque, defesa, saque, velocidade) e o de 3 de velocidade também valem. Falta o efeito das outras 13, balancear e testar com gente. Testes novos: `teste_cartas.gd` e `teste_cartas_na_partida.gd`.
+- **Modo Caos (primeira versão, 10/11/2026):** menu → seleção → partida com cartas. Testado no Godot 4.7.2 em 10/11/2026: o caminho todo abre e a tela de cartas funciona com os dois jogadores (`teste_tela_de_cartas.gd`); os efeitos ainda não foram jogados por gente. Tela refeita na Fase 03: cartas desenhadas em `scripts/partida/carta_visual.gd` (prata, ouro e prismática com moldura, fundo e brilho próprios; ícone do conjunto em `arte/icones/`; foto do atleta destaque do time na jogada do conjunto, tirada uma vez e guardada), cronômetro, emblema do time e botão TROCAR (Bloqueio; `trocas_por_partida` em `dados/cartas.json`, regra em `partida._trocar_cartas`). Os dois jogadores escolhem 1 de 3 cartas antes do 1º saque e a cada 3 pontos (`pontos_por_escolha` em `dados/cartas.json`), com limite de 60 s (depois sorteia). Regras em `scripts/regras/cartas.gd`, tela em `scripts/partida/escolha_de_cartas.gd`, efeitos em `scripts/regras/atributos.gd` (`time["modificadores"]`). Só 8 das 21 cartas têm efeito e entram no sorteio (lista `IMPLEMENTADAS`): Mãos Firmes, Pés Leves, Tapete Vermelho, Saque Firme, Levantador Preciso, Muro, Ataque Rápido e Troca de Lugar; os bônus de conjunto de 2 cartas (ataque, defesa, saque, velocidade) e o de 3 de velocidade também valem. Falta o efeito das outras 13, balancear e testar com gente. Testes novos: `teste_cartas.gd` e `teste_cartas_na_partida.gd`.
 - **Online**: ainda não foi construído. O código já separa a entrada (teclado/controle) da lógica do jogo pra facilitar isso. Plano: um computador é o "dono" da partida, primeiro conexão por IP, depois procurar partida.
 
 ### Arte e som
 - Estádios com cenário de verdade (hoje são cores por estádio).
-- Imagens dos times e prévias dos estádios na seleção (`arte/times/` e `arte/estadios/`, opcionais).
+- Prévias dos estádios na seleção: capturas do próprio jogo em `arte/estadios/<id>.png` (Fase 04), também usadas desfocadas no fundo da seleção. Retrato 2D opcional dos times em `arte/times/` (sem ele aparece o atleta 3D).
 - Som e música, quando for decidido.
 
 ---
@@ -170,10 +170,12 @@ Leia esta seção inteira antes de mexer no código.
 - **`scripts/entrada/`:** teclado e controle viram **comandos**. A partida não sabe de onde o comando veio. É isso que vai permitir o online: basta criar outra fonte de comandos que venha da rede.
 - **`scripts/partida/partida.gd`:** o centro da partida (~1.900 linhas): monta quadra, times e câmeras, liga regras, IA, bloqueio, rodízio, faltas, placar e animações. É o arquivo mais arriscado de mexer; separe partes novas em scripts próprios (como foi feito com `bola.gd`, `anel_de_tempo.gd`, `mira_visual.gd`, `anel_do_controlado.gd`, `camera_da_partida.gd`, `barra_de_forca.gd`). Pedaços que se repetem já têm ajudantes: `_distancia_no_chao`, `_animador_de`, `_erro_aleatorio`, `_destino_na_quadra_do_outro`, `_mostrar_mensagem(texto, time)`.
 - **Bloqueio:** `_tipo_do_bloqueio` devolve `Bloqueio.NENHUM`, `DEVOLVE` ou `TOQUE`; a bola (`bola.gd`) usa isso pra voltar ou raspar e seguir. Botões apertados cedo ficam em `pedidos[time]` por `TEMPO_DO_PEDIDO`.
+- **Polyfork** (Fase 05): 3 GLBs gratuitos em `assets/polyfork/cenario/` (CC BY 4.0, créditos em `assets/polyfork/LEIA-ME.md`), carregados por `scripts/cenario/polyfork.gd` (cor dos vértices, troca de cores, apoio no chão; sem o arquivo, volta a peça desenhada). Antes de acrescentar outro, registre em `assets/polyfork/manifesto.json`.
+- **`scripts/cenario/`** (Fase 04): `cenario.gd` monta quadra, rede, árbitros, bancos e mesa e chama o estilo do estádio (`ginasio_japones.gd` ou `arena.gd`); `pecas.gd` tem as peças. A partida só chama `_criar_cenario()`. As câmeras ficam do lado de fora do ginásio, atrás de cada time: o que está no fundo atrás de um time vai pra camada 13 (atrás do time 0, z positivo) ou 14 (atrás do time 1), e a câmera daquele time não desenha essa camada (`Cenario.CAMADA_ATRAS_DO_TIME`). Use as camadas 11–14 só pra isso. O cenário não tem física: medidas da quadra e da rede continuam em `partida.gd` e `bola.gd`.
 - **`scripts/visual/`:** `visual_anime.gd` (materiais anime), `animador.gd` (animações dos personagens), `impacto.gd` (congelar e tremer a tela), `rastro.gd` (rastro da bola).
-- **`scripts/menus/`:** `estilo.gd` guarda cores, fontes e peças de interface de todos os menus (inclusive `rotulo_com_contorno`, usado na partida); `selecao.gd` tem a lógica da seleção e `selecao_de_times.gd` desenha a tela; `cortina.gd` é a cortina preta das trocas de cena.
+- **`scripts/menus/`:** `estilo.gd` guarda cores, fontes e peças de interface de todos os menus (inclusive `rotulo_com_contorno`, usado na partida); `selecao.gd` tem a lógica da seleção e `selecao_de_times.gd` desenha a tela (emblemas em `arte/emblemas/`, ícones em `arte/icones/`, atleta 3D em `retrato_do_atleta.gd`, que guarda os atletas já montados e libera ao sair); `cortina.gd` é a cortina preta das trocas de cena.
 - **`dados/*.json`:** tudo que é ajustável sem código (times, elenco, estádios, cartas), lido por `scripts/comum/dados.gd`. A escalação depende do campo `posicao` em `dados/elenco.json` (levantador, ponteiro, central, oposto): mantenha 1 levantador, 2 ponteiros, 2 centrais e 1 oposto por time.
-- **Câmera e visual:** ajustáveis no Inspetor do nó `Partida` em `cenas/partida.tscn` (tela dividida, altura, distância, foco, visual anime). Valores atuais: altura 14,5, distância 29,5, foco 1,5, abertura 27°. O quanto a câmera acompanha a bola fica nas constantes de `scripts/partida/camera_da_partida.gd`.
+- **Câmera e visual:** ajustáveis no Inspetor do nó `Partida` em `cenas/partida.tscn` (tela dividida, altura, distância, foco, visual anime). Valores atuais (Fase 04): altura 10,5, distância 24, foco 0, abertura 37° (antes: 14,5, 29,5, 1,5 e 27°; a câmera nova mostra o ginásio e deixa os atletas maiores, com os quatro cantos da quadra na tela). O quanto a câmera acompanha a bola fica nas constantes de `scripts/partida/camera_da_partida.gd`.
 
 ### Personagens (`.vrm` ou gerados)
 - Ordem que a partida usa (`Dados.carregar_personagem`): `.vrm` se existir → gerado por código se tiver entrada em `dados/aparencia.json` → cápsula.
@@ -192,11 +194,12 @@ Leia esta seção inteira antes de mexer no código.
 - **Cuidado:** deixe **Remove Tracks desligado** na importação. No Godot 4.7.2 ele apaga as trilhas da animação.
 - **DeepMotion** (vídeo → animação): ossos com nomes `*_JNT`, vem de costas e o quadril sobe com o tempo. Fica em `animacoes/deepmotion/` com `deepmotion_bone_map.tres`; rode `godot --headless --script res://ferramentas/converte_deepmotion.gd` pra gerar o `.tres` do jogo.
 - Levantamento e cortada montada saem de `ferramentas/animacoes_combinadas.gd`.
+- **Pose de espera** (Fase 06): parado em quadra o atleta toca "espera", criada em `animador.gd` a partir da "parado" (`POSE_DE_ESPERA`, `DESCIDA_DO_QUADRIL`, `PARADO_NO_JOGO`). Mexendo nos ângulos, rode `teste_pose_de_espera.gd` (confere os pés no chão).
 - `scripts/visual/animador.gd`: a tabela `TRECHOS` diz qual pedaço de cada animação toca em cada lance. A cortada usa `TEMPO_ATE_A_BATIDA` (0,3 s) e puxa a bola até a mão (ímã de 0,15 s).
 - Passo a passo completo em `animacoes/LEIA-ME.md`.
 
 ### Testes
-- São 24 arquivos em `testes/` (`teste_elenco_em_quadra.gd` confere os 42 atletas: malha com pesos, esqueleto, trilhas das animações e pose que se mexe). Rode todos, dentro da pasta do projeto:
+- São 30 arquivos em `testes/` (`teste_pose_de_espera.gd` confere a pose de espera com os pés no chão; `teste_cenario.gd` abre a partida nos 4 estádios e confere rede, árbitros, pessoas e as camadas de cada câmera; `teste_tela_de_selecao.gd` e `teste_tela_de_cartas.gd` abrem a tela e apertam os botões dos dois jogadores; `teste_elenco_em_quadra.gd` confere os 42 atletas: malha com pesos, esqueleto, trilhas das animações e pose que se mexe). Rode todos, dentro da pasta do projeto:
 
 ```
 for t in testes/teste_*.gd; do godot --headless --script res://$t; done

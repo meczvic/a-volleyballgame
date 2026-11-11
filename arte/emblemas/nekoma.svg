@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+<!-- Gato facetado (emblema original do jogo). Grupo de trás = contorno claro. -->
+<g fill="#F5F2EB" stroke="#F5F2EB" stroke-width="14" stroke-linejoin="round">
+<polygon points="56,36 108,94 50,112"/><polygon points="200,36 148,94 206,112"/>
+<polygon points="50,106 104,90 152,90 206,106 220,150 192,200 128,226 64,200 36,150"/>
+<polygon points="64,200 128,226 192,200 174,234 128,248 82,234"/></g>
+<polygon fill="#1A1A1E" points="56,36 108,94 50,112"/><polygon fill="#1A1A1E" points="200,36 148,94 206,112"/>
+<polygon fill="#D3343B" points="62,58 94,94 60,104"/><polygon fill="#D3343B" points="194,58 162,94 196,104"/>
+<polygon fill="#1A1A1E" points="50,106 104,90 152,90 206,106 220,150 192,200 128,226 64,200 36,150"/>
+<polygon fill="#2B2B33" points="104,90 152,90 128,124"/><polygon fill="#24242B" points="36,150 64,200 96,168"/><polygon fill="#24242B" points="220,150 192,200 160,168"/>
+<polygon fill="#F2C230" points="74,140 108,126 116,148 88,156"/><polygon fill="#F2C230" points="182,140 148,126 140,148 168,156"/>
+<polygon fill="#111114" points="96,130 102,129 100,153 94,154"/><polygon fill="#111114" points="160,130 154,129 156,153 162,154"/>
+<polygon fill="#D3343B" points="116,174 140,174 128,186"/>
+<polygon fill="#D3343B" points="64,200 128,226 192,200 174,234 128,248 82,234"/>
+</svg>

@@ -1,0 +1,56 @@
+{
+	"_sobre": "Modelos 3D da Polyfork usados no jogo (Fase 05). Todos gratuitos, baixados em 11/11/2026 de https://polyfork.dev/dl/<id>.glb (sem conta). Licença escolhida: CC BY 4.0 para os arquivos de malha (GLB), que permite redistribuir no GitHub com crédito, link e indicação de mudanças (https://polyfork.dev/licensing). Nada do código .mjs nem edições HD foi usado. Carregados por scripts/cenario/polyfork.gd.",
+	"assets": [
+		{
+			"id": "ball-cart-8274fd",
+			"nome": "Ball Cart",
+			"arquivo": "assets/polyfork/cenario/ball-cart-8274fd.glb",
+			"url": "https://polyfork.dev/asset/ball-cart-8274fd",
+			"download": "https://polyfork.dev/dl/ball-cart-8274fd.glb",
+			"licenca": "CC BY 4.0",
+			"credito": "Ball Cart by Polyfork (https://polyfork.dev/asset/ball-cart-8274fd), CC BY 4.0",
+			"triangulos": 1155,
+			"tamanho_m": [0.92, 1.71, 1.0],
+			"mudancas": "Cores de vértice das bolas trocadas no jogo (preto -> azul #1E4FB8, laranja -> amarelo #F2C21B) pra virarem bolas de vôlei; material novo que usa a cor do vértice. O arquivo GLB não foi alterado.",
+			"onde": "Ginásio Japonês: um carrinho perto do palco e dois perto do portão (scripts/cenario/ginasio_japones.gd, _carrinho_de_bolas).",
+			"substitui": "Carrinho feito com caixas e esferas (continua como reserva se o arquivo faltar).",
+			"status": "Testado no Godot 4.7.2 (teste_cenario.gd e capturas da Fase 05)."
+		},
+		{
+			"id": "whiteboard-ea98f7",
+			"nome": "Whiteboard",
+			"arquivo": "assets/polyfork/cenario/whiteboard-ea98f7.glb",
+			"url": "https://polyfork.dev/asset/whiteboard-ea98f7",
+			"download": "https://polyfork.dev/dl/whiteboard-ea98f7.glb",
+			"licenca": "CC BY 4.0",
+			"credito": "Whiteboard by Polyfork (https://polyfork.dev/asset/whiteboard-ea98f7), CC BY 4.0",
+			"triangulos": 512,
+			"tamanho_m": [1.6, 1.2, 0.13],
+			"mudancas": "Material novo que usa a cor do vértice; colocado num suporte com rodinhas feito no jogo. O arquivo GLB não foi alterado.",
+			"onde": "Ginásio Japonês: na frente da porta da esquerda do palco (_quadro_branco).",
+			"substitui": "Quadro branco feito com caixas (continua como reserva).",
+			"status": "Testado no Godot 4.7.2 (teste_cenario.gd e capturas da Fase 05)."
+		},
+		{
+			"id": "plank-bench-c46528",
+			"nome": "Plank Bench",
+			"arquivo": "assets/polyfork/cenario/plank-bench-c46528.glb",
+			"url": "https://polyfork.dev/asset/plank-bench-c46528",
+			"download": "https://polyfork.dev/dl/plank-bench-c46528.glb",
+			"licenca": "CC BY 4.0",
+			"credito": "Plank Bench by Polyfork (https://polyfork.dev/asset/plank-bench-c46528), CC BY 4.0",
+			"triangulos": 402,
+			"tamanho_m": [4.0, 0.45, 0.32],
+			"mudancas": "Material novo que usa a cor do vértice; girado 90° pra ficar ao longo da lateral. O arquivo GLB não foi alterado.",
+			"onde": "Ginásio Japonês: banco de cada time (scripts/cenario/cenario.gd, _criar_bancos_e_mesa). Nas arenas continua o banco desenhado.",
+			"substitui": "Banco feito com caixas (continua como reserva e nas arenas).",
+			"status": "Testado no Godot 4.7.2 (teste_cenario.gd e capturas da Fase 05)."
+		}
+	],
+	"avaliados_e_nao_usados": [
+		{"id": "match-scoreboard-58f51e", "motivo": "Placar de estádio de futebol com 4,8 m de altura; o ginásio já tem placar de parede com os times."},
+		{"id": "referee-9e9e73", "motivo": "Personagem com esqueleto diferente e uniforme de futebol; os árbitros do jogo são personagens do gerador, com as mesmas animações."},
+		{"id": "spectator-d086fe", "motivo": "3.657 triângulos por pessoa; o público instanciado do jogo é bem mais leve."},
+		{"id": "bleacher-stand-run-1627c2", "motivo": "O ginásio de colégio usa mezanino em vez de arquibancada."}
+	]
+}

@@ -34,8 +34,9 @@ Nos menus: setas, WASD ou direcional navegam; **Enter, J ou A** escolhem; **Esc 
 
 ### Menus
 
-1. **Menu principal:** Partida rápida, Controles e Sair. Modo Caos e Online aparecem como "em breve".
-2. **Seleção de times:** cada jogador move o próprio cursor (Jogador 1: A/D, Jogador 2: setas, ou o direcional do seu controle) e confirma com **Passe** (J, 1 numérico ou A). Os atributos do time aparecem na metade de cada um. **Mergulho** (Espaço, 0 numérico ou B) desfaz.
+1. **Menu principal:** Partida rápida, Modo Caos, Controles e Sair. Online aparece como "em breve".
+   - **Modo Caos:** igual à partida rápida, mas antes do 1º saque e a cada 3 pontos cada jogador escolhe 1 de 3 cartas na metade dele (esquerda/direita escolhe, Passe confirma; 60 s, depois sorteia). Cada carta mostra a raridade (**prata**, **ouro** ou **prismática**, cada uma com moldura e fundo próprios), o atleta destaque do seu time fazendo a jogada da carta, o ícone do conjunto, o nome e o efeito. **Bloqueio** (L, 3 numérico ou Y) troca as 3 cartas por outras 3, uma vez por partida (`trocas_por_partida` em `dados/cartas.json`). Só 8 cartas já têm efeito (veja `docs/ESTADO_DO_PROJETO.md`).
+2. **Seleção de times:** cada jogador move o próprio cursor (Jogador 1: A/D, Jogador 2: setas, ou o direcional do seu controle) e confirma com **Passe** (J, 1 numérico ou A). Na metade de cada um aparecem o emblema e o nome do time, os atributos com ícone e barra, e o atleta destaque em 3D (o mesmo personagem da partida), que comemora quando você confirma. **Mergulho** (Espaço, 0 numérico ou B) desfaz.
 3. Com os dois confirmados, qualquer um escolhe o **estádio** (esquerda/direita) e confirma pra começar.
 4. Na partida, **Esc ou Start** pausa: continuar, recomeçar, trocar times ou voltar ao menu. No fim, aparece quem venceu, com as mesmas opções.
 
@@ -61,7 +62,7 @@ Se os dois escolherem o mesmo time, o Jogador 2 joga com o uniforme reserva.
 - Passe e levantamento perfeitos dão o **levantamento rápido** (bola baixa, que chega antes do bloqueio).
 - Na cortada, aperte um pouco antes: o atleta pula e bate no alto do pulo. Cortada perfeita é forte e funda (a tela congela por um instante e treme); ruim sai fraca e torta.
 
-**Placar e efeitos:** o placar fica em cima, no meio, com a cor de cada time, as bolinhas dos sets (● ganho, ○ não) e um ponto colorido do lado de quem saca. Quando sai ponto, o número de quem pontuou pula e pisca. Embaixo aparece **SET POINT**, **MATCH POINT** ou **PONTO DECISIVO** (quando os dois fecham o set com o próximo ponto). Uma faixa na cor do time atravessa a tela: **PONTO!** (com o motivo, se foi falta), **ACE!** (saque que cai sem ninguém tocar), **BLOQUEIO!**, **SET!** e **JOGO!**. A bola que cai dentro abre uma onda no chão e treme a tela. O bloqueio congela o jogo por um instante, treme a tela e mostra "Bloqueio!" em cima da bola.
+**Placar e efeitos:** o placar fica em cima, no meio, como numa transmissão: o emblema e o nome de cada time num bloco inclinado, os pontos numa caixa com a borda na cor do time e, no meio, o set atual com uma bolinha por set (pintada na cor de quem ganhou). Uma bola pequena mostra quem saca. Quando sai ponto, um corte de luz dourado atravessa a caixa de quem pontuou, saem faíscas, o número salta e fica amarelo um instante. Embaixo aparece **SET POINT**, **MATCH POINT** ou **PONTO DECISIVO** (quando os dois fecham o set com o próximo ponto); no fim do jogo o meio mostra **FIM** e a caixa do vencedor brilha. Uma faixa escura com a ponta na cor do time e o emblema de quem pontuou atravessa a tela: **PONTO!** (com o motivo, se foi falta), **ACE!** (saque que cai sem ninguém tocar), **BLOQUEIO!**, **SET!** e **JOGO!**. A bola que cai dentro abre uma onda no chão e treme a tela. O bloqueio congela o jogo por um instante, treme a tela e mostra "Bloqueio!" em cima da bola.
 
 **Largada:** depois de apertar Ataque, aperte **Passe** enquanto o atleta está no ar. Em vez de bater, ele empurra a bola devagar **por cima do bloqueio**, e ela cai curta, entre 1 e 3 m da rede. A direção escolhe o lado. Funciona bem quando o bloqueio está fechado e a defesa está lá atrás. Contra uma defesa que espera perto da rede, é bola fácil.
 
@@ -99,13 +100,15 @@ O jogo segue as regras oficiais (FIVB). Só o placar é do jogo: sets até 7, co
 | `scripts/regras/` | Regras puras, sem gráfico: placar, sets, rodízio, escalação (`escalacao.gd`), formação no saque (`formacao.gd`), toques, trajetória da bola, escolha do atacante. |
 | `scripts/entrada/` | Teclado e controle viram "comandos". A lógica do jogo não sabe se o comando veio do teclado ou da internet, o que facilita o online depois. |
 | `scripts/partida/` | O que acontece na quadra. |
-| `scripts/menus/` | Menu principal, seleção de times (`selecao.gd` tem as regras, `selecao_de_times.gd` desenha a tela), pausa e fim de jogo. `estilo.gd` guarda as cores e fontes de todos os menus. `configuracao.gd` guarda os times e o estádio escolhidos. |
+| `scripts/menus/` | Menu principal, seleção de times (`selecao.gd` tem as regras, `selecao_de_times.gd` desenha a tela, `retrato_do_atleta.gd` mostra o atleta em 3D), pausa e fim de jogo. `estilo.gd` guarda as cores e fontes de todos os menus. `configuracao.gd` guarda os times e o estádio escolhidos. |
 | `scripts/comum/` | `dados.gd` lê os arquivos da pasta `dados/`. |
 | `fontes/` | Fonte Barlow Condensed (licença livre OFL, em `LICENCA_OFL.txt`). |
-| `shaders/` | Efeito anime: `anime.gdshader` (luz e sombra em faixas) e `contorno.gdshader` (contorno escuro). |
+| `shaders/` | Efeito anime: `anime.gdshader` (luz e sombra em faixas) e `contorno.gdshader` (contorno escuro). Cenário: `piso_de_madeira.gdshader`, `rede.gdshader` (malha vazada), `janela_entardecer.gdshader` e `grade.gdshader`. |
+| `assets/polyfork/` | Três modelos gratuitos da [Polyfork](https://polyfork.dev) usados no Ginásio Japonês (carrinho de bolas, quadro branco, banco de tábua), licença CC BY 4.0. Créditos em `assets/polyfork/LEIA-ME.md`, detalhes em `manifesto.json`. |
+| `scripts/cenario/` | O lugar da partida, montado em código: `cenario.gd` (quadra, linhas, rede com antenas, cadeira do juiz, árbitros, bancos com reservas e técnico, mesa do apontador), `ginasio_japones.gd` (ginásio de colégio ao entardecer) e `arena.gd` (arquibancadas, público, placas de LED e telão, pros outros três estádios). `pecas.gd` tem as peças simples (caixas, placas, textos, público instanciado). |
 | `scripts/visual/` | `visual_anime.gd` cria materiais anime prontos: `VisualAnime.material(cor)`. |
 | `dados/` | Times (atributos e cores), estádios (cores da quadra, do fundo, das placas e da luz) e cartas do Modo Caos, em JSON. Mudar um número aqui muda o jogo sem mexer em código. |
-| `arte/` (opcional) | Se você criar `arte/times/<id>.png` (um personagem com fundo transparente, ex.: `arte/times/karasuno.png`), ele aparece grande na seleção de times. `arte/estadios/<id>.png` vira a prévia do estádio. Os ids estão nos arquivos de `dados/`. |
+| `arte/` | `arte/emblemas/<id>.svg`: emblema de cada time (desenhos originais do jogo). `arte/icones/`: ícones dos menus (brancos; o jogo pinta na cor certa). Opcional: se você criar `arte/times/<id>.png` (um personagem com fundo transparente, ex.: `arte/times/karasuno.png`), ele aparece grande na seleção de times no lugar do atleta 3D. O atleta 3D é o do campo `destaque` em `dados/times.json`. `arte/estadios/<id>.png` vira a prévia do estádio. Os ids estão nos arquivos de `dados/`. |
 | `personagens/` | Atletas feitos no VRoid Studio (`.vrm`), um por arquivo: `personagens/<time>/<número>_<nome>.vrm`. Veja o [guia do VRoid](https://claude.ai/artifact/NitRJ4DP8oGWkKQJLS1k6A). |
 | `testes/` | Testes automáticos das regras. |
 
@@ -128,7 +131,7 @@ godot --headless --script res://testes/teste_animacoes.gd
 godot --headless --script res://testes/teste_animador.gd
 ```
 
-Ou todos de uma vez (21 arquivos, incluindo tempo do toque, mira, cortada, atributos, mergulho, jogadas e placar):
+Ou todos de uma vez (30 arquivos, incluindo tempo do toque, mira, cortada, atributos, mergulho, jogadas e placar):
 
 ```
 for t in testes/teste_*.gd; do godot --headless --script res://$t; done
