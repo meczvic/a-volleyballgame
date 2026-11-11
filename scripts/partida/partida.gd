@@ -1602,13 +1602,9 @@ func _carregar_escolhas() -> void:
 		dados_das_cartas = Dados.cartas()
 
 
-## Uniforme reserva: a 3ª cor vira a principal, e a principal vira o detalhe.
+## Uniforme reserva: a regra fica em Dados (a seleção de times usa a mesma).
 func _com_uniforme_reserva(time: Dictionary) -> Dictionary:
-	var reserva := time.duplicate(true)
-	var cores: Array = reserva["cores"]
-	if cores.size() >= 3:
-		reserva["cores"] = [cores[2], cores[0], cores[1]]
-	return reserva
+	return Dados.com_uniforme_reserva(time)
 
 
 ## Cor do estádio (veja dados/estadios.json), ou "padrao" se faltar.

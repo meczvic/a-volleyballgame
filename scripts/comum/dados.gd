@@ -92,6 +92,29 @@ static func indice_de(lista: Array, id: String) -> int:
 	return 0
 
 
+## Uniforme reserva (quando os dois jogadores escolhem o mesmo time, o Jogador 2
+## usa ele): a 3ª cor vira a principal, e a principal vira o detalhe.
+static func com_uniforme_reserva(time: Dictionary) -> Dictionary:
+	var reserva := time.duplicate(true)
+	var cores: Array = reserva.get("cores", [])
+	if cores.size() >= 3:
+		reserva["cores"] = [cores[2], cores[0], cores[1]]
+	return reserva
+
+
+## Atleta que aparece no retrato do time (campo "destaque" do times.json, o
+## número da camisa). Sem o campo, ou se o número não existir, é o primeiro.
+static func atleta_destaque(time: Dictionary) -> Dictionary:
+	var elenco_do_time := elenco(str(time.get("id", "")))
+	if elenco_do_time.is_empty():
+		return {}
+	var numero := int(time.get("destaque", -1))
+	for atleta in elenco_do_time:
+		if int(atleta.get("numero", -2)) == numero:
+			return atleta
+	return elenco_do_time[0]
+
+
 ## Lê uma cor "#RRGGBB" de um dicionário. Se faltar ou estiver errada, usa "padrao".
 static func cor(dados: Dictionary, chave: String, padrao: Color) -> Color:
 	return Color.from_string(str(dados.get(chave, "")), padrao)

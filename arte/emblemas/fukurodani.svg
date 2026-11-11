@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+<!-- Coruja facetada (emblema original do jogo). Grupo de trás = contorno claro. -->
+<g fill="#F5F2EB" stroke="#F5F2EB" stroke-width="14" stroke-linejoin="round">
+<polygon points="48,34 102,78 60,98"/><polygon points="208,34 154,78 196,98"/>
+<polygon points="60,90 100,76 156,76 196,90 216,140 198,196 128,234 58,196 40,140"/></g>
+<polygon fill="#3A3F48" points="48,34 102,78 60,98"/><polygon fill="#3A3F48" points="208,34 154,78 196,98"/>
+<polygon fill="#3A3F48" points="60,90 100,76 156,76 196,90 216,140 198,196 128,234 58,196 40,140"/>
+<polygon fill="#4A505B" points="40,140 58,196 92,180"/><polygon fill="#4A505B" points="216,140 198,196 164,180"/>
+<polygon fill="#8C95A3" points="88,186 128,234 168,186 128,202"/>
+<polygon fill="#ECEDEF" points="66,110 120,102 126,150 96,170 62,150"/><polygon fill="#ECEDEF" points="190,110 136,102 130,150 160,170 194,150"/>
+<circle fill="#E3B23C" cx="96" cy="134" r="21"/><circle fill="#E3B23C" cx="160" cy="134" r="21"/>
+<circle fill="#111114" cx="98" cy="134" r="9"/><circle fill="#111114" cx="158" cy="134" r="9"/>
+<polygon fill="#23262D" points="64,98 128,126 192,98 128,112"/>
+<polygon fill="#F2A93B" points="118,148 138,148 128,178"/>
+</svg>

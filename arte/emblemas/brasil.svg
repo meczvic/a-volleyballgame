@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+<!-- Bola de vôlei verde e amarela (emblema original do jogo). -->
+<defs><clipPath id="bola"><circle cx="128" cy="128" r="104"/></clipPath></defs>
+<circle cx="128" cy="128" r="111" fill="#F5F2EB"/>
+<circle cx="128" cy="128" r="104" fill="#F2C21B"/>
+<g clip-path="url(#bola)">
+<path fill="#1E4FB8" d="M 10 92 Q 128 40 236 150 L 236 196 Q 140 78 10 136 Z"/>
+<path fill="#18A957" d="M 40 250 Q 90 140 246 92 L 250 132 Q 128 168 86 250 Z"/>
+<path fill="none" stroke="#0E2A5C" stroke-width="5" d="M 10 92 Q 128 40 236 150 M 10 136 Q 140 78 236 196 M 40 250 Q 90 140 246 92 M 86 250 Q 128 168 250 132"/>
+</g>
+<circle cx="128" cy="128" r="104" fill="none" stroke="#0E2A5C" stroke-width="5"/>
+</svg>

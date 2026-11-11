@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+<!-- Folhas facetadas (emblema original do jogo). Grupo de trás = contorno claro. -->
+<g fill="#F5F2EB" stroke="#F5F2EB" stroke-width="14" stroke-linejoin="round">
+<polygon points="128,22 164,96 128,170 92,96"/><polygon points="28,72 110,104 122,158 68,142"/><polygon points="228,72 146,104 134,158 188,142"/>
+<polygon points="40,180 112,164 124,196 72,210"/><polygon points="216,180 144,164 132,196 184,210"/><polygon points="120,160 136,160 140,238 116,238"/></g>
+<polygon fill="#1E6E66" points="120,160 136,160 140,238 116,238"/>
+<polygon fill="#2E9E93" points="128,22 164,96 128,170 92,96"/><polygon fill="#6FD0C4" points="128,22 128,170 92,96"/>
+<polygon fill="#2E9E93" points="28,72 110,104 122,158 68,142"/><polygon fill="#6FD0C4" points="28,72 122,158 110,104"/>
+<polygon fill="#2E9E93" points="228,72 146,104 134,158 188,142"/><polygon fill="#1E6E66" points="228,72 134,158 188,142"/>
+<polygon fill="#2E9E93" points="40,180 112,164 124,196 72,210"/><polygon fill="#1E6E66" points="40,180 124,196 72,210"/>
+<polygon fill="#2E9E93" points="216,180 144,164 132,196 184,210"/><polygon fill="#6FD0C4" points="216,180 144,164 132,196"/>
+</svg>

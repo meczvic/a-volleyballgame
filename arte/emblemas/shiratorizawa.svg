@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+<!-- Águia branca facetada (emblema original do jogo). Grupo de trás = contorno claro. -->
+<g fill="#F5F2EB" stroke="#F5F2EB" stroke-width="14" stroke-linejoin="round">
+<polygon points="72,80 114,58 166,60 206,84 224,124 238,184 208,170 216,214 184,196 178,234 140,198 120,162 96,134 64,122"/>
+<polygon points="74,80 22,104 34,130 52,124 68,142 96,132"/></g>
+<polygon fill="#8155C7" points="72,80 114,58 166,60 206,84 224,124 238,184 208,170 216,214 184,196 178,234 140,198 120,162 96,134 64,122"/>
+<polygon fill="#F2F2F5" points="72,80 114,58 166,60 206,84 216,120 176,150 150,176 120,162 96,134 64,122"/>
+<polygon fill="#C9CCD6" points="166,60 206,84 172,118"/><polygon fill="#C9CCD6" points="120,162 176,150 150,176"/><polygon fill="#DADCE4" points="206,84 216,120 184,128"/>
+<polygon fill="#6A3E9E" points="216,120 238,184 208,170 216,214 184,196 178,234 150,176 176,150"/>
+<polygon fill="#5A3388" points="176,150 208,170 184,196"/>
+<polygon fill="#F2B830" points="74,80 22,104 34,130 52,124 68,142 96,132"/><polygon fill="#C98A10" points="22,104 34,130 42,112"/>
+<polygon fill="#6A3E9E" points="78,84 140,74 162,92 112,100"/>
+<polygon fill="#1A1A1E" points="112,102 132,99 124,112"/>
+</svg>

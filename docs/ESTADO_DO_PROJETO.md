@@ -32,7 +32,7 @@ Tudo abaixo está neste repositório. Em 09/11/2026, os **23 testes automáticos
 
 ### Menus e telas
 - Menu principal (Partida rápida, Modo Caos, Controles, Sair; Online aparece como "em breve").
-- Seleção de times com cursor de cada jogador e atributos do time na tela; escolha entre **4 estádios** (Ginásio Japonês, Arena Nacional, Arena Brasileira, Arena Neon).
+- Seleção de times com cursor de cada jogador, emblema de cada time, atributos com ícone e o atleta destaque em 3D que comemora ao confirmar (Fase 01, 10/11/2026); escolha entre **4 estádios** (Ginásio Japonês, Arena Nacional, Arena Brasileira, Arena Neon).
 - Pausa (continuar, recomeçar, trocar times, menu) e tela de fim de jogo.
 - Uniforme reserva quando os dois escolhem o mesmo time.
 
@@ -115,7 +115,7 @@ Feito depois de um robô jogar partidas inteiras e listar o que parecia estranho
 
 ### Arte e som
 - Estádios com cenário de verdade (hoje são cores por estádio).
-- Imagens dos times e prévias dos estádios na seleção (`arte/times/` e `arte/estadios/`, opcionais).
+- Prévias dos estádios na seleção (`arte/estadios/`, opcional; hoje é um desenho da quadra). Retrato 2D opcional dos times em `arte/times/` (sem ele aparece o atleta 3D).
 - Som e música, quando for decidido.
 
 ---
@@ -171,7 +171,7 @@ Leia esta seção inteira antes de mexer no código.
 - **`scripts/partida/partida.gd`:** o centro da partida (~1.900 linhas): monta quadra, times e câmeras, liga regras, IA, bloqueio, rodízio, faltas, placar e animações. É o arquivo mais arriscado de mexer; separe partes novas em scripts próprios (como foi feito com `bola.gd`, `anel_de_tempo.gd`, `mira_visual.gd`, `anel_do_controlado.gd`, `camera_da_partida.gd`, `barra_de_forca.gd`). Pedaços que se repetem já têm ajudantes: `_distancia_no_chao`, `_animador_de`, `_erro_aleatorio`, `_destino_na_quadra_do_outro`, `_mostrar_mensagem(texto, time)`.
 - **Bloqueio:** `_tipo_do_bloqueio` devolve `Bloqueio.NENHUM`, `DEVOLVE` ou `TOQUE`; a bola (`bola.gd`) usa isso pra voltar ou raspar e seguir. Botões apertados cedo ficam em `pedidos[time]` por `TEMPO_DO_PEDIDO`.
 - **`scripts/visual/`:** `visual_anime.gd` (materiais anime), `animador.gd` (animações dos personagens), `impacto.gd` (congelar e tremer a tela), `rastro.gd` (rastro da bola).
-- **`scripts/menus/`:** `estilo.gd` guarda cores, fontes e peças de interface de todos os menus (inclusive `rotulo_com_contorno`, usado na partida); `selecao.gd` tem a lógica da seleção e `selecao_de_times.gd` desenha a tela; `cortina.gd` é a cortina preta das trocas de cena.
+- **`scripts/menus/`:** `estilo.gd` guarda cores, fontes e peças de interface de todos os menus (inclusive `rotulo_com_contorno`, usado na partida); `selecao.gd` tem a lógica da seleção e `selecao_de_times.gd` desenha a tela (emblemas em `arte/emblemas/`, ícones em `arte/icones/`, atleta 3D em `retrato_do_atleta.gd`, que guarda os atletas já montados e libera ao sair); `cortina.gd` é a cortina preta das trocas de cena.
 - **`dados/*.json`:** tudo que é ajustável sem código (times, elenco, estádios, cartas), lido por `scripts/comum/dados.gd`. A escalação depende do campo `posicao` em `dados/elenco.json` (levantador, ponteiro, central, oposto): mantenha 1 levantador, 2 ponteiros, 2 centrais e 1 oposto por time.
 - **Câmera e visual:** ajustáveis no Inspetor do nó `Partida` em `cenas/partida.tscn` (tela dividida, altura, distância, foco, visual anime). Valores atuais: altura 14,5, distância 29,5, foco 1,5, abertura 27°. O quanto a câmera acompanha a bola fica nas constantes de `scripts/partida/camera_da_partida.gd`.
 
@@ -196,7 +196,7 @@ Leia esta seção inteira antes de mexer no código.
 - Passo a passo completo em `animacoes/LEIA-ME.md`.
 
 ### Testes
-- São 24 arquivos em `testes/` (`teste_elenco_em_quadra.gd` confere os 42 atletas: malha com pesos, esqueleto, trilhas das animações e pose que se mexe). Rode todos, dentro da pasta do projeto:
+- São 27 arquivos em `testes/` (`teste_tela_de_selecao.gd` abre a tela de seleção e aperta os botões dos dois jogadores; `teste_elenco_em_quadra.gd` confere os 42 atletas: malha com pesos, esqueleto, trilhas das animações e pose que se mexe). Rode todos, dentro da pasta do projeto:
 
 ```
 for t in testes/teste_*.gd; do godot --headless --script res://$t; done

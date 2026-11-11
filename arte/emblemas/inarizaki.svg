@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+<!-- Raposa facetada (emblema original do jogo). Grupo de trás = contorno claro. -->
+<g fill="#F5F2EB" stroke="#F5F2EB" stroke-width="14" stroke-linejoin="round">
+<polygon points="52,24 114,88 56,118"/><polygon points="204,24 142,88 200,118"/>
+<polygon points="56,112 112,88 144,88 200,112 228,150 170,184 128,234 86,184 28,150"/></g>
+<polygon fill="#E8742A" points="52,24 114,88 56,118"/><polygon fill="#E8742A" points="204,24 142,88 200,118"/>
+<polygon fill="#1A1A1E" points="52,24 82,54 60,70"/><polygon fill="#1A1A1E" points="204,24 174,54 196,70"/>
+<polygon fill="#F5D7C0" points="66,74 100,90 62,108"/><polygon fill="#F5D7C0" points="190,74 156,90 194,108"/>
+<polygon fill="#E8742A" points="56,112 112,88 144,88 200,112 228,150 170,184 128,234 86,184 28,150"/>
+<polygon fill="#C85A1E" points="112,88 144,88 128,134"/><polygon fill="#D2661F" points="56,112 112,88 92,128"/><polygon fill="#D2661F" points="200,112 144,88 164,128"/>
+<polygon fill="#F5F2EB" points="28,150 86,172 112,202 128,234 84,192"/><polygon fill="#F5F2EB" points="228,150 170,172 144,202 128,234 172,192"/>
+<polygon fill="#1A1A1E" points="76,130 114,140 104,152"/><polygon fill="#1A1A1E" points="180,130 142,140 152,152"/>
+<polygon fill="#1A1A1E" points="116,220 140,220 128,236"/>
+</svg>

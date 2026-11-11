@@ -1,8 +1,9 @@
 {
-	"_sobre": "Atributos de 1 a 5, cada time soma 17. Cores do uniforme: [principal, detalhe, terceira]; quando os dois jogadores escolhem o mesmo time, o segundo usa o uniforme reserva (terceira cor com detalhe da principal). A cor_do_menu pinta o cartão e as barras na seleção de times. Nomes ficam aqui para serem trocados facilmente se o jogo for publicado.",
+	"_sobre": "Atributos de 1 a 5, cada time soma 17. Cores do uniforme: [principal, detalhe, terceira]; quando os dois jogadores escolhem o mesmo time, o segundo usa o uniforme reserva (terceira cor com detalhe da principal). A cor_do_menu pinta o cartão e as barras na seleção de times. O campo destaque é o número da camisa do atleta que aparece no retrato da seleção; o emblema fica em arte/emblemas/<id>.svg. Nomes ficam aqui para serem trocados facilmente se o jogo for publicado.",
 	"times": [
 		{
 			"id": "karasuno",
+			"destaque": 10,
 			"nome": "Karasuno",
 			"estilo": "Rápido e ofensivo",
 			"atributos": { "ataque": 4, "defesa": 2, "saque": 3, "bloqueio": 3, "velocidade": 5 },
@@ -12,6 +13,7 @@
 		},
 		{
 			"id": "aoba_johsai",
+			"destaque": 1,
 			"nome": "Aoba Johsai",
 			"estilo": "Levantador forte, saque potente",
 			"atributos": { "ataque": 4, "defesa": 3, "saque": 5, "bloqueio": 2, "velocidade": 3 },
@@ -21,6 +23,7 @@
 		},
 		{
 			"id": "shiratorizawa",
+			"destaque": 1,
 			"nome": "Shiratorizawa",
 			"estilo": "Ataque de força bruta",
 			"atributos": { "ataque": 5, "defesa": 3, "saque": 4, "bloqueio": 3, "velocidade": 2 },
@@ -30,6 +33,7 @@
 		},
 		{
 			"id": "nekoma",
+			"destaque": 5,
 			"nome": "Nekoma",
 			"estilo": "Defesa e recepção",
 			"atributos": { "ataque": 2, "defesa": 5, "saque": 3, "bloqueio": 3, "velocidade": 4 },
@@ -39,6 +43,7 @@
 		},
 		{
 			"id": "fukurodani",
+			"destaque": 4,
 			"nome": "Fukurodani",
 			"estilo": "Ataque com ás instável",
 			"atributos": { "ataque": 5, "defesa": 3, "saque": 3, "bloqueio": 3, "velocidade": 3 },
@@ -48,6 +53,7 @@
 		},
 		{
 			"id": "inarizaki",
+			"destaque": 7,
 			"nome": "Inarizaki",
 			"estilo": "Versátil e imprevisível",
 			"atributos": { "ataque": 4, "defesa": 3, "saque": 4, "bloqueio": 3, "velocidade": 3 },
@@ -57,6 +63,7 @@
 		},
 		{
 			"id": "brasil",
+			"destaque": 10,
 			"nome": "Brasil",
 			"estilo": "Equilíbrio e ataque pelas pontas",
 			"atributos": { "ataque": 4, "defesa": 3, "saque": 3, "bloqueio": 3, "velocidade": 4 },
