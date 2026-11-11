@@ -194,12 +194,13 @@ Leia esta seção inteira antes de mexer no código.
 - **Cuidado:** deixe **Remove Tracks desligado** na importação. No Godot 4.7.2 ele apaga as trilhas da animação.
 - **DeepMotion** (vídeo → animação): ossos com nomes `*_JNT`, vem de costas e o quadril sobe com o tempo. Fica em `animacoes/deepmotion/` com `deepmotion_bone_map.tres`; rode `godot --headless --script res://ferramentas/converte_deepmotion.gd` pra gerar o `.tres` do jogo.
 - Levantamento e cortada montada saem de `ferramentas/animacoes_combinadas.gd`.
+- **Atleta no estilo anime** (depois da Fase 06, `docs/ATLETA_ANIME.md`): sombreamento em `shaders/atleta.gdshader`, rosto desenhado em `shaders/rosto.gdshader` (parâmetros de `_parametros_do_rosto`), cabelo em mechas largas por estilo (`_estilo_de_cabelo` em `gerador_de_atleta.gd`), contorno com largura mínima em pixels. Pra mudar um estilo de cabelo, mexa na tabela do estilo; pra ver o resultado use `ferramentas/capturas.gd` (vista `rosto` pro close).
 - **Pose de espera** (Fase 06): parado em quadra o atleta toca "espera", criada em `animador.gd` a partir da "parado" (`POSE_DE_ESPERA`, `DESCIDA_DO_QUADRIL`, `PARADO_NO_JOGO`). Mexendo nos ângulos, rode `teste_pose_de_espera.gd` (confere os pés no chão).
 - `scripts/visual/animador.gd`: a tabela `TRECHOS` diz qual pedaço de cada animação toca em cada lance. A cortada usa `TEMPO_ATE_A_BATIDA` (0,3 s) e puxa a bola até a mão (ímã de 0,15 s).
 - Passo a passo completo em `animacoes/LEIA-ME.md`.
 
 ### Testes
-- São 30 arquivos em `testes/` (`teste_pose_de_espera.gd` confere a pose de espera com os pés no chão; `teste_cenario.gd` abre a partida nos 4 estádios e confere rede, árbitros, pessoas e as camadas de cada câmera; `teste_tela_de_selecao.gd` e `teste_tela_de_cartas.gd` abrem a tela e apertam os botões dos dois jogadores; `teste_elenco_em_quadra.gd` confere os 42 atletas: malha com pesos, esqueleto, trilhas das animações e pose que se mexe). Rode todos, dentro da pasta do projeto:
+- São 31 arquivos em `testes/` (`teste_atleta_anime.gd` confere o atleta no estilo anime: normais pra fora, rosto desenhado, cabelo em mechas e os 42 montando; `teste_pose_de_espera.gd` confere a pose de espera com os pés no chão; `teste_cenario.gd` abre a partida nos 4 estádios e confere rede, árbitros, pessoas e as camadas de cada câmera; `teste_tela_de_selecao.gd` e `teste_tela_de_cartas.gd` abrem a tela e apertam os botões dos dois jogadores; `teste_elenco_em_quadra.gd` confere os 42 atletas: malha com pesos, esqueleto, trilhas das animações e pose que se mexe). Rode todos, dentro da pasta do projeto:
 
 ```
 for t in testes/teste_*.gd; do godot --headless --script res://$t; done
