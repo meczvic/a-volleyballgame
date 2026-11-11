@@ -110,7 +110,7 @@ Feito depois de um robô jogar partidas inteiras e listar o que parecia estranho
 - A base está feita. Falta testar com gente de verdade e ajustar números (janelas de tempo, alcance, força).
 
 ### Modos
-- **Modo Caos (primeira versão, 10/11/2026, ainda NÃO testada no Godot):** menu → seleção → partida com cartas. Os dois jogadores escolhem 1 de 3 cartas antes do 1º saque e a cada 3 pontos (`pontos_por_escolha` em `dados/cartas.json`), com limite de 60 s (depois sorteia). Regras em `scripts/regras/cartas.gd`, tela em `scripts/partida/escolha_de_cartas.gd`, efeitos em `scripts/regras/atributos.gd` (`time["modificadores"]`). Só 8 das 21 cartas têm efeito e entram no sorteio (lista `IMPLEMENTADAS`): Mãos Firmes, Pés Leves, Tapete Vermelho, Saque Firme, Levantador Preciso, Muro, Ataque Rápido e Troca de Lugar; os bônus de conjunto de 2 cartas (ataque, defesa, saque, velocidade) e o de 3 de velocidade também valem. Falta o efeito das outras 13, balancear e testar com gente. Testes novos: `teste_cartas.gd` e `teste_cartas_na_partida.gd`.
+- **Modo Caos (primeira versão, 10/11/2026):** menu → seleção → partida com cartas. Testado no Godot 4.7.2 em 10/11/2026: o caminho todo abre e a tela de cartas funciona com os dois jogadores (`teste_tela_de_cartas.gd`); os efeitos ainda não foram jogados por gente. Tela refeita na Fase 03: cartas desenhadas em `scripts/partida/carta_visual.gd` (prata, ouro e prismática com moldura, fundo e brilho próprios; ícone do conjunto em `arte/icones/`), cronômetro, emblema do time. Os dois jogadores escolhem 1 de 3 cartas antes do 1º saque e a cada 3 pontos (`pontos_por_escolha` em `dados/cartas.json`), com limite de 60 s (depois sorteia). Regras em `scripts/regras/cartas.gd`, tela em `scripts/partida/escolha_de_cartas.gd`, efeitos em `scripts/regras/atributos.gd` (`time["modificadores"]`). Só 8 das 21 cartas têm efeito e entram no sorteio (lista `IMPLEMENTADAS`): Mãos Firmes, Pés Leves, Tapete Vermelho, Saque Firme, Levantador Preciso, Muro, Ataque Rápido e Troca de Lugar; os bônus de conjunto de 2 cartas (ataque, defesa, saque, velocidade) e o de 3 de velocidade também valem. Falta o efeito das outras 13, balancear e testar com gente. Testes novos: `teste_cartas.gd` e `teste_cartas_na_partida.gd`.
 - **Online**: ainda não foi construído. O código já separa a entrada (teclado/controle) da lógica do jogo pra facilitar isso. Plano: um computador é o "dono" da partida, primeiro conexão por IP, depois procurar partida.
 
 ### Arte e som
@@ -196,7 +196,7 @@ Leia esta seção inteira antes de mexer no código.
 - Passo a passo completo em `animacoes/LEIA-ME.md`.
 
 ### Testes
-- São 27 arquivos em `testes/` (`teste_tela_de_selecao.gd` abre a tela de seleção e aperta os botões dos dois jogadores; `teste_elenco_em_quadra.gd` confere os 42 atletas: malha com pesos, esqueleto, trilhas das animações e pose que se mexe). Rode todos, dentro da pasta do projeto:
+- São 28 arquivos em `testes/` (`teste_tela_de_selecao.gd` e `teste_tela_de_cartas.gd` abrem a tela e apertam os botões dos dois jogadores; `teste_elenco_em_quadra.gd` confere os 42 atletas: malha com pesos, esqueleto, trilhas das animações e pose que se mexe). Rode todos, dentro da pasta do projeto:
 
 ```
 for t in testes/teste_*.gd; do godot --headless --script res://$t; done

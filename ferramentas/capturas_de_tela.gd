@@ -16,7 +16,9 @@ extends SceneTree
 ##   selecao_inicio   seleção com os cursores nos dois times, ninguém confirmou
 ##   selecao_estadio  os dois confirmaram, escolhendo o estádio
 ##   partida_saque    partida parada esperando o saque (placar zerado)
-##   cartas           Modo Caos: escolha de cartas do começo da partida
+##   cartas           Modo Caos: escolha de cartas do começo da partida, sempre
+##                    com as mesmas cartas (uma de cada raridade) pra comparar
+##   cartas_estados   o mesmo, com o J1 confirmado na 3ª carta e o J2 na 2ª
 ##   placar_*         pontos marcados pela regra de verdade (_encerrar_rally):
 ##                    jogo (4 x 3), ponto (no meio da animação, 6 x 3), set_point,
 ##                    set (faixa SET!), match_point e fim. Cada um sai também
@@ -89,9 +91,16 @@ func _capturar(tela: String) -> void:
 			await _capturar_placar()
 		"cartas":
 			configuracao.modo = "caos"
-			_abrir(CENA_PARTIDA)
+			var partida := _abrir(CENA_PARTIDA)
+			await _esperar(0.3)
+			var escolha := _cartas_fixas(partida)
 			await _esperar(ESPERA)
 			_salvar("cartas")
+			escolha._mover(0, 2)
+			escolha._confirmar(0)
+			escolha._mover(1, 1)
+			await _esperar(0.4)
+			_salvar("cartas_estados")
 			configuracao.modo = "rapida"
 		_:
 			print("Tela desconhecida: %s (use %s)" % [tela, ", ".join(TODAS)])
@@ -125,6 +134,31 @@ func _capturar_placar() -> void:
 	_ponto(partida, 0)
 	await _esperar(0.4)
 	_salvar("placar_fim", true)
+
+
+## Troca a escolha sorteada por uma fixa: prata, ouro e prismática pros dois.
+func _cartas_fixas(partida: Node) -> Node:
+	var Cartas = load("res://scripts/regras/cartas.gd")
+	var dados: Dictionary = partida.dados_das_cartas
+	var ids := [["maos_firmes", "muro", "troca_de_lugar"], ["saque_firme", "ataque_rapido", "troca_de_lugar"]]
+	var opcoes := []
+	for lista in ids:
+		var cartas := []
+		for id in lista:
+			cartas.append(Cartas.por_id(dados, id))
+		opcoes.append(cartas)
+	if partida.escolha_de_cartas != null and is_instance_valid(partida.escolha_de_cartas):
+		partida.escolha_de_cartas.free()
+	var escolha = load("res://scripts/partida/escolha_de_cartas.gd").new()
+	partida.add_child(escolha)
+	var argumentos := [opcoes, [partida.times_em_jogo[0]["nome"], partida.times_em_jogo[1]["nome"]],
+		[partida._cor_do_time(0), partida._cor_do_time(1)], [[], []], [[], []], 60.0]
+	# A versão nova também recebe os ids dos times (pros emblemas).
+	if escolha.get_method_argument_count("configurar") >= 7:
+		argumentos.append([str(partida.times_em_jogo[0]["id"]), str(partida.times_em_jogo[1]["id"])])
+	escolha.callv("configurar", argumentos)
+	partida.escolha_de_cartas = escolha
+	return escolha
 
 
 func _pontos(partida: Node, a: int, b: int) -> void:

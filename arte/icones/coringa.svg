@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<!-- Duas setas trocando de lugar (carta coringa). -->
+<g fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+<path d="M10 24 C14 12 30 8 42 14"/><path d="M54 40 C50 52 34 56 22 50"/>
+</g>
+<g fill="#FFFFFF"><path d="M36 4 L52 16 L34 24 Z"/><path d="M28 60 L12 48 L30 40 Z"/></g>
+</svg>

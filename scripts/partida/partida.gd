@@ -1371,7 +1371,8 @@ func _abrir_escolha_de_cartas(depois: Callable) -> void:
 		[times_em_jogo[0]["nome"], times_em_jogo[1]["nome"]],
 		[_cor_do_time(0), _cor_do_time(1)],
 		cartas_dos_times, nomes_das_maos,
-		Cartas.tempo_limite(dados_das_cartas))
+		Cartas.tempo_limite(dados_das_cartas),
+		[str(times_em_jogo[0]["id"]), str(times_em_jogo[1]["id"])])
 	escolha_de_cartas.terminou.connect(func(escolhas: Array) -> void:
 		escolha_de_cartas = null
 		_ao_escolher_cartas(escolhas)

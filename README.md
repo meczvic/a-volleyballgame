@@ -34,7 +34,8 @@ Nos menus: setas, WASD ou direcional navegam; **Enter, J ou A** escolhem; **Esc 
 
 ### Menus
 
-1. **Menu principal:** Partida rápida, Controles e Sair. Modo Caos e Online aparecem como "em breve".
+1. **Menu principal:** Partida rápida, Modo Caos, Controles e Sair. Online aparece como "em breve".
+   - **Modo Caos:** igual à partida rápida, mas antes do 1º saque e a cada 3 pontos cada jogador escolhe 1 de 3 cartas na metade dele (esquerda/direita escolhe, Passe confirma; 60 s, depois sorteia). Cada carta mostra a raridade (**prata**, **ouro** ou **prismática**, cada uma com moldura e fundo próprios), o ícone do conjunto, o nome e o efeito. Só 8 cartas já têm efeito (veja `docs/ESTADO_DO_PROJETO.md`).
 2. **Seleção de times:** cada jogador move o próprio cursor (Jogador 1: A/D, Jogador 2: setas, ou o direcional do seu controle) e confirma com **Passe** (J, 1 numérico ou A). Na metade de cada um aparecem o emblema e o nome do time, os atributos com ícone e barra, e o atleta destaque em 3D (o mesmo personagem da partida), que comemora quando você confirma. **Mergulho** (Espaço, 0 numérico ou B) desfaz.
 3. Com os dois confirmados, qualquer um escolhe o **estádio** (esquerda/direita) e confirma pra começar.
 4. Na partida, **Esc ou Start** pausa: continuar, recomeçar, trocar times ou voltar ao menu. No fim, aparece quem venceu, com as mesmas opções.
@@ -128,7 +129,7 @@ godot --headless --script res://testes/teste_animacoes.gd
 godot --headless --script res://testes/teste_animador.gd
 ```
 
-Ou todos de uma vez (27 arquivos, incluindo tempo do toque, mira, cortada, atributos, mergulho, jogadas e placar):
+Ou todos de uma vez (28 arquivos, incluindo tempo do toque, mira, cortada, atributos, mergulho, jogadas e placar):
 
 ```
 for t in testes/teste_*.gd; do godot --headless --script res://$t; done
