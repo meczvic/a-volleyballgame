@@ -9,7 +9,7 @@ extends SceneTree
 ##
 ## Saída em producao/capturas/<time>/:
 ##   folha.png                     os 6 do time, frente (em cima) e costas (embaixo)
-##   <nn>_<nome>_<vista>.png       frente, perfil, tres_quartos, costas, correr, cortada, espera
+##   <nn>_<nome>_<vista>.png       frente, perfil, tres_quartos, costas, correr, cortada, espera, rosto
 ##
 ## O atleta vem do mesmo caminho da partida (Dados.carregar_personagem): VRM se
 ## existir, senão o gerado por código, senão a cápsula.
@@ -25,6 +25,7 @@ const VISTAS := {
 	"correr": [PI * 0.2, "correr", 0.35],
 	"cortada": [PI * 0.3, "cortada", 1.62],
 	"espera": [PI * 0.2, "espera", 0.5],
+	"rosto": [PI * 0.12, "parado", 0.0],
 }
 const PASTA := "res://producao/capturas"
 
@@ -155,9 +156,14 @@ func _atleta(id_time: String, chave: String) -> void:
 		_preparar_animacao(personagem, cfg[1], cfg[2])
 		var altura: float = float(personagem.get_meta("altura", 1.8))
 		var alvo := Vector3(0, altura * 0.55, 0)
+		var distancia := altura * 2.25
 		if vista == "cortada":
 			alvo.y = altura * 0.75
-		_camera.position = alvo + Vector3(0, 0.15, altura * 2.25)
+		elif vista == "rosto":
+			# Close de cabeça e ombros (rosto, cabelo, gola).
+			alvo.y = altura * 0.86
+			distancia = altura * 0.62
+		_camera.position = alvo + Vector3(0, 0.15 if vista != "rosto" else 0.03, distancia)
 		_camera.look_at(alvo)
 		await process_frame
 		await process_frame
