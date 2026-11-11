@@ -62,6 +62,7 @@ const Atributos := preload("res://scripts/regras/atributos.gd")
 const MiraVisual := preload("res://scripts/partida/mira_visual.gd")
 const PlacarVisual := preload("res://scripts/partida/placar_visual.gd")
 const FaixaDePonto := preload("res://scripts/partida/faixa_de_ponto.gd")
+const Cenario := preload("res://scripts/cenario/cenario.gd")
 const OndaNoChao := preload("res://scripts/visual/onda_no_chao.gd")
 const AnelDoControlado := preload("res://scripts/partida/anel_do_controlado.gd")
 const CameraDaPartida := preload("res://scripts/partida/camera_da_partida.gd")
@@ -188,16 +189,18 @@ const DISTANCIA_DO_ANEL_DE_TEMPO := 3.5
 ## jogador só vê o próprio anel.
 const CAMADA_DO_ANEL_DE_TEMPO := [11, 12]
 
-## Câmera atrás do próprio time, baixa e de longe, como numa transmissão de TV
-## (referência: Spike Volleyball). Ajuste aqui ou no Inspetor.
-## Altura e distância da rede, em metros.
-@export var altura_camera := 14.5
-@export var distancia_camera := 29.5
+## Câmera atrás do próprio time, como numa transmissão de TV (referência:
+## Spike Volleyball). Desde a Fase 04 ela fica mais baixa e mais perto, com a
+## lente um pouco mais aberta, pra mostrar o ginásio em volta e deixar os
+## atletas maiores (antes: altura 14,5, distância 29,5, foco 1,5, abertura 27).
+## Ajuste aqui ou no Inspetor. Altura e distância da rede, em metros.
+@export var altura_camera := 10.5
+@export var distancia_camera := 24.0
 ## Pra onde a câmera aponta: metros antes da rede, do lado do próprio time.
 ## Mais alto mostra mais o fundo da sua quadra (onde fica quem saca).
-@export var foco_da_camera := 1.5
+@export var foco_da_camera := 0.0
 ## Abertura vertical da câmera, em graus. Menor = mais "zoom" e menos distorção.
-@export var abertura_da_camera := 27.0
+@export var abertura_da_camera := 37.0
 ## Tela dividida: cada jogador vê de trás do próprio time.
 ## Desligado: uma câmera só, do lado do Jogador 1.
 @export var tela_dividida := true
@@ -243,6 +246,8 @@ var bola
 var marcador
 var menu
 var placar_visual: PanelContainer
+## Quadra, rede e ginásio em volta (scripts/cenario/cenario.gd).
+var cenario: Node3D
 ## Faixa grande do ponto ("PONTO!", "ACE!", "BLOQUEIO!", "SET!").
 var faixa: Control
 ## Time que bloqueou por último no rally (pra saber se o ponto foi de
@@ -299,10 +304,7 @@ var rotulos_de_cartas: Array[Label] = []
 func _ready() -> void:
 	_carregar_escolhas()
 
-	_criar_ambiente()
-	_criar_quadra()
-	_criar_placas()
-	_criar_rede()
+	_criar_cenario()
 	for time in 2:
 		_criar_atletas(time)
 		_criar_marcas_de_ataque(time)
@@ -1646,69 +1648,17 @@ func _cor_do_estadio(chave: String, padrao: Color) -> Color:
 	return Dados.cor(estadio.get("cores", {}), chave, padrao)
 
 
-# --- Construção da cena (provisória) ---
+# --- Construção da cena ---
 
-func _criar_ambiente() -> void:
-	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = _cor_do_estadio("fundo", Color("#1B2A3A"))
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = _cor_do_estadio("luz", Color(1.0, 0.95, 0.9))
-	# A sombra "chapada" do visual anime fica melhor com mais luz ambiente.
-	env.ambient_light_energy = 0.8 if visual_anime else 0.6
-	var mundo := WorldEnvironment.new()
-	mundo.environment = env
-	add_child(mundo)
-
-	var sol := DirectionalLight3D.new()
-	sol.rotation_degrees = Vector3(-55.0, 30.0, 0.0)
-	sol.shadow_enabled = true
-	add_child(sol)
-
-
-func _criar_quadra() -> void:
-	# Zona livre em volta e a quadra, nas cores do estádio.
-	_caixa(Vector3(LARGURA_ZONA_LIVRE, 0.1, COMPRIMENTO_ZONA_LIVRE), Vector3(0, -0.05, 0),
-		_cor_do_estadio("zona_livre", Color("#2D6A9A")))
-	_caixa(Vector3(LARGURA, 0.1, COMPRIMENTO), Vector3(0, -0.04, 0),
-		_cor_do_estadio("quadra", Color("#E39A55")))
-
-	# Linhas: laterais, fundos, centro e linhas de ataque (3 m da rede).
-	var cor_das_linhas := _cor_do_estadio("linhas", Color.WHITE)
-	var y := 0.015
-	for x in [-LARGURA / 2.0, LARGURA / 2.0]:
-		_caixa(Vector3(0.05, 0.01, COMPRIMENTO), Vector3(x, y, 0), cor_das_linhas)
-	for z in [-COMPRIMENTO / 2.0, -3.0, 0.0, 3.0, COMPRIMENTO / 2.0]:
-		_caixa(Vector3(LARGURA, 0.01, 0.05), Vector3(0, y, z), cor_das_linhas)
-
-
-## Placas de propaganda em volta da zona livre, na cor do estádio.
-func _criar_placas() -> void:
-	var cor := _cor_do_estadio("placas", Color("#8E2B2B"))
-	var altura := 1.0
-	var espessura := 0.3
-	var x := LARGURA_ZONA_LIVRE / 2.0 + espessura / 2.0
-	var z := COMPRIMENTO_ZONA_LIVRE / 2.0 + espessura / 2.0
-	for lado in [-1.0, 1.0]:
-		_caixa(Vector3(espessura, altura, COMPRIMENTO_ZONA_LIVRE), Vector3(x * lado, altura / 2.0, 0.0), cor)
-		_caixa(Vector3(LARGURA_ZONA_LIVRE + espessura * 2.0, altura, espessura), Vector3(0.0, altura / 2.0, z * lado), cor)
-
-
-func _criar_rede() -> void:
-	var rede := _caixa(Vector3(LARGURA + 1.0, 1.0, 0.03), Vector3(0, ALTURA_REDE - 0.5, 0), Color(1, 1, 1, 0.45))
-	var material := rede.material_override as StandardMaterial3D
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-
-	for x in [-(LARGURA / 2.0 + 0.5), LARGURA / 2.0 + 0.5]:
-		var poste := MeshInstance3D.new()
-		var cilindro := CylinderMesh.new()
-		cilindro.top_radius = 0.05
-		cilindro.bottom_radius = 0.05
-		cilindro.height = ALTURA_REDE + 0.1
-		poste.mesh = cilindro
-		poste.material_override = _material(Color("#D8D8D8"))
-		poste.position = Vector3(x, cilindro.height / 2.0, 0)
-		add_child(poste)
+## Quadra, rede, árbitros e o ginásio ou arena em volta (scripts/cenario/).
+func _criar_cenario() -> void:
+	cenario = Cenario.new()
+	cenario.name = "Cenario"
+	add_child(cenario)
+	cenario.montar(estadio, times_em_jogo, {
+		"largura": LARGURA, "comprimento": COMPRIMENTO, "altura_da_rede": ALTURA_REDE,
+		"zona_livre": Vector2(LARGURA_ZONA_LIVRE, COMPRIMENTO_ZONA_LIVRE),
+	})
 
 
 func _criar_atletas(time: int) -> void:
@@ -1866,6 +1816,8 @@ func _adicionar_camera(onde: Node, time: int) -> void:
 		abertura_da_camera
 	)
 	camera.current = true
+	# O fundo atrás do próprio time fica entre a câmera e a quadra: não desenha.
+	camera.set_cull_mask_value(Cenario.CAMADA_ATRAS_DO_TIME[0 if lado > 0.0 else 1], false)
 	if tela_dividida:
 		# Esconde o anel de tempo do outro jogador.
 		camera.set_cull_mask_value(CAMADA_DO_ANEL_DE_TEMPO[1 - time], false)

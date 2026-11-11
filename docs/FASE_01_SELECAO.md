@@ -58,7 +58,7 @@ Tela de seleção parada, `--print-fps`: **~108 FPS em 1600×900** e **~99 em 12
 
 ## O que vem de outras fases do pacote
 - **Atleta mais caprichado:** o retrato usa o personagem do jogo, então melhora junto com ele na Fase 06.
-- **Prévia e fundo do ginásio:** vêm da Fase 04; a captura do ginásio novo vai em `arte/estadios/<id>.png` e aparece sozinha.
+- **Prévia e fundo do ginásio:** feitos na Fase 04 (capturas do jogo em `arte/estadios/<id>.png`; o fundo da seleção usa a mesma imagem, desfocada).
 - Os nomes em japonês da referência ficaram de fora a seu pedido (10/11/2026).
 - Os emblemas são desenhos originais; pra trocar o traço, é só trocar o SVG em `arte/emblemas/`.
 

@@ -103,7 +103,8 @@ O jogo segue as regras oficiais (FIVB). Só o placar é do jogo: sets até 7, co
 | `scripts/menus/` | Menu principal, seleção de times (`selecao.gd` tem as regras, `selecao_de_times.gd` desenha a tela, `retrato_do_atleta.gd` mostra o atleta em 3D), pausa e fim de jogo. `estilo.gd` guarda as cores e fontes de todos os menus. `configuracao.gd` guarda os times e o estádio escolhidos. |
 | `scripts/comum/` | `dados.gd` lê os arquivos da pasta `dados/`. |
 | `fontes/` | Fonte Barlow Condensed (licença livre OFL, em `LICENCA_OFL.txt`). |
-| `shaders/` | Efeito anime: `anime.gdshader` (luz e sombra em faixas) e `contorno.gdshader` (contorno escuro). |
+| `shaders/` | Efeito anime: `anime.gdshader` (luz e sombra em faixas) e `contorno.gdshader` (contorno escuro). Cenário: `piso_de_madeira.gdshader`, `rede.gdshader` (malha vazada), `janela_entardecer.gdshader` e `grade.gdshader`. |
+| `scripts/cenario/` | O lugar da partida, montado em código: `cenario.gd` (quadra, linhas, rede com antenas, cadeira do juiz, árbitros, bancos com reservas e técnico, mesa do apontador), `ginasio_japones.gd` (ginásio de colégio ao entardecer) e `arena.gd` (arquibancadas, público, placas de LED e telão, pros outros três estádios). `pecas.gd` tem as peças simples (caixas, placas, textos, público instanciado). |
 | `scripts/visual/` | `visual_anime.gd` cria materiais anime prontos: `VisualAnime.material(cor)`. |
 | `dados/` | Times (atributos e cores), estádios (cores da quadra, do fundo, das placas e da luz) e cartas do Modo Caos, em JSON. Mudar um número aqui muda o jogo sem mexer em código. |
 | `arte/` | `arte/emblemas/<id>.svg`: emblema de cada time (desenhos originais do jogo). `arte/icones/`: ícones dos menus (brancos; o jogo pinta na cor certa). Opcional: se você criar `arte/times/<id>.png` (um personagem com fundo transparente, ex.: `arte/times/karasuno.png`), ele aparece grande na seleção de times no lugar do atleta 3D. O atleta 3D é o do campo `destaque` em `dados/times.json`. `arte/estadios/<id>.png` vira a prévia do estádio. Os ids estão nos arquivos de `dados/`. |
@@ -129,7 +130,7 @@ godot --headless --script res://testes/teste_animacoes.gd
 godot --headless --script res://testes/teste_animador.gd
 ```
 
-Ou todos de uma vez (28 arquivos, incluindo tempo do toque, mira, cortada, atributos, mergulho, jogadas e placar):
+Ou todos de uma vez (29 arquivos, incluindo tempo do toque, mira, cortada, atributos, mergulho, jogadas e placar):
 
 ```
 for t in testes/teste_*.gd; do godot --headless --script res://$t; done

@@ -7,7 +7,7 @@ extends SceneTree
 ##
 ## Opções:
 ##   saida=<pasta>      onde salvar (padrão producao/telas)
-##   telas=<lista>      menu, selecao, partida, cartas, placar (padrão: todas)
+##   telas=<lista>      menu, selecao, partida, cartas, placar, ginasio (padrão: todas)
 ##   times=<id1>,<id2>  padrão karasuno,nekoma
 ##   estadio=<id>       padrão ginasio_japones
 ##
@@ -20,6 +20,10 @@ extends SceneTree
 ##                    com as mesmas cartas (uma de cada raridade) pra comparar
 ##   cartas_estados   o mesmo, com o J1 confirmado na 3ª carta e o J2 na 2ª
 ##   cartas_troca     depois disso, o J2 usa o TROCAR (cartas novas, sorteadas)
+##   ginasio_vazio    câmeras de jogo sem atletas nem bola (só o cenário)
+##   ginasio_geral    visão do alto, de um canto, com os 12 atletas (sem placar)
+##   ginasio_geral_vazio  a mesma visão, sem atletas
+##   ginasio_frente_vazio na altura dos olhos, do fundo (como a referência image-gen-1)
 ##   placar_*         pontos marcados pela regra de verdade (_encerrar_rally):
 ##                    jogo (4 x 3), ponto (no meio da animação, 6 x 3), set_point,
 ##                    set (faixa SET!), match_point e fim. Cada um sai também
@@ -30,7 +34,7 @@ extends SceneTree
 const CENA_MENU := "res://cenas/menu_principal.tscn"
 const CENA_SELECAO := "res://cenas/selecao_de_times.tscn"
 const CENA_PARTIDA := "res://cenas/partida.tscn"
-const TODAS := ["menu", "selecao", "partida", "cartas", "placar"]
+const TODAS := ["menu", "selecao", "partida", "cartas", "placar", "ginasio"]
 ## Tempo pras animações de entrada (cortina, aparecer) terminarem.
 const ESPERA := 1.5
 
@@ -90,6 +94,8 @@ func _capturar(tela: String) -> void:
 			_salvar("partida_saque")
 		"placar":
 			await _capturar_placar()
+		"ginasio":
+			await _capturar_ginasio()
 		"cartas":
 			configuracao.modo = "caos"
 			var partida := _abrir(CENA_PARTIDA)
@@ -169,6 +175,49 @@ func _cartas_fixas(partida: Node) -> Node:
 	escolha.callv("configurar", argumentos)
 	partida.escolha_de_cartas = escolha
 	return escolha
+
+
+## Cenário vazio nas câmeras de jogo e uma visão geral do alto.
+func _capturar_ginasio() -> void:
+	var partida := _abrir(CENA_PARTIDA)
+	await _esperar(ESPERA)
+	_mostrar_atletas(partida, false)
+	await _esperar(0.2)
+	_salvar("ginasio_vazio")
+
+	# Visão geral: some a tela dividida e a interface, e uma câmera do alto,
+	# de dentro do canto do ginásio, mostra tudo.
+	for nome in ["TelaDividida", "Interface"]:
+		var camada := partida.get_node_or_null(nome) as CanvasLayer
+		if camada != null:
+			camada.visible = false
+	var camera := Camera3D.new()
+	camera.fov = 46.0
+	partida.add_child(camera)
+	camera.look_at_from_position(Vector3(-8.5, 9.5, 17.5), Vector3(0.5, 0.0, -2.0))
+	var cenario = partida.get("cenario")
+	if cenario != null:
+		camera.set_cull_mask_value(cenario.CAMADA_ATRAS_DO_TIME[0], false)
+	camera.current = true
+	_mostrar_atletas(partida, true)
+	await _esperar(0.3)
+	_salvar("ginasio_geral")
+	_mostrar_atletas(partida, false)
+	await _esperar(0.2)
+	_salvar("ginasio_geral_vazio")
+	# Na altura dos olhos, do fundo, como a imagem "image-gen-1" do pacote.
+	camera.fov = 62.0
+	camera.look_at_from_position(Vector3(0.0, 3.4, 17.8), Vector3(0.0, 3.0, -8.0))
+	await _esperar(0.3)
+	_salvar("ginasio_frente_vazio")
+
+
+## Mostra ou esconde tudo o que é do jogo (atletas, bola, anéis, marcas),
+## deixando só o cenário.
+func _mostrar_atletas(partida: Node, sim: bool) -> void:
+	for filho in partida.get_children():
+		if filho is Node3D and filho.name != "Cenario" and not filho is Camera3D:
+			(filho as Node3D).visible = sim
 
 
 func _pontos(partida: Node, a: int, b: int) -> void:

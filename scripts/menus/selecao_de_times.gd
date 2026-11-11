@@ -86,6 +86,9 @@ var _cartoes: Array[Panel] = []
 ## [jogador][time] -> etiqueta "J1"/"J2" em cima do cartão.
 var _fichas: Array = [[], []]
 var _fundo: Control
+## Foto do estádio escolhido, desfocada e escura, atrás de tudo (como na referência).
+var _foto_do_fundo: TextureRect
+var _fotos_desfocadas := {}
 var _raio: Control
 var _vs: Label
 var _faixa_do_estadio: Panel
@@ -325,6 +328,8 @@ func _atualizar_estadio() -> void:
 	_descricao_do_estadio.text = str(estadio.get("descricao", ""))
 
 	var imagem := _imagem_opcional(PASTA_ESTADIOS % estadio.get("id", ""))
+	_foto_do_fundo.texture = _desfocada(str(estadio.get("id", "")), imagem)
+	_fundo.queue_redraw()
 	_imagem_do_estadio.texture = imagem
 	_imagem_do_estadio.visible = imagem != null
 	_previa_do_estadio.visible = imagem == null
@@ -362,7 +367,9 @@ func _atualizar_instrucao() -> void:
 ## Fundo: carvão, luz diagonal nas cores dos times, piso de madeira embaixo e
 ## a sombra do atleta de cada lado.
 func _desenhar_fundo() -> void:
-	_fundo.draw_rect(Rect2(0.0, 0.0, LARGURA, 900.0), Estilo.FUNDO)
+	# Com a foto do estádio atrás, o carvão fica translúcido.
+	var com_foto := _foto_do_fundo != null and _foto_do_fundo.texture != null
+	_fundo.draw_rect(Rect2(0.0, 0.0, LARGURA, 900.0), Color(Estilo.FUNDO, 0.55 if com_foto else 1.0))
 	for jogador in 2:
 		var cor: Color = _cores_dos_lados[jogador]
 		var lado := -1.0 if jogador == 0 else 1.0
@@ -378,7 +385,7 @@ func _desenhar_fundo() -> void:
 			_fundo.draw_colored_polygon(pontos, Color(cor, 0.07 - k * 0.012))
 	# Piso de madeira em perspectiva atrás dos cartões e do estádio.
 	var horizonte := 586.0
-	_fundo.draw_rect(Rect2(0.0, horizonte, LARGURA, 900.0 - horizonte), Color("#3A2416"))
+	_fundo.draw_rect(Rect2(0.0, horizonte, LARGURA, 900.0 - horizonte), Color("#3A2416", 0.6 if com_foto else 1.0))
 	for t in 9:
 		var y := horizonte + pow(t / 8.0, 1.6) * (900.0 - horizonte)
 		_fundo.draw_line(Vector2(0.0, y), Vector2(LARGURA, y), Color("#2A190F"), 2.0)
@@ -444,6 +451,18 @@ func _desenhar_elipse(no: CanvasItem, centro: Vector2, raios: Vector2, cor: Colo
 # --- Construção da tela ---
 
 func _criar_fundo() -> void:
+	var base := ColorRect.new()
+	base.color = Estilo.FUNDO
+	base.set_anchors_preset(Control.PRESET_FULL_RECT)
+	base.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(base)
+	_foto_do_fundo = TextureRect.new()
+	_foto_do_fundo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_foto_do_fundo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_foto_do_fundo.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_foto_do_fundo.modulate = Color(0.55, 0.52, 0.52)
+	_foto_do_fundo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_foto_do_fundo)
 	_fundo = Control.new()
 	_fundo.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_fundo.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -872,6 +891,24 @@ func _parar_animacao(chave: String) -> void:
 	var anterior = _animacoes.get(chave)
 	if anterior is Tween and anterior.is_valid():
 		anterior.kill()
+
+
+## A foto do estádio bem pequena e esticada na tela inteira fica desfocada
+## (guarda pra não refazer).
+func _desfocada(id: String, imagem: Texture2D) -> Texture2D:
+	if imagem == null:
+		return null
+	if not _fotos_desfocadas.has(id):
+		var pequena := imagem.get_image()
+		if pequena == null or pequena.is_empty():
+			return imagem
+		pequena = pequena.duplicate()
+		if pequena.is_compressed():
+			pequena.decompress()
+		pequena.resize(96, 54, Image.INTERPOLATE_BILINEAR)
+		pequena.resize(384, 216, Image.INTERPOLATE_BILINEAR)
+		_fotos_desfocadas[id] = ImageTexture.create_from_image(pequena)
+	return _fotos_desfocadas[id]
 
 
 ## Carrega uma imagem só se o arquivo existir (guarda pra não carregar de novo).

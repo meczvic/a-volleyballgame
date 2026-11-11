@@ -94,7 +94,7 @@ Feito depois de um robô jogar partidas inteiras e listar o que parecia estranho
 ### Dados editáveis (sem mexer em código)
 - `dados/times.json`: times, atributos (1 a 5, somando 17) e cores.
 - `dados/elenco.json`: atletas de cada time (nome, número, posição).
-- `dados/estadios.json`: cores da quadra, do fundo, das placas e da luz.
+- `dados/estadios.json`: estilo (ginásio ou arena), cores (piso, quadra, linhas, placas, proteção dos postes, luz, sol), textos das faixas (ginásio), letreiro e cores do público (arena).
 - `dados/cartas.json`: cartas do Modo Caos (usadas no Modo Caos, só as de `IMPLEMENTADAS` em `scripts/regras/cartas.gd`).
 
 ---
@@ -115,7 +115,7 @@ Feito depois de um robô jogar partidas inteiras e listar o que parecia estranho
 
 ### Arte e som
 - Estádios com cenário de verdade (hoje são cores por estádio).
-- Prévias dos estádios na seleção (`arte/estadios/`, opcional; hoje é um desenho da quadra). Retrato 2D opcional dos times em `arte/times/` (sem ele aparece o atleta 3D).
+- Prévias dos estádios na seleção: capturas do próprio jogo em `arte/estadios/<id>.png` (Fase 04), também usadas desfocadas no fundo da seleção. Retrato 2D opcional dos times em `arte/times/` (sem ele aparece o atleta 3D).
 - Som e música, quando for decidido.
 
 ---
@@ -170,10 +170,11 @@ Leia esta seção inteira antes de mexer no código.
 - **`scripts/entrada/`:** teclado e controle viram **comandos**. A partida não sabe de onde o comando veio. É isso que vai permitir o online: basta criar outra fonte de comandos que venha da rede.
 - **`scripts/partida/partida.gd`:** o centro da partida (~1.900 linhas): monta quadra, times e câmeras, liga regras, IA, bloqueio, rodízio, faltas, placar e animações. É o arquivo mais arriscado de mexer; separe partes novas em scripts próprios (como foi feito com `bola.gd`, `anel_de_tempo.gd`, `mira_visual.gd`, `anel_do_controlado.gd`, `camera_da_partida.gd`, `barra_de_forca.gd`). Pedaços que se repetem já têm ajudantes: `_distancia_no_chao`, `_animador_de`, `_erro_aleatorio`, `_destino_na_quadra_do_outro`, `_mostrar_mensagem(texto, time)`.
 - **Bloqueio:** `_tipo_do_bloqueio` devolve `Bloqueio.NENHUM`, `DEVOLVE` ou `TOQUE`; a bola (`bola.gd`) usa isso pra voltar ou raspar e seguir. Botões apertados cedo ficam em `pedidos[time]` por `TEMPO_DO_PEDIDO`.
+- **`scripts/cenario/`** (Fase 04): `cenario.gd` monta quadra, rede, árbitros, bancos e mesa e chama o estilo do estádio (`ginasio_japones.gd` ou `arena.gd`); `pecas.gd` tem as peças. A partida só chama `_criar_cenario()`. As câmeras ficam do lado de fora do ginásio, atrás de cada time: o que está no fundo atrás de um time vai pra camada 13 (atrás do time 0, z positivo) ou 14 (atrás do time 1), e a câmera daquele time não desenha essa camada (`Cenario.CAMADA_ATRAS_DO_TIME`). Use as camadas 11–14 só pra isso. O cenário não tem física: medidas da quadra e da rede continuam em `partida.gd` e `bola.gd`.
 - **`scripts/visual/`:** `visual_anime.gd` (materiais anime), `animador.gd` (animações dos personagens), `impacto.gd` (congelar e tremer a tela), `rastro.gd` (rastro da bola).
 - **`scripts/menus/`:** `estilo.gd` guarda cores, fontes e peças de interface de todos os menus (inclusive `rotulo_com_contorno`, usado na partida); `selecao.gd` tem a lógica da seleção e `selecao_de_times.gd` desenha a tela (emblemas em `arte/emblemas/`, ícones em `arte/icones/`, atleta 3D em `retrato_do_atleta.gd`, que guarda os atletas já montados e libera ao sair); `cortina.gd` é a cortina preta das trocas de cena.
 - **`dados/*.json`:** tudo que é ajustável sem código (times, elenco, estádios, cartas), lido por `scripts/comum/dados.gd`. A escalação depende do campo `posicao` em `dados/elenco.json` (levantador, ponteiro, central, oposto): mantenha 1 levantador, 2 ponteiros, 2 centrais e 1 oposto por time.
-- **Câmera e visual:** ajustáveis no Inspetor do nó `Partida` em `cenas/partida.tscn` (tela dividida, altura, distância, foco, visual anime). Valores atuais: altura 14,5, distância 29,5, foco 1,5, abertura 27°. O quanto a câmera acompanha a bola fica nas constantes de `scripts/partida/camera_da_partida.gd`.
+- **Câmera e visual:** ajustáveis no Inspetor do nó `Partida` em `cenas/partida.tscn` (tela dividida, altura, distância, foco, visual anime). Valores atuais (Fase 04): altura 10,5, distância 24, foco 0, abertura 37° (antes: 14,5, 29,5, 1,5 e 27°; a câmera nova mostra o ginásio e deixa os atletas maiores, com os quatro cantos da quadra na tela). O quanto a câmera acompanha a bola fica nas constantes de `scripts/partida/camera_da_partida.gd`.
 
 ### Personagens (`.vrm` ou gerados)
 - Ordem que a partida usa (`Dados.carregar_personagem`): `.vrm` se existir → gerado por código se tiver entrada em `dados/aparencia.json` → cápsula.
@@ -196,7 +197,7 @@ Leia esta seção inteira antes de mexer no código.
 - Passo a passo completo em `animacoes/LEIA-ME.md`.
 
 ### Testes
-- São 28 arquivos em `testes/` (`teste_tela_de_selecao.gd` e `teste_tela_de_cartas.gd` abrem a tela e apertam os botões dos dois jogadores; `teste_elenco_em_quadra.gd` confere os 42 atletas: malha com pesos, esqueleto, trilhas das animações e pose que se mexe). Rode todos, dentro da pasta do projeto:
+- São 29 arquivos em `testes/` (`teste_cenario.gd` abre a partida nos 4 estádios e confere rede, árbitros, pessoas e as camadas de cada câmera; `teste_tela_de_selecao.gd` e `teste_tela_de_cartas.gd` abrem a tela e apertam os botões dos dois jogadores; `teste_elenco_em_quadra.gd` confere os 42 atletas: malha com pesos, esqueleto, trilhas das animações e pose que se mexe). Rode todos, dentro da pasta do projeto:
 
 ```
 for t in testes/teste_*.gd; do godot --headless --script res://$t; done

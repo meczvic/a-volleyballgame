@@ -348,6 +348,9 @@ func _desenhar_efeito() -> void:
 		var caixa := _caixas[time]
 		var centro := caixa.position + caixa.size / 2.0
 		var some := 1.0 - smoothstep(0.55, 1.0, p)
+		# No fim o corte e as faíscas viram formas achatadas: não desenha.
+		if some < 0.03:
+			continue
 
 		# Brilho dourado que se abre.
 		var raio := lerpf(30.0, 120.0, ease(p, 0.4))
@@ -363,12 +366,13 @@ func _desenhar_efeito() -> void:
 		var ponta_b := centro + direcao * comprimento
 		var miolo := Color(1.0, 0.96, 0.8, some)
 		var borda := Color(DOURADO, 0.0)
-		_efeito.draw_polygon(
-			PackedVector2Array([ponta_a, centro + normal * largura * 2.6, ponta_b, centro - normal * largura * 2.6]),
-			PackedColorArray([borda, Color(DOURADO, 0.35 * some), borda, Color(DOURADO, 0.35 * some)]))
-		_efeito.draw_polygon(
-			PackedVector2Array([ponta_a, centro + normal * largura, ponta_b, centro - normal * largura]),
-			PackedColorArray([borda, miolo, borda, miolo]))
+		if comprimento > 2.0:
+			_efeito.draw_polygon(
+				PackedVector2Array([ponta_a, centro + normal * largura * 2.6, ponta_b, centro - normal * largura * 2.6]),
+				PackedColorArray([borda, Color(DOURADO, 0.35 * some), borda, Color(DOURADO, 0.35 * some)]))
+			_efeito.draw_polygon(
+				PackedVector2Array([ponta_a, centro + normal * largura, ponta_b, centro - normal * largura]),
+				PackedColorArray([borda, miolo, borda, miolo]))
 
 		# Faíscas: triângulos finos que voam pra fora.
 		for faisca in _faiscas[time]:
