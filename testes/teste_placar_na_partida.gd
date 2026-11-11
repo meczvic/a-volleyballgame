@@ -151,6 +151,8 @@ func _teste_visual_do_placar() -> void:
 	partida._encerrar_rally(1, "dentro")
 	_verificar(visual.numero_amarelo(1), "número de quem pontuou fica amarelo")
 	_verificar(not visual.numero_amarelo(0), "o do outro não")
+	_verificar(visual._faiscas[1].size() == visual.QUANTAS_FAISCAS, "efeito de ponto solta as faíscas na caixa de quem pontuou")
+	_verificar(visual._faiscas[0].is_empty(), "e não na do outro")
 	_verificar(partida.faixa.tem_emblema(), "faixa de ponto mostra o emblema de quem pontuou")
 	_verificar(visual.saque_visivel(1) and not visual.saque_visivel(0), "bola do saque passa pra quem ganhou o ponto")
 

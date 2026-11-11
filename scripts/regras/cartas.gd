@@ -62,6 +62,11 @@ static func tempo_limite(dados: Dictionary) -> float:
 	return float(dados.get("tempo_limite_escolha", 60))
 
 
+## Quantas vezes cada jogador pode trocar as cartas oferecidas na partida.
+static func trocas_por_partida(dados: Dictionary) -> int:
+	return maxi(int(dados.get("trocas_por_partida", 1)), 0)
+
+
 static func cartas_por_escolha(dados: Dictionary) -> int:
 	return maxi(int(dados.get("cartas_por_escolha", 3)), 1)
 

@@ -67,10 +67,10 @@ O placar continua em cima, no meio, sobre a linha que divide as metades. Tem 940
 - `testes/teste_placar_na_partida.gd` — verificações novas.
 - `ferramentas/capturas_de_tela.gd` — tela `placar`, com recorte.
 
-## O que ainda falta em relação à referência
-- O nome em japonês embaixo do nome do time (precisa de fonte com kanji).
-- O efeito de ponto da referência tem um corte de luz grande e faíscas; aqui é um risco fino e um clarão, pra não chamar atenção demais durante o jogo. Fácil de aumentar se você preferir.
-- A mensagem "Ponto Karasuno!" no meio da tela continua aparecendo junto com a faixa PONTO! (já era assim). Fica pra fase de game feel decidir se uma das duas sai.
+## Ajustes depois da entrega (ver `docs/AJUSTES_FIDELIDADE.md`)
+- O efeito de ponto ficou como na referência: corte de luz dourado atravessando a caixa, faíscas e brilho (no lugar do risco fino).
+- A caixa "Ponto Karasuno!" do meio da tela não aparece mais junto com a faixa PONTO! (a faixa já diz quem pontuou e o motivo).
+- Os nomes em japonês da referência ficaram de fora a seu pedido.
 
 ## Como testar no seu PC
 1. Abra o projeto e aperte **F5** → Partida rápida → escolham os times → começa.

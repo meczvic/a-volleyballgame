@@ -5,8 +5,9 @@ extends PanelContainer
 ## bolinha por set (pintada na cor de quem ganhou). A bola pequena mostra quem
 ## saca. Embaixo aparece SET POINT / MATCH POINT / PONTO DECISIVO.
 ##
-## No ponto, a caixa de quem pontuou pisca, um risco de luz passa por ela, o
-## número salta e fica amarelo um instante, e o placar treme de leve.
+## No ponto (como na referência): um corte de luz dourado atravessa a caixa de
+## quem pontuou, saem faíscas, um brilho dourado se abre em volta, o número
+## salta e fica amarelo um instante, e o placar treme de leve.
 ##
 ## Só desenha: a conta dos pontos é de scripts/regras/placar.gd.
 ## Uso: configurar(nomes, cores, ids) uma vez; atualizar(...) a cada mudança;
@@ -31,15 +32,23 @@ const TAMANHO_DO_EMBLEMA := 60.0
 const PULO_DO_NUMERO := 1.6
 const DURACAO_DO_PULO := 0.45
 const TEMPO_AMARELO := 1.1
+## Duração do corte de luz e das faíscas (s).
+const DURACAO_DO_EFEITO := 0.65
+const DOURADO := Color("#FFB23A")
+const QUANTAS_FAISCAS := 12
 const AMARELO := Color("#FFD84A")
 const FUNDO_DO_BLOCO := Color(0.07, 0.08, 0.1, 0.94)
 const FUNDO_DOS_PONTOS := Color(0.04, 0.045, 0.06, 0.96)
 
 var _conteudo: Control
 var _nomes: Array[Label] = []
+## Efeito do ponto, desenhado por cima de tudo: progresso de 0 a 1 por time
+## (-1 = parado) e [ângulo, força] de cada faísca.
+var _efeito: Control
+var _progresso_do_efeito: Array[float] = [-1.0, -1.0]
+var _faiscas: Array = [[], []]
 var _pontos: Array[Label] = []
 var _caixas: Array[Panel] = []
-var _brilhos: Array[Panel] = []
 var _claroes: Array[ColorRect] = []
 var _emblemas: Array[TextureRect] = []
 var _riscos: Array = [[], []]
@@ -74,6 +83,12 @@ func _ready() -> void:
 		_criar_bloco(time)
 		_criar_caixa_de_pontos(time)
 	_criar_meio()
+
+	_efeito = Control.new()
+	_efeito.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_efeito.size = _conteudo.size
+	_efeito.draw.connect(_desenhar_efeito)
+	_conteudo.add_child(_efeito)
 
 
 func configurar(nomes: Array, cores: Array, ids: Array = []) -> void:
@@ -137,9 +152,10 @@ func comemorar(time: int) -> void:
 		_tweens[time].kill()
 	numero.scale = Vector2.ONE * PULO_DO_NUMERO
 	numero.add_theme_color_override("font_color", AMARELO)
-	var brilho := _brilhos[time]
-	brilho.visible = true
-	brilho.position.x = -60.0
+	var faiscas: Array = []
+	for i in QUANTAS_FAISCAS:
+		faiscas.append([TAU * i / QUANTAS_FAISCAS + randf_range(-0.2, 0.2), randf_range(0.7, 1.3)])
+	_faiscas[time] = faiscas
 	var clarao := _claroes[time]
 	clarao.color = Color(_cores[time].lightened(0.5), 0.75)
 
@@ -147,10 +163,9 @@ func comemorar(time: int) -> void:
 	tween.tween_property(numero, "scale", Vector2.ONE, DURACAO_DO_PULO) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(clarao, "color:a", 0.0, 0.35)
-	tween.tween_property(brilho, "position:x", LARGURA_DOS_PONTOS + 20.0, 0.32) \
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
-	tween.chain().tween_callback(func() -> void: brilho.visible = false)
-	tween.tween_interval(TEMPO_AMARELO - 0.32)
+	tween.tween_method(_mudar_efeito.bind(time), 0.0, 1.0, DURACAO_DO_EFEITO)
+	tween.chain().tween_callback(_mudar_efeito.bind(-1.0, time))
+	tween.tween_interval(TEMPO_AMARELO - DURACAO_DO_EFEITO)
 	tween.chain().tween_callback(func() -> void: numero.remove_theme_color_override("font_color"))
 	_tweens[time] = tween
 
@@ -182,6 +197,10 @@ func sets_acesos(time: int) -> int:
 
 func numero_pulando(time: int) -> bool:
 	return _pontos[time].scale.x > 1.01
+
+
+func efeito_ativo(time: int) -> bool:
+	return _progresso_do_efeito[time] >= 0.0
 
 
 func numero_amarelo(time: int) -> bool:
@@ -275,13 +294,6 @@ func _criar_caixa_de_pontos(time: int) -> void:
 	caixa.add_child(numero)
 	_pontos.append(numero)
 
-	# Risco de luz que atravessa a caixa no ponto.
-	var brilho := Estilo.painel(Color(1.0, 0.95, 0.75, 0.85), -0.9)
-	brilho.size = Vector2(14.0, caixa.size.y)
-	brilho.position = Vector2(-60.0, 0.0)
-	brilho.visible = false
-	caixa.add_child(brilho)
-	_brilhos.append(brilho)
 
 
 ## Meio: "SET n" em cima, uma bolinha por set embaixo; aviso por baixo do placar.
@@ -318,6 +330,55 @@ func _criar_meio() -> void:
 	_aviso = Estilo.etiqueta("", Estilo.DESTAQUE, 22)
 	_aviso.visible = false
 	centro.add_child(_aviso)
+
+
+# --- Efeito do ponto ---
+
+func _mudar_efeito(progresso: float, time: int) -> void:
+	_progresso_do_efeito[time] = progresso
+	_efeito.queue_redraw()
+
+
+## Corte de luz em diagonal pela caixa, faíscas saindo do centro e brilho em volta.
+func _desenhar_efeito() -> void:
+	for time in 2:
+		var p := _progresso_do_efeito[time]
+		if p < 0.0:
+			continue
+		var caixa := _caixas[time]
+		var centro := caixa.position + caixa.size / 2.0
+		var some := 1.0 - smoothstep(0.55, 1.0, p)
+
+		# Brilho dourado que se abre.
+		var raio := lerpf(30.0, 120.0, ease(p, 0.4))
+		for k in 5:
+			_efeito.draw_circle(centro, raio * (1.0 - k * 0.16), Color(DOURADO, 0.12 * some))
+
+		# Corte: losango comprido que cresce na diagonal, de baixo pra cima.
+		var direcao := Vector2(1.0, -0.62).normalized()
+		var normal := Vector2(-direcao.y, direcao.x)
+		var comprimento := 175.0 * ease(minf(p / 0.35, 1.0), 0.3)
+		var largura := 13.0 * some
+		var ponta_a := centro - direcao * comprimento
+		var ponta_b := centro + direcao * comprimento
+		var miolo := Color(1.0, 0.96, 0.8, some)
+		var borda := Color(DOURADO, 0.0)
+		_efeito.draw_polygon(
+			PackedVector2Array([ponta_a, centro + normal * largura * 2.6, ponta_b, centro - normal * largura * 2.6]),
+			PackedColorArray([borda, Color(DOURADO, 0.35 * some), borda, Color(DOURADO, 0.35 * some)]))
+		_efeito.draw_polygon(
+			PackedVector2Array([ponta_a, centro + normal * largura, ponta_b, centro - normal * largura]),
+			PackedColorArray([borda, miolo, borda, miolo]))
+
+		# Faíscas: triângulos finos que voam pra fora.
+		for faisca in _faiscas[time]:
+			var angulo: float = faisca[0]
+			var forca: float = faisca[1]
+			var dir := Vector2.from_angle(angulo)
+			var inicio := centro + dir * lerpf(26.0, 96.0 * forca, ease(p, 0.35))
+			var fim := inicio + dir * 16.0 * forca * some
+			var lado := Vector2(-dir.y, dir.x) * 2.5
+			_efeito.draw_colored_polygon(PackedVector2Array([inicio + lado, fim, inicio - lado]), Color(1.0, 0.85, 0.4, some))
 
 
 # --- Ajudantes ---

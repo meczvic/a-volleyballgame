@@ -2,7 +2,8 @@ extends SceneTree
 ## Testes da TELA de escolha de cartas do Modo Caos (a regra fica em
 ## teste_cartas.gd e o fluxo na partida em teste_cartas_na_partida.gd).
 ## Abre a tela sozinha e aperta os botões dos dois jogadores: raridades
-## diferentes, cursor, confirmar, botões cedo demais, tempo acabando.
+## diferentes, cursor, confirmar, botões cedo demais, tempo acabando e o botão
+## TROCAR (Bloqueio).
 ## Rodar no terminal, dentro da pasta do projeto:
 ##   godot --headless --script res://testes/teste_tela_de_cartas.gd
 
@@ -21,6 +22,7 @@ func _initialize() -> void:
 func _rodar() -> void:
 	await _teste_raridades_e_escolha()
 	await _teste_tempo_acaba()
+	await _teste_trocar_cartas()
 
 	if falhas == 0:
 		print("OK: todos os testes da tela de cartas passaram.")
@@ -47,7 +49,19 @@ func _esperar(segundos: float) -> void:
 	await process_frame
 
 
-func _nova_tela(tempo: float) -> Node:
+## Troca de mentira: sempre devolve estas 3 cartas.
+const NOVAS := ["pes_leves", "tapete_vermelho", "levantador_preciso"]
+
+
+func _sortear_troca(_jogador: int, _atuais: Array) -> Array:
+	var dados := Dados.cartas()
+	var cartas := []
+	for id in NOVAS:
+		cartas.append(Cartas.por_id(dados, id))
+	return cartas
+
+
+func _nova_tela(tempo: float, trocas: Array = [0, 0]) -> Node:
 	var dados := Dados.cartas()
 	var opcoes := []
 	for lista in [["maos_firmes", "muro", "troca_de_lugar"], ["saque_firme", "ataque_rapido", "troca_de_lugar"]]:
@@ -57,8 +71,9 @@ func _nova_tela(tempo: float) -> Node:
 		opcoes.append(cartas)
 	var tela = EscolhaDeCartas.new()
 	root.add_child(tela)
+	var times := [Dados.por_id(Dados.times(), "karasuno"), Dados.por_id(Dados.times(), "nekoma")]
 	tela.configurar(opcoes, ["Karasuno", "Nekoma"], [Color("#F28C28"), Color("#D3343B")],
-		[[], []], [[], []], tempo, ["karasuno", "nekoma"])
+		[[], []], [[], []], tempo, ["karasuno", "nekoma"], times, trocas, _sortear_troca)
 	_resultado = []
 	tela.terminou.connect(func(escolhas: Array) -> void: _resultado = escolhas)
 	return tela
@@ -114,3 +129,33 @@ func _teste_tempo_acaba() -> void:
 		var ids_j1 := ["maos_firmes", "muro", "troca_de_lugar"]
 		var ids_j2 := ["saque_firme", "ataque_rapido", "troca_de_lugar"]
 		_verificar(ids_j1.has(_resultado[0]) and ids_j2.has(_resultado[1]), "cartas sorteadas são das opções de cada um")
+
+
+func _ids(tela: Node, jogador: int) -> Array:
+	var ids := []
+	for carta in tela._opcoes[jogador]:
+		ids.append(str(carta.get("id", "")))
+	return ids
+
+
+func _teste_trocar_cartas() -> void:
+	var tela = _nova_tela(60.0, [1, 0])
+	await _esperar(EscolhaDeCartas.ATRASO_DAS_TECLAS)
+	_verificar(tela.trocas_restantes(0) == 1 and tela.trocas_restantes(1) == 0, "J1 com 1 troca, J2 sem troca")
+	_verificar(tela._textos_dos_botoes[0].text.begins_with("TROCAR (1)"), "botão mostra TROCAR (1)")
+	await _apertar("p1_direita")
+	await _apertar("p1_bloqueio")
+	_verificar(_ids(tela, 0) == NOVAS, "Bloqueio troca as 3 cartas do J1 (%s)" % [_ids(tela, 0)])
+	_verificar(tela._quadros[0].size() == 3, "3 cartas novas na tela")
+	_verificar(tela._indice[0] == 0, "cursor volta pra 1ª carta")
+	_verificar(tela.trocas_restantes(0) == 0, "gastou a troca")
+	_verificar(tela._textos_dos_botoes[0].text.begins_with("TROCAR (0)"), "botão mostra TROCAR (0)")
+	await _apertar("p1_bloqueio")
+	_verificar(tela.trocas_restantes(0) == 0 and _ids(tela, 0) == NOVAS, "sem troca, nada muda")
+	var antes_j2 := _ids(tela, 1)
+	await _apertar("p2_bloqueio")
+	_verificar(_ids(tela, 1) == antes_j2, "J2 sem troca não troca")
+	await _apertar("p1_passe")
+	await _apertar("p2_passe")
+	await _esperar(EscolhaDeCartas.PAUSA_DO_FIM + 0.1)
+	_verificar(_resultado.size() == 2 and _resultado[0] == NOVAS[0], "J1 escolhe uma das cartas novas (%s)" % [_resultado])

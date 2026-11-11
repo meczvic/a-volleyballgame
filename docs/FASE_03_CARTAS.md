@@ -61,11 +61,10 @@ Partida no Modo Caos parada na escolha de cartas, 1600×900, `--print-fps`: **~9
 - `ferramentas/capturas_de_tela.gd` — cartas fixas e tela `cartas_estados`.
 - README (Modo Caos saiu de "em breve" no texto do menu, que já estava ativo) e `docs/ESTADO_DO_PROJETO.md`.
 
-## O que ainda falta em relação à referência
-- **Ilustração em cada carta:** a referência tem desenhos de atletas. Aqui a "arte" é o ícone do conjunto com fundo de raridade, que é o pedido do pacote (sem ilustração AAA por carta). Se um dia houver ilustrações, dá pra pôr uma imagem por carta no lugar do ícone.
-- **Botão Reroll:** não existe no jogo; é mecânica nova e precisa da sua decisão.
-- **Uma carta por jogador em tela cheia:** a referência mostra 3 cartas grandes pra um jogador. Aqui os dois escolhem ao mesmo tempo, cada um na sua metade, então as cartas são menores.
-- **Efeitos:** só 8 das 21 cartas têm efeito no jogo (como antes desta fase).
+## Ajustes depois da entrega (ver `docs/AJUSTES_FIDELIDADE.md`)
+- **Ilustração:** cada carta mostra o atleta destaque do time do jogador fazendo a jogada do conjunto, como as ilustrações da referência.
+- **TROCAR (o "Reroll" da referência):** Bloqueio troca as 3 cartas por outras 3, uma vez por partida (ajustável em `dados/cartas.json`).
+- As cartas ficam na metade de cada jogador porque os dois escolhem ao mesmo tempo (a referência mostra um jogador só).
 
 ## Como testar no seu PC
 1. **F5** → **MODO CAOS** → escolham os times e o estádio.

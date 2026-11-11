@@ -8,10 +8,14 @@ extends CanvasLayer
 ## Não usa a pausa do jogo: a partida só ignora os botões enquanto esta tela
 ## existe. Se alguém pausar de verdade, a contagem para junto.
 ##
+## Bloqueio troca as 3 cartas oferecidas por outras 3 (botão TROCAR, o "Reroll"
+## da referência), enquanto o jogador ainda tiver trocas na partida.
+##
 ## Visual (referência "Escolha Sua Carta de Vôlei"): cronômetro em cima, título,
-## a etiqueta de cada jogador com o emblema do time e as 3 cartas dele
-## (carta_visual.gd desenha cada uma, com a raridade). A carta do cursor sobe;
-## a confirmada ganha o selo ESCOLHIDA e as outras apagam.
+## a etiqueta de cada jogador com o emblema do time, as 3 cartas dele
+## (carta_visual.gd desenha cada uma, com a raridade e o atleta do time na
+## jogada) e o botão TROCAR. A carta do cursor sobe; a confirmada ganha o selo
+## ESCOLHIDA e as outras apagam.
 
 ## [id da carta do Jogador 1, id da carta do Jogador 2].
 signal terminou(escolhas: Array)
@@ -23,7 +27,8 @@ const LARGURA_DA_CARTA := 236.0
 const ESPACO := 18.0
 const METADE := 800.0
 const MARGEM := 28.0
-const TOPO_DAS_CARTAS := 296.0
+const TOPO_DAS_CARTAS := 290.0
+const LARGURA_DO_BOTAO := 300.0
 ## A carta do cursor sobe e cresce um pouco.
 const SUBIDA := 14.0
 const CRESCIMENTO := 1.04
@@ -49,19 +54,34 @@ var _atraso := ATRASO_DAS_TECLAS
 var _fechando := -1.0
 var _terminada := false
 var _tweens := {}
+var _raiz: Control
+var _times: Array = []
+## Trocas que cada jogador ainda tem, e quem sorteia as cartas novas.
+var _trocas: Array = [0, 0]
+var _sortear_troca: Callable
+var _botoes: Array = [null, null]
+var _textos_dos_botoes: Array = [null, null]
 
 
 ## "opcoes": para cada jogador, a lista de cartas (dicionários de dados/cartas.json).
 ## "maos": ids que cada time já tem (só pra mostrar). "cores": cor de cada time.
-## "ids": id de cada time (pro emblema; opcional).
+## "ids": id de cada time (pro emblema). "times": dados de cada time como estão
+## em quadra (pro atleta nas cartas). "trocas": quantas trocas cada um tem.
+## "sortear_troca": func(jogador, ids_atuais) -> novas cartas ([] = não deu).
+## Os quatro últimos são opcionais.
 func configurar(opcoes: Array, nomes: Array, cores: Array, maos: Array, nomes_das_maos: Array,
-		tempo_limite: float, ids: Array = []) -> void:
+		tempo_limite: float, ids: Array = [], times: Array = [], trocas: Array = [0, 0],
+		sortear_troca: Callable = Callable()) -> void:
 	layer = 9
 	_opcoes = opcoes
 	_cores = cores
 	_tempo = tempo_limite
+	_times = times
+	_trocas = trocas.duplicate()
+	_sortear_troca = sortear_troca
 
 	var raiz := Control.new()
+	_raiz = raiz
 	raiz.set_anchors_preset(Control.PRESET_FULL_RECT)
 	raiz.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	raiz.theme = Estilo.tema()
@@ -81,31 +101,19 @@ func configurar(opcoes: Array, nomes: Array, cores: Array, maos: Array, nomes_da
 		var largura := LARGURA_DA_CARTA * 3.0 + ESPACO * 2.0
 		_criar_etiqueta_do_jogador(raiz, jogador, str(nomes[jogador]), ids[jogador] if jogador < ids.size() else "", Vector2(x0, 226.0), largura)
 
-		for i in (_opcoes[jogador] as Array).size():
-			var carta := CartaVisual.new()
-			carta.configurar(_opcoes[jogador][i], _cores[jogador])
-			carta.position = Vector2(x0 + i * (LARGURA_DA_CARTA + ESPACO), TOPO_DAS_CARTAS)
-			raiz.add_child(carta)
-			_quadros[jogador].append(carta)
-			# Entrada: cada carta sobe e aparece, uma depois da outra.
-			carta.modulate.a = 0.0
-			carta.position.y += 40.0
-			var entrada := carta.create_tween().set_parallel()
-			var y_final := TOPO_DAS_CARTAS - (SUBIDA if i == int(_indice[jogador]) else 0.0)
-			entrada.tween_property(carta, "position:y", y_final, 0.25).set_delay(0.06 * (i + jogador * 3)) \
-				.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-			entrada.tween_property(carta, "modulate:a", 1.0, 0.2).set_delay(0.06 * (i + jogador * 3))
+		_criar_cartas(jogador, 0.06 * jogador * 3)
+		_criar_botao_de_troca(raiz, jogador, Vector2(x0 + (largura - LARGURA_DO_BOTAO) / 2.0, 668.0))
 
 		var aviso := Estilo.rotulo("", 34, Estilo.PRONTO, true)
-		aviso.position = Vector2(x0, 644.0)
+		aviso.position = Vector2(x0, 664.0)
 		aviso.size = Vector2(largura, 44.0)
 		aviso.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		aviso.pivot_offset = aviso.size / 2.0
 		raiz.add_child(aviso)
 		_avisos[jogador] = aviso
 
-		var dica := Estilo.rotulo("Esquerda/direita escolhe  ·  Passe confirma", 21, Estilo.TEXTO_SUAVE)
-		dica.position = Vector2(x0, 688.0)
+		var dica := Estilo.rotulo("Esquerda/direita escolhe  ·  Passe confirma  ·  Bloqueio troca", 20, Estilo.TEXTO_SUAVE)
+		dica.position = Vector2(x0, 716.0)
 		dica.size = Vector2(largura, 30.0)
 		dica.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		raiz.add_child(dica)
@@ -115,7 +123,7 @@ func configurar(opcoes: Array, nomes: Array, cores: Array, maos: Array, nomes_da
 			", ".join(nomes_da_mao) if not nomes_da_mao.is_empty() else "nenhuma"
 		), 20, Estilo.TEXTO_APAGADO)
 		mao.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		mao.position = Vector2(x0, 722.0)
+		mao.position = Vector2(x0, 746.0)
 		mao.size = Vector2(largura, 80.0)
 		mao.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		raiz.add_child(mao)
@@ -148,6 +156,8 @@ func _process(delta: float) -> void:
 			elif Input.is_action_just_pressed(prefixo + "passe") \
 					or Input.is_action_just_pressed(prefixo + "ataque"):
 				_confirmar(jogador)
+			elif Input.is_action_just_pressed(prefixo + "bloqueio"):
+				_trocar(jogador)
 
 	if _tempo <= 0.0:
 		# Acabou o tempo: quem não escolheu ganha uma carta sorteada.
@@ -168,6 +178,7 @@ func _mover(jogador: int, passo: int) -> void:
 func _confirmar(jogador: int) -> void:
 	_pronto[jogador] = true
 	_atualizar_quadros()
+	_atualizar_botao(jogador)
 	# A carta escolhida dá um pulo e o PRONTO! salta.
 	var carta: Control = _quadros[jogador][_indice[jogador]]
 	carta.scale = Vector2.ONE * 1.14
@@ -175,6 +186,36 @@ func _confirmar(jogador: int) -> void:
 	var aviso: Label = _avisos[jogador]
 	aviso.scale = Vector2.ONE * 1.5
 	_animar("aviso%d" % jogador, aviso, "scale", Vector2.ONE, 0.3, Tween.TRANS_BACK)
+
+
+## TROCAR: as cartas da tela saem e entram 3 novas (se ainda tiver troca).
+func _trocar(jogador: int) -> void:
+	if _pronto[jogador] or int(_trocas[jogador]) <= 0 or not _sortear_troca.is_valid():
+		_balancar_botao(jogador)
+		return
+	var atuais: Array = []
+	for carta in _opcoes[jogador]:
+		atuais.append(str(carta.get("id", "")))
+	var novas: Array = _sortear_troca.call(jogador, atuais)
+	if novas.is_empty():
+		_balancar_botao(jogador)
+		return
+	_trocas[jogador] = int(_trocas[jogador]) - 1
+	for carta in _quadros[jogador]:
+		var saida := (carta as Control).create_tween().set_parallel()
+		saida.tween_property(carta, "position:y", TOPO_DAS_CARTAS + 60.0, 0.18)
+		saida.tween_property(carta, "modulate:a", 0.0, 0.18)
+		saida.chain().tween_callback(carta.queue_free)
+	_quadros[jogador] = []
+	_opcoes[jogador] = novas
+	_indice[jogador] = 0
+	_criar_cartas(jogador, 0.12)
+	_atualizar_quadros()
+	_atualizar_botao(jogador)
+
+
+func trocas_restantes(jogador: int) -> int:
+	return int(_trocas[jogador])
 
 
 func _terminar() -> void:
@@ -213,6 +254,71 @@ func _atualizar_quadros() -> void:
 
 
 # --- Construção ---
+
+## As cartas de "jogador", entrando uma depois da outra a partir de "atraso" (s).
+func _criar_cartas(jogador: int, atraso: float) -> void:
+	var x0 := METADE * jogador + MARGEM
+	var time: Dictionary = _times[jogador] if jogador < _times.size() else {}
+	for i in (_opcoes[jogador] as Array).size():
+		var carta := CartaVisual.new()
+		carta.configurar(_opcoes[jogador][i], _cores[jogador], time)
+		carta.position = Vector2(x0 + i * (LARGURA_DA_CARTA + ESPACO), TOPO_DAS_CARTAS)
+		_raiz.add_child(carta)
+		_quadros[jogador].append(carta)
+		# Entrada: cada carta sobe e aparece, uma depois da outra.
+		carta.modulate.a = 0.0
+		carta.position.y += 40.0
+		var entrada := carta.create_tween().set_parallel()
+		var y_final := TOPO_DAS_CARTAS - (SUBIDA if i == int(_indice[jogador]) else 0.0)
+		entrada.tween_property(carta, "position:y", y_final, 0.25).set_delay(atraso + 0.06 * i) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		entrada.tween_property(carta, "modulate:a", 1.0, 0.2).set_delay(atraso + 0.06 * i)
+
+
+## Botão TROCAR (o "Reroll" da referência) embaixo das cartas do jogador.
+func _criar_botao_de_troca(raiz: Control, jogador: int, posicao: Vector2) -> void:
+	var botao := Estilo.painel(Color(0.08, 0.09, 0.12, 0.95), Estilo.INCLINACAO, 2, Color(1, 1, 1, 0.7))
+	botao.position = posicao
+	botao.size = Vector2(LARGURA_DO_BOTAO, 42.0)
+	botao.pivot_offset = botao.size / 2.0
+	raiz.add_child(botao)
+	var icone := TextureRect.new()
+	icone.texture = load("res://arte/icones/coringa.svg")
+	icone.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icone.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icone.size = Vector2(28.0, 28.0)
+	icone.position = Vector2(26.0, 7.0)
+	icone.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	botao.add_child(icone)
+	var texto := Estilo.rotulo("", 26, Estilo.TEXTO, true)
+	texto.position = Vector2(62.0, 0.0)
+	texto.size = Vector2(LARGURA_DO_BOTAO - 74.0, 42.0)
+	texto.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	botao.add_child(texto)
+	_botoes[jogador] = botao
+	_textos_dos_botoes[jogador] = texto
+	_atualizar_botao(jogador)
+
+
+func _atualizar_botao(jogador: int) -> void:
+	var botao: Control = _botoes[jogador]
+	if botao == null:
+		return
+	var restantes := int(_trocas[jogador])
+	(_textos_dos_botoes[jogador] as Label).text = "TROCAR (%d)   Bloqueio" % restantes
+	botao.visible = not _pronto[jogador]
+	botao.modulate = Color.WHITE if restantes > 0 and _sortear_troca.is_valid() else Color(1, 1, 1, 0.4)
+
+
+## Sem troca: o botão balança pra avisar.
+func _balancar_botao(jogador: int) -> void:
+	var botao: Control = _botoes[jogador]
+	if botao == null or not botao.visible:
+		return
+	var x := botao.position.x
+	var tween := create_tween()
+	for passo in [8.0, -7.0, 5.0, -3.0, 0.0]:
+		tween.tween_property(botao, "position:x", x + passo, 0.04)
 
 func _criar_relogio(raiz: Control) -> void:
 	_caixa_do_relogio = Control.new()

@@ -3,6 +3,8 @@
 	"tempo_limite_escolha": 60,
 	"pontos_por_escolha": 3,
 	"cartas_por_escolha": 3,
+	"trocas_por_partida": 1,
+	"_sobre_as_trocas": "Cada jogador pode trocar as 3 cartas oferecidas por outras 3, essa quantidade de vezes na partida (botão TROCAR, com Bloqueio).",
 	"_sobre_a_escolha": "Os dois jogadores escolhem uma carta antes do 1º saque e depois a cada 'pontos_por_escolha' pontos (contando os dois times). Só entram no sorteio as cartas que já têm efeito no jogo (lista IMPLEMENTADAS em scripts/regras/cartas.gd).",
 	"cartas": [
 		{ "id": "maos_firmes", "nome": "Mãos Firmes", "raridade": "prata", "conjunto": "defesa", "efeito": "Passes ficam mais precisos" },

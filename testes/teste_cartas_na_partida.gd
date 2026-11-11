@@ -26,6 +26,7 @@ func _rodar() -> void:
 	_teste_escolha_vale_e_solta_o_jogo()
 	_teste_escolha_a_cada_3_pontos()
 	_teste_levantador_preciso()
+	_teste_trocar_cartas()
 	root.get_node("Configuracao").modo = "rapida"
 
 	if falhas == 0:
@@ -116,4 +117,22 @@ func _teste_levantador_preciso() -> void:
 	partida._aplicar_cartas()
 	_verificar(partida._qualidade_do_toque("levantamento", 0) == Q.PERFEITO, "Levantador Preciso: levantamento sempre perfeito")
 	_verificar(partida.rotulos_de_cartas[0].text.contains("Levantador Preciso"), "o nome da carta aparece na tela")
+	_fechar(partida)
+
+
+## Botão TROCAR: cada time começa com as trocas de dados/cartas.json; trocar
+## gasta uma e devolve cartas novas; sem troca, devolve nada.
+func _teste_trocar_cartas() -> void:
+	var partida = _nova_partida("caos")
+	var trocas: int = partida.Cartas.trocas_por_partida(partida.dados_das_cartas)
+	_verificar(trocas >= 1, "dados dão pelo menos 1 troca")
+	_verificar(partida.trocas_restantes == [trocas, trocas], "os dois times começam com %d troca(s)" % trocas)
+	var novas: Array = partida._trocar_cartas(0, [])
+	_verificar(novas.size() == partida.Cartas.cartas_por_escolha(partida.dados_das_cartas), "troca devolve cartas novas")
+	_verificar(partida.trocas_restantes[0] == trocas - 1 and partida.trocas_restantes[1] == trocas, "só o time 0 gastou")
+	for i in trocas - 1:
+		partida._trocar_cartas(0, [])
+	_verificar(partida._trocar_cartas(0, []).is_empty(), "sem troca, não vem carta")
+	_verificar(partida.escolha_de_cartas.trocas_restantes(1) == trocas, "a tela recebe as trocas do time")
+	partida.escolha_de_cartas.free()
 	_fechar(partida)

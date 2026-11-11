@@ -56,12 +56,11 @@ Tela de seleção parada, `--print-fps`: **~108 FPS em 1600×900** e **~99 em 12
 - `ferramentas/lado_a_lado.gd` — novo: junta imagens pra comparar.
 - README e `docs/ESTADO_DO_PROJETO.md` atualizados.
 
-## Diferenças que ainda faltam em relação à referência
-- **Atleta:** é o personagem low-poly do jogo, ainda simples (corpo de tubos, pele chapada). Isso melhora sozinho quando a Fase 06 melhorar o gerador, porque o retrato usa o mesmo personagem.
-- **Prévia do estádio:** ainda é o desenho da quadra. Depois da Fase 04 (ginásio), dá pra salvar uma captura de cada estádio em `arte/estadios/<id>.png` e ela aparece sozinha.
-- **Nome em japonês** embaixo do nome do time: precisaria de uma fonte com kanji (~5 MB). Ficou o estilo do time no lugar.
-- **Fundo com o ginásio desfocado:** depende do ginásio da Fase 04.
-- **Emblemas:** são originais e simples; se você quiser outros bichos ou outro traço, é só trocar o SVG em `arte/emblemas/`.
+## O que vem de outras fases do pacote
+- **Atleta mais caprichado:** o retrato usa o personagem do jogo, então melhora junto com ele na Fase 06.
+- **Prévia e fundo do ginásio:** vêm da Fase 04; a captura do ginásio novo vai em `arte/estadios/<id>.png` e aparece sozinha.
+- Os nomes em japonês da referência ficaram de fora a seu pedido (10/11/2026).
+- Os emblemas são desenhos originais; pra trocar o traço, é só trocar o SVG em `arte/emblemas/`.
 
 ## Como testar no seu PC
 1. Abra o projeto no Godot e aperte **F5**.

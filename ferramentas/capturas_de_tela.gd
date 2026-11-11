@@ -19,6 +19,7 @@ extends SceneTree
 ##   cartas           Modo Caos: escolha de cartas do começo da partida, sempre
 ##                    com as mesmas cartas (uma de cada raridade) pra comparar
 ##   cartas_estados   o mesmo, com o J1 confirmado na 3ª carta e o J2 na 2ª
+##   cartas_troca     depois disso, o J2 usa o TROCAR (cartas novas, sorteadas)
 ##   placar_*         pontos marcados pela regra de verdade (_encerrar_rally):
 ##                    jogo (4 x 3), ponto (no meio da animação, 6 x 3), set_point,
 ##                    set (faixa SET!), match_point e fim. Cada um sai também
@@ -101,6 +102,10 @@ func _capturar(tela: String) -> void:
 			escolha._mover(1, 1)
 			await _esperar(0.4)
 			_salvar("cartas_estados")
+			if escolha.has_method("_trocar"):
+				escolha._trocar(1)
+				await _esperar(0.8)
+				_salvar("cartas_troca")
 			configuracao.modo = "rapida"
 		_:
 			print("Tela desconhecida: %s (use %s)" % [tela, ", ".join(TODAS)])
@@ -156,6 +161,11 @@ func _cartas_fixas(partida: Node) -> Node:
 	# A versão nova também recebe os ids dos times (pros emblemas).
 	if escolha.get_method_argument_count("configurar") >= 7:
 		argumentos.append([str(partida.times_em_jogo[0]["id"]), str(partida.times_em_jogo[1]["id"])])
+	# A versão com atleta nas cartas e botão TROCAR recebe os times e as trocas.
+	if escolha.get_method_argument_count("configurar") >= 10:
+		argumentos.append(partida.times_em_jogo)
+		argumentos.append([1, 1])
+		argumentos.append(partida._trocar_cartas)
 	escolha.callv("configurar", argumentos)
 	partida.escolha_de_cartas = escolha
 	return escolha

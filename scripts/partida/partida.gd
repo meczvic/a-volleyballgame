@@ -286,6 +286,8 @@ var cortadas: Array = [{}, {}]
 ## das cartas, quantos pontos já saíram e a tela de escolha (null = fechada).
 var modo_caos := false
 var cartas_dos_times: Array = [[], []]
+## Trocas de cartas (TROCAR) que cada time ainda tem na partida.
+var trocas_restantes: Array = [0, 0]
 var ultima_carta: Array = ["", ""]
 var dados_das_cartas: Dictionary = {}
 var pontos_jogados := 0
@@ -1302,6 +1304,9 @@ func _encerrar_rally(vencedor: int, motivo: String) -> void:
 		faixa.mostrar("PONTO!", nome, _cor_do_time(vencedor), vencedor)
 	else:
 		faixa.mostrar("PONTO!", "%s  ·  %s" % [nome, explicacao], _cor_do_time(vencedor), vencedor)
+	# A faixa já diz quem pontuou e o motivo: a caixa do meio fica escondida
+	# (o texto continua lá, pros testes e pro robô).
+	caixa_da_mensagem.visible = false
 	for atleta in atletas[vencedor]:
 		_animar(atleta, "comemoracao_palmas")
 	# Se foi o último ponto, o placar chama _ao_encerrar_partida aqui dentro.
@@ -1372,12 +1377,38 @@ func _abrir_escolha_de_cartas(depois: Callable) -> void:
 		[_cor_do_time(0), _cor_do_time(1)],
 		cartas_dos_times, nomes_das_maos,
 		Cartas.tempo_limite(dados_das_cartas),
-		[str(times_em_jogo[0]["id"]), str(times_em_jogo[1]["id"])])
+		[str(times_em_jogo[0]["id"]), str(times_em_jogo[1]["id"])],
+		times_em_jogo, trocas_restantes.duplicate(), _trocar_cartas)
 	escolha_de_cartas.terminou.connect(func(escolhas: Array) -> void:
 		escolha_de_cartas = null
 		_ao_escolher_cartas(escolhas)
 		if depois.is_valid():
 			depois.call())
+
+
+## Botão TROCAR da tela de cartas: gasta uma troca do time e sorteia outras
+## cartas (tenta não repetir as que estavam na tela). Sem troca, devolve [].
+func _trocar_cartas(time: int, atuais: Array) -> Array:
+	if trocas_restantes[time] <= 0:
+		return []
+	var quantidade := Cartas.cartas_por_escolha(dados_das_cartas)
+	var ids: Array = []
+	for tentativa in 8:
+		ids = Cartas.sortear(dados_das_cartas, cartas_dos_times[time], RandomNumberGenerator.new(),
+			quantidade, ultima_carta[1 - time])
+		var repetidas := 0
+		for id in ids:
+			if atuais.has(id):
+				repetidas += 1
+		if repetidas < ids.size():
+			break
+	if ids.is_empty():
+		return []
+	trocas_restantes[time] -= 1
+	var cartas: Array = []
+	for id in ids:
+		cartas.append(Cartas.por_id(dados_das_cartas, id))
+	return cartas
 
 
 ## As duas cartas escolhidas entram na mão de cada time. As duas escolhas
@@ -1490,6 +1521,7 @@ func _ao_encerrar_set(vencedor: int) -> void:
 		placar.set_atual, times_em_jogo[vencedor]["nome"],
 		placar.pontos[vencedor], placar.pontos[1 - vencedor],
 	])
+	caixa_da_mensagem.visible = false
 
 
 func _atualizar_placar() -> void:
@@ -1600,6 +1632,7 @@ func _carregar_escolhas() -> void:
 	estadio = Dados.por_id(Dados.estadios(), Configuracao.estadio)
 	modo_caos = Configuracao.modo == "caos"
 	if modo_caos:
+		trocas_restantes = [Cartas.trocas_por_partida(Dados.cartas()), Cartas.trocas_por_partida(Dados.cartas())]
 		dados_das_cartas = Dados.cartas()
 
 

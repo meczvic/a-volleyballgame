@@ -1,7 +1,11 @@
 extends Control
-## Uma carta do Modo Caos, desenhada em código (sem ilustração pintada): moldura
-## chanfrada, aba da raridade em cima, uma "arte" com o ícone do conjunto e um
-## fundo próprio da raridade, um hexágono com o ícone, o nome, o conjunto e o efeito.
+## Uma carta do Modo Caos: moldura chanfrada, aba da raridade em cima, a "arte"
+## (o atleta destaque do time fazendo a jogada do conjunto, em cima de um fundo
+## próprio da raridade), um hexágono com o ícone do conjunto, o nome e o efeito.
+##
+## A arte é uma foto do personagem 3D do jogo, tirada uma vez e guardada (a
+## mesma carta do mesmo time não fotografa de novo). Sem time, ou se a foto não
+## sair (por exemplo sem placa de vídeo, nos testes), fica o ícone grande.
 ##
 ## Raridades (as de dados/cartas.json):
 ## - prata: moldura prateada fina, fundo de aço com reflexos inclinados;
@@ -14,11 +18,13 @@ extends Control
 ## que o jogador escolheu). Subir e crescer fica por conta de quem usa a carta.
 
 const Estilo := preload("res://scripts/menus/estilo.gd")
+const Dados := preload("res://scripts/comum/dados.gd")
+const Animador := preload("res://scripts/visual/animador.gd")
 
-const TAMANHO := Vector2(236.0, 336.0)
+const TAMANHO := Vector2(236.0, 360.0)
 const CHANFRO := 18.0
 ## Área da "arte" (fundo + ícone grande).
-const ARTE := Rect2(14.0, 30.0, 208.0, 138.0)
+const ARTE := Rect2(14.0, 30.0, 208.0, 184.0)
 const RAIO_DO_HEXAGONO := 27.0
 const FUNDO_DA_CARTA := Color("#151920")
 
@@ -54,6 +60,21 @@ const CONJUNTOS := {
 	"coringa": ["coringa", "CORINGA"],
 }
 const PASTA_ICONES := "res://arte/icones/%s.svg"
+## Lance de cada conjunto na foto: [animação, instante (s), giro do atleta (rad),
+## onde a foto corta embaixo (0 = pés, 1 = topo)].
+const LANCE_DO_CONJUNTO := {
+	"ataque": ["cortada", 1.62, 0.75, 0.42],
+	"defesa": ["manchete", 0.45, 0.6, 0.3],
+	"saque": ["saque", 1.3, 0.85, 0.4],
+	"rede": ["bloqueio", 0.85, 0.3, 0.45],
+	"velocidade": ["correr", 0.35, 1.2, 0.3],
+	"coringa": ["comemoracao_torcida", 0.6, 0.35, 0.4],
+}
+## Foto em dobro do tamanho da arte, pra ficar nítida.
+const ESCALA_DA_FOTO := 2
+
+## Fotos já tiradas: "<time>|<cores>|<conjunto>|<raridade>" -> textura.
+static var _fotos := {}
 
 var carta: Dictionary = {}
 var raridade := "prata"
@@ -66,11 +87,22 @@ var _tempo := 0.0
 ## Facetas da carta prismática: [triângulo, cor, fase do brilho].
 var _facetas: Array = []
 var _selo: Label
+var _time: Dictionary = {}
+var _icone_grande: TextureRect
+var _foto: TextureRect
+var _estudio: SubViewport
+var _camera_do_estudio: Camera3D
+var _personagem_do_estudio: Node3D
+## 0 = esperando a pose entrar; 1 = esperando a foto ser desenhada.
+var _etapa_da_foto := 0
+var _quadros_esperando := 0
 
 
-## Monta a carta. Chame antes de pôr na tela.
-func configurar(dados: Dictionary, cor: Color) -> void:
+## Monta a carta. "time" (com as cores do uniforme em jogo) é de quem a carta
+## vai ser: o atleta destaque dele aparece na arte. Chame antes de pôr na tela.
+func configurar(dados: Dictionary, cor: Color, time: Dictionary = {}) -> void:
 	carta = dados
+	_time = time
 	cor_do_jogador = cor
 	raridade = str(dados.get("raridade", "prata"))
 	if not COR_DA_RARIDADE.has(raridade):
@@ -82,6 +114,15 @@ func configurar(dados: Dictionary, cor: Color) -> void:
 	_criar_textos()
 	if raridade == "prismatica":
 		_criar_facetas()
+
+
+func _ready() -> void:
+	if not _time.is_empty():
+		_preparar_foto()
+
+
+func tem_foto() -> bool:
+	return _foto != null and _foto.texture != null
 
 
 func definir_estado(esta_escolhida: bool, esta_confirmada: bool, esta_apagada: bool) -> void:
@@ -226,9 +267,16 @@ func _criar_textos() -> void:
 	var caminho := PASTA_ICONES % dados_do_conjunto[0]
 	var textura: Texture2D = load(caminho) if ResourceLoader.exists(caminho) else null
 
-	var grande := _icone(textura, 78.0, COR_DO_ICONE[raridade])
-	grande.position = ARTE.get_center() + Vector2(-39.0, -45.0)
-	add_child(grande)
+	_icone_grande = _icone(textura, 78.0, COR_DO_ICONE[raridade])
+	_icone_grande.position = ARTE.get_center() + Vector2(-39.0, -45.0)
+	add_child(_icone_grande)
+	_foto = TextureRect.new()
+	_foto.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_foto.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_foto.position = ARTE.position
+	_foto.size = ARTE.size
+	_foto.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_foto)
 	var pequeno := _icone(textura, 28.0, cor)
 	pequeno.position = Vector2(TAMANHO.x / 2.0 - 14.0, ARTE.end.y - 14.0)
 	add_child(pequeno)
@@ -259,7 +307,7 @@ func _criar_textos() -> void:
 	add_child(efeito)
 
 	_selo = Estilo.etiqueta("ESCOLHIDA", Estilo.PRONTO, 22)
-	_selo.position = Vector2(TAMANHO.x / 2.0 - 70.0, TAMANHO.y - 24.0)
+	_selo.position = Vector2(TAMANHO.x / 2.0 - 70.0, TAMANHO.y - 12.0)
 	_selo.size = Vector2(140.0, 32.0)
 	_selo.visible = false
 	add_child(_selo)
@@ -301,6 +349,132 @@ func _criar_facetas() -> void:
 			for tri in [[a, b, e], [a, e, d]]:
 				var cor: Color = CORES_PRISMATICAS[sorteio.randi() % CORES_PRISMATICAS.size()]
 				_facetas.append([PackedVector2Array(tri), cor, sorteio.randf() * TAU])
+
+
+# --- Foto do atleta ---
+
+## Monta um estúdio 3D só pra esta carta, posa o atleta e tira a foto quando a
+## placa de vídeo desenhar (a foto fica guardada pras próximas vezes).
+func _preparar_foto() -> void:
+	var conjunto := str(carta.get("conjunto", ""))
+	var chave := "%s|%s|%s|%s" % [_time.get("id", ""), str(_time.get("cores", [])), conjunto, raridade]
+	if _fotos.has(chave):
+		_mostrar_foto(_fotos[chave])
+		return
+	var personagem := Dados.carregar_personagem(_time, Dados.atleta_destaque(_time))
+	if personagem == null:
+		return
+
+	_estudio = SubViewport.new()
+	_estudio.own_world_3d = true
+	_estudio.transparent_bg = true
+	_estudio.msaa_3d = Viewport.MSAA_4X
+	_estudio.size = Vector2i(ARTE.size * ESCALA_DA_FOTO)
+	_estudio.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	add_child(_estudio)
+	var mundo := Node3D.new()
+	_estudio.add_child(mundo)
+	var ambiente := WorldEnvironment.new()
+	var env := Environment.new()
+	env.background_mode = Environment.BG_CLEAR_COLOR
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color(0.85, 0.85, 0.9)
+	env.ambient_light_energy = 0.5
+	ambiente.environment = env
+	mundo.add_child(ambiente)
+	var principal := DirectionalLight3D.new()
+	principal.rotation_degrees = Vector3(-30.0, 30.0, 0.0)
+	principal.light_color = Color(1.0, 0.95, 0.88)
+	mundo.add_child(principal)
+	# Contorno na cor da raridade, de trás.
+	var contorno := DirectionalLight3D.new()
+	contorno.rotation_degrees = Vector3(-15.0, 165.0, 0.0)
+	contorno.light_energy = 2.4
+	contorno.light_color = cor_da_raridade().lightened(0.2)
+	mundo.add_child(contorno)
+
+	var lance: Array = LANCE_DO_CONJUNTO.get(conjunto, ["parado", 0.0, 0.4, 0.4])
+	set_meta("corte_da_foto", float(lance[3]))
+	mundo.add_child(personagem)
+	personagem.rotation.y = lance[2]
+	var player := personagem.get_node_or_null("AnimationPlayer") as AnimationPlayer
+	if player != null:
+		if not player.has_animation_library(Animador.BIBLIOTECA):
+			player.add_animation_library(Animador.BIBLIOTECA, Animador.biblioteca())
+		var nome := Animador.BIBLIOTECA + "/" + str(lance[0])
+		if player.has_animation(nome):
+			player.play(nome)
+			player.seek(float(lance[1]), true)
+			player.advance(0.0)
+			player.pause()
+
+	_camera_do_estudio = Camera3D.new()
+	_camera_do_estudio.fov = 30.0
+	mundo.add_child(_camera_do_estudio)
+	_camera_do_estudio.current = true
+	_personagem_do_estudio = personagem
+
+	# A pose só aparece nos ossos no quadro seguinte: espera, mede o corpo já
+	# posado, enquadra e aí tira a foto.
+	_etapa_da_foto = 0
+	_quadros_esperando = 1
+	set_meta("chave_da_foto", chave)
+	RenderingServer.frame_post_draw.connect(_ao_desenhar)
+
+
+## Etapa 0: a pose entrou, enquadra e pede a foto. Etapa 1: a placa de vídeo
+## desenhou, guarda a imagem.
+func _ao_desenhar() -> void:
+	_quadros_esperando -= 1
+	if _quadros_esperando > 0:
+		return
+	if _etapa_da_foto == 0:
+		_enquadrar(_camera_do_estudio, _personagem_do_estudio)
+		_estudio.render_target_update_mode = SubViewport.UPDATE_ONCE
+		_etapa_da_foto = 1
+		_quadros_esperando = 2
+		return
+	RenderingServer.frame_post_draw.disconnect(_ao_desenhar)
+	var imagem := _estudio.get_texture().get_image() if _estudio != null else null
+	if _estudio != null:
+		_estudio.queue_free()
+		_estudio = null
+	if imagem == null or imagem.is_empty():
+		return
+	var textura := ImageTexture.create_from_image(imagem)
+	_fotos[get_meta("chave_da_foto")] = textura
+	_mostrar_foto(textura)
+
+
+func _mostrar_foto(textura: Texture2D) -> void:
+	_foto.texture = textura
+	_icone_grande.visible = false
+
+
+## Close do atleta (da cintura ou do joelho pra cima, conforme o lance), com a
+## cabeça e as mãos dentro da foto, como as ilustrações da referência.
+func _enquadrar(camera: Camera3D, personagem: Node3D) -> void:
+	var altura := float(personagem.get_meta("altura", 1.8))
+	var minimo := Vector3(-0.3, 0.0, -0.3)
+	var maximo := Vector3(0.3, altura, 0.3)
+	var esqueletos := personagem.find_children("*", "Skeleton3D", true, false)
+	if not esqueletos.is_empty():
+		var esqueleto := esqueletos[0] as Skeleton3D
+		minimo = Vector3.INF
+		maximo = -Vector3.INF
+		for i in esqueleto.get_bone_count():
+			var ponto := esqueleto.global_transform * esqueleto.get_bone_global_pose(i).origin
+			minimo = minimo.min(ponto)
+			maximo = maximo.max(ponto)
+	var alto := maximo.y + altura * 0.1
+	var baixo := lerpf(minimo.y, alto, float(get_meta("corte_da_foto", 0.4)))
+	var centro := Vector3((minimo.x + maximo.x) / 2.0, (alto + baixo) / 2.0, (minimo.z + maximo.z) / 2.0)
+	var tangente := tan(deg_to_rad(camera.fov / 2.0))
+	var proporcao := ARTE.size.x / ARTE.size.y
+	var distancia := maxf((alto - baixo) / 2.0 / tangente,
+		(maximo.x - minimo.x + 0.15) / 2.0 / (tangente * proporcao))
+	camera.position = centro + Vector3(0.0, 0.0, distancia + (maximo.z - minimo.z) / 2.0)
+	camera.look_at(centro)
 
 
 # --- Ajudantes de geometria ---
