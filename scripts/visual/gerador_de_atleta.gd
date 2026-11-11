@@ -52,9 +52,9 @@ const PORTES := {
 	"grande": [1.16, 1.2, 1.14],
 }
 const PELES := {
-	"clara": "#F3DCC8", "clara_quente": "#F6E1CF", "bem_clara": "#F8E8DC",
-	"bronzeada": "#E5BE9A", "morena_clara": "#D9AE88", "morena": "#B98262",
-	"parda": "#9C6B4E", "negra": "#6E4A33",
+	"clara": "#EDC4A2", "clara_quente": "#F0C39C", "bem_clara": "#F3D3B8",
+	"bronzeada": "#D9A57A", "morena_clara": "#C9946C", "morena": "#A8714F",
+	"parda": "#8C5C40", "negra": "#5E3D2A",
 }
 const COR_CONTORNO := Color(0.08, 0.07, 0.1)
 
@@ -506,12 +506,12 @@ static func _construir_malhas(ap: Dictionary, uniforme: Dictionary, m: Dictionar
 	var y_pescoco: float = m["Neck"].y + 0.03 * e
 	var larguras := [
 		[y_virilha, 0.105 * e * larg], [y_quadril, 0.165 * e * larg], [y_cintura, 0.14 * e * larg],
-		[y_peito, 0.165 * e * larg], [y_alto, 0.19 * e * larg * m["ombros"]], [y_ombro, 0.165 * e * m["ombros"]],
+		[y_peito, 0.172 * e * larg], [y_alto, 0.205 * e * larg * m["ombros"]], [y_ombro, 0.178 * e * m["ombros"]],
 		[y_pescoco, 0.055 * e],
 	]
 	var profundidades := [
 		[y_virilha, 0.085 * e * larg], [y_quadril, 0.108 * e * larg], [y_cintura, 0.095 * e * larg],
-		[y_peito, 0.112 * e * larg], [y_alto, 0.115 * e * larg], [y_ombro, 0.1 * e],
+		[y_peito, 0.118 * e * larg], [y_alto, 0.118 * e * larg], [y_ombro, 0.1 * e],
 		[y_pescoco, 0.055 * e],
 	]
 	var meio_x := func(y: float) -> float: return _interp(larguras, y)
@@ -565,21 +565,23 @@ static func _construir_malhas(ap: Dictionary, uniforme: Dictionary, m: Dictionar
 		var eixo := Vector3(lado, 0, 0)
 		var braco := func(pos: Vector3, r: float, pesos: Dictionary) -> Dictionary:
 			return {"p": Malha.anel(pos, Vector3(0, r, 0), Vector3(0, 0, r), 12), "pesos": pesos}
-		var r_ombro := 0.062 * e * memb
-		var r_cotovelo := 0.045 * e * memb
-		var r_pulso := 0.034 * e * memb
-		var fim_manga := ombro + eixo * 0.09 * e
+		var r_ombro := 0.066 * e * memb
+		var r_cotovelo := 0.044 * e * memb
+		var r_pulso := 0.032 * e * memb
+		var fim_manga := ombro + eixo * 0.12 * e
 		malha.tubo("camisa", [
 			braco.call(ombro - eixo * 0.03 * e, r_ombro * 1.05, {"UpperChest": 0.6, p + "UpperArm": 0.4}),
-			braco.call(ombro + eixo * 0.02 * e, r_ombro * 1.08, {p + "UpperArm": 0.8, "UpperChest": 0.2}),
-			braco.call(fim_manga, r_ombro * 1.02, {p + "UpperArm": 1.0}),
+			braco.call(ombro + eixo * 0.02 * e, r_ombro * 1.14, {p + "UpperArm": 0.8, "UpperChest": 0.2}),
+			braco.call(ombro + eixo * 0.07 * e, r_ombro * 1.1, {p + "UpperArm": 1.0}),
+			braco.call(fim_manga, r_ombro * 1.06, {p + "UpperArm": 1.0}),
 		], true, false)
-		malha.tubo("detalhe", [braco.call(fim_manga - eixo * 0.008 * e, r_ombro * 1.06, {p + "UpperArm": 1.0}), braco.call(fim_manga + eixo * 0.012 * e, r_ombro * 1.04, {p + "UpperArm": 1.0})], false, false)
+		malha.tubo("detalhe", [braco.call(fim_manga - eixo * 0.012 * e, r_ombro * 1.1, {p + "UpperArm": 1.0}), braco.call(fim_manga + eixo * 0.01 * e, r_ombro * 1.08, {p + "UpperArm": 1.0})], false, false)
 		malha.tubo("pele", [
-			braco.call(fim_manga, r_ombro * 0.97, {p + "UpperArm": 1.0}),
-			braco.call(cotovelo - eixo * 0.03 * e, r_cotovelo * 1.08, {p + "UpperArm": 0.8, p + "LowerArm": 0.2}),
+			braco.call(fim_manga, r_ombro * 0.9, {p + "UpperArm": 1.0}),
+			braco.call(lerp(fim_manga, cotovelo, 0.45), r_cotovelo * 1.2, {p + "UpperArm": 1.0}),
+			braco.call(cotovelo - eixo * 0.03 * e, r_cotovelo * 1.05, {p + "UpperArm": 0.8, p + "LowerArm": 0.2}),
 			braco.call(cotovelo, r_cotovelo, {p + "UpperArm": 0.5, p + "LowerArm": 0.5}),
-			braco.call(cotovelo + eixo * 0.05 * e, r_cotovelo * 1.08, {p + "LowerArm": 1.0}),
+			braco.call(cotovelo + eixo * 0.05 * e, r_cotovelo * 1.15, {p + "LowerArm": 1.0}),
 			braco.call(pulso - eixo * 0.01 * e, r_pulso, {p + "LowerArm": 0.6, p + "Hand": 0.4}),
 		], false, true)
 		# Mão: luva achatada (palma virada pra baixo).
@@ -606,24 +608,24 @@ static func _construir_malhas(ap: Dictionary, uniforme: Dictionary, m: Dictionar
 		var dedos: Vector3 = m[p + "Toes"]
 		var perna := func(pos: Vector3, r: float, pesos: Dictionary, rz := -1.0) -> Dictionary:
 			return {"p": Malha.anel(pos, Vector3(r, 0, 0), Vector3(0, 0, r if rz < 0 else rz), 12), "pesos": pesos}
-		var r_coxa := 0.088 * e * memb
+		var r_coxa := 0.094 * e * memb
 		var r_joelho := 0.06 * e * memb
-		var r_panturrilha := 0.068 * e * memb
-		var r_tornozelo := 0.04 * e * memb
-		var y_shorts := coxa.y - 0.17 * e
+		var r_panturrilha := 0.074 * e * memb
+		var r_tornozelo := 0.038 * e * memb
+		var y_shorts := coxa.y - 0.19 * e
 		var fim_shorts := Vector3(coxa.x, y_shorts, coxa.z + 0.004 * e)
 		# Shorts por cima da coxa.
 		malha.tubo("shorts", [
 			perna.call(coxa + Vector3(0, 0.03 * e, 0), r_coxa * 1.1, {"Hips": 0.7, p + "UpperLeg": 0.3}),
-			perna.call(coxa - Vector3(0, 0.06 * e, 0), r_coxa * 1.1, {"Hips": 0.2, p + "UpperLeg": 0.8}),
-			perna.call(fim_shorts, r_coxa * 1.04, {p + "UpperLeg": 1.0}),
+			perna.call(coxa - Vector3(0, 0.06 * e, 0), r_coxa * 1.14, {"Hips": 0.2, p + "UpperLeg": 0.8}),
+			perna.call(fim_shorts, r_coxa * 1.1, {p + "UpperLeg": 1.0}),
 		], false, false)
-		malha.tubo("detalhe", [perna.call(fim_shorts + Vector3(0, 0.012 * e, 0), r_coxa * 1.07, {p + "UpperLeg": 1.0}), perna.call(fim_shorts - Vector3(0, 0.004 * e, 0), r_coxa * 1.05, {p + "UpperLeg": 1.0})], false, false)
+		malha.tubo("detalhe", [perna.call(fim_shorts + Vector3(0, 0.016 * e, 0), r_coxa * 1.13, {p + "UpperLeg": 1.0}), perna.call(fim_shorts - Vector3(0, 0.004 * e, 0), r_coxa * 1.11, {p + "UpperLeg": 1.0})], false, false)
 		# Coxa e joelho (pele), joelheira, panturrilha.
 		var y_joelheira_alto := joelho.y + 0.06 * e
 		var y_joelheira_baixo := joelho.y - 0.055 * e
 		malha.tubo("pele", [
-			perna.call(fim_shorts, r_coxa * 0.98, {p + "UpperLeg": 1.0}),
+			perna.call(fim_shorts, r_coxa * 0.96, {p + "UpperLeg": 1.0}),
 			perna.call(Vector3(joelho.x, y_joelheira_alto + 0.03 * e, joelho.z), r_joelho * 1.1, {p + "UpperLeg": 0.85, p + "LowerLeg": 0.15}),
 			perna.call(Vector3(joelho.x, y_joelheira_alto, joelho.z), r_joelho * 1.05, {p + "UpperLeg": 0.7, p + "LowerLeg": 0.3}),
 		], false, false)
@@ -632,7 +634,7 @@ static func _construir_malhas(ap: Dictionary, uniforme: Dictionary, m: Dictionar
 			perna.call(joelho + Vector3(0, 0, 0.006 * e), r_joelho * 1.16, {p + "UpperLeg": 0.5, p + "LowerLeg": 0.5}),
 			perna.call(Vector3(joelho.x, y_joelheira_baixo, joelho.z), r_joelho * 1.1, {p + "UpperLeg": 0.2, p + "LowerLeg": 0.8}),
 		], false, false)
-		var y_meia := tornozelo.y + 0.09 * e
+		var y_meia := tornozelo.y + 0.04 * e
 		malha.tubo("pele", [
 			perna.call(Vector3(joelho.x, y_joelheira_baixo, joelho.z), r_joelho * 1.0, {p + "UpperLeg": 0.2, p + "LowerLeg": 0.8}),
 			perna.call(Vector3(joelho.x, joelho.y - 0.12 * e, joelho.z - 0.006 * e), r_panturrilha, {p + "LowerLeg": 1.0}),
@@ -653,17 +655,28 @@ static func _construir_malhas(ap: Dictionary, uniforme: Dictionary, m: Dictionar
 			sapato.call(Vector3(dedos.x, dedos.y + 0.012 * e, dedos.z + 0.01 * e), 0.046 * e * memb, 0.022 * e, {p + "Foot": 0.4, p + "Toes": 0.6}),
 			sapato.call(Vector3(dedos.x, dedos.y + 0.008 * e, dedos.z + 0.055 * e), 0.028 * e * memb, 0.012 * e, {p + "Toes": 1.0}),
 		], true, true)
+		# Faixa na lateral do tênis, na cor de detalhe do time.
+		malha.tubo("detalhe", [
+			sapato.call(Vector3(tornozelo.x, tornozelo.y * 0.55, tornozelo.z + 0.0 * e), 0.054 * e * memb, 0.012 * e, {p + "Foot": 1.0}),
+			sapato.call(Vector3(tornozelo.x, tornozelo.y * 0.55, tornozelo.z + 0.035 * e), 0.056 * e * memb, 0.012 * e, {p + "Foot": 0.9, p + "Toes": 0.1}),
+		], false, false)
 		# Sola escura.
 		malha.tubo("sola", [
-			sapato.call(Vector3(tornozelo.x, sola * 0.9, tornozelo.z - 0.045 * e), r_tornozelo * 1.1, sola * 0.9, {p + "Foot": 1.0}),
-			sapato.call(Vector3(dedos.x, sola * 0.9, dedos.z + 0.04 * e), 0.03 * e * memb, sola * 0.9, {p + "Toes": 1.0}),
+			sapato.call(Vector3(tornozelo.x, sola * 1.1, tornozelo.z - 0.05 * e), r_tornozelo * 1.25, sola * 1.2, {p + "Foot": 1.0}),
+			sapato.call(Vector3(tornozelo.x, sola * 1.1, tornozelo.z + 0.03 * e), 0.056 * e * memb, sola * 1.2, {p + "Foot": 1.0}),
+			sapato.call(Vector3(dedos.x, sola * 1.1, dedos.z + 0.045 * e), 0.034 * e * memb, sola * 1.2, {p + "Toes": 1.0}),
 		], true, true)
 
 	# Número: costas (grande) e peito (pequeno, à esquerda de quem veste).
 	var numero := int(uniforme.get("numero", 0))
 	var pesos_costas := {"Chest": 0.5, "UpperChest": 0.5}
-	malha.placa("numero", meio_x, meio_z, 0.0, y_peito - 0.07 * e, y_alto + 0.03 * e, PI - 0.9, PI + 0.9, 0.018 * e, pesos_costas, 10, 4)
-	malha.placa("numero", meio_x, meio_z, 0.0, y_peito + 0.0 * e, y_peito + 0.06 * e, 0.22, 0.62, 0.018 * e, pesos_costas, 4, 2)
+	malha.placa("numero", meio_x, meio_z, 0.0, y_peito - 0.09 * e, y_alto + 0.035 * e, PI - 0.95, PI + 0.95, 0.018 * e, pesos_costas, 10, 4)
+	malha.placa("numero", meio_x, meio_z, 0.0, y_peito - 0.075 * e, y_alto - 0.005 * e, -0.62, 0.62, 0.018 * e, pesos_costas, 8, 3)
+	# Recortes laterais da camisa e faixa lateral do short, na cor de detalhe.
+	for lado: float in [1.0, -1.0]:
+		var centro := PI / 2.0 * lado
+		malha.placa("detalhe", meio_x, meio_z, 0.0, y_barra + 0.01 * e, y_alto - 0.02 * e, centro - 0.32, centro + 0.32, 0.016 * e, {"Spine": 0.5, "Chest": 0.5}, 6, 4)
+		malha.placa("detalhe", meio_x, meio_z, 0.0, y_virilha + 0.03 * e, y_barra - 0.01 * e, centro - 0.18, centro + 0.18, 0.017 * e, {"Hips": 1.0}, 4, 2)
 
 	var materiais := {
 		"pele": _material(cor_pele, 0.01 * e),
