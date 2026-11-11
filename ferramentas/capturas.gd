@@ -9,7 +9,7 @@ extends SceneTree
 ##
 ## Saída em producao/capturas/<time>/:
 ##   folha.png                     os 6 do time, frente (em cima) e costas (embaixo)
-##   <nn>_<nome>_<vista>.png       frente, perfil, tres_quartos, costas, correr, cortada
+##   <nn>_<nome>_<vista>.png       frente, perfil, tres_quartos, costas, correr, cortada, espera
 ##
 ## O atleta vem do mesmo caminho da partida (Dados.carregar_personagem): VRM se
 ## existir, senão o gerado por código, senão a cápsula.
@@ -24,6 +24,7 @@ const VISTAS := {
 	"costas": [PI, "parado", 0.0],
 	"correr": [PI * 0.2, "correr", 0.35],
 	"cortada": [PI * 0.3, "cortada", 1.62],
+	"espera": [PI * 0.2, "espera", 0.5],
 }
 const PASTA := "res://producao/capturas"
 

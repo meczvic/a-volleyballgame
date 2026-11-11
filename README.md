@@ -131,7 +131,7 @@ godot --headless --script res://testes/teste_animacoes.gd
 godot --headless --script res://testes/teste_animador.gd
 ```
 
-Ou todos de uma vez (29 arquivos, incluindo tempo do toque, mira, cortada, atributos, mergulho, jogadas e placar):
+Ou todos de uma vez (30 arquivos, incluindo tempo do toque, mira, cortada, atributos, mergulho, jogadas e placar):
 
 ```
 for t in testes/teste_*.gd; do godot --headless --script res://$t; done

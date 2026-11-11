@@ -22,7 +22,21 @@ const ARQUIVOS := {
 	"comemoracao_palmas": "res://animacoes/comemoracao_palmas.fbx",
 	"comemoracao_torcida": "res://animacoes/comemoracao_torcida.fbx",
 }
-const EM_LOOP := ["parado", "correr", "lateral_esquerda", "lateral_direita", "comemoracao_palmas", "comemoracao_torcida"]
+const EM_LOOP := ["parado", "espera", "correr", "lateral_esquerda", "lateral_direita", "comemoracao_palmas", "comemoracao_torcida"]
+## Pose de espera do jogo (Fase 06): a "parado" com os joelhos dobrados, o
+## quadril mais baixo, o tronco inclinado pra frente e os braços na frente do
+## corpo, como um atleta pronto pra receber. [osso, eixo local, ângulo (rad)];
+## nos braços, o ângulo troca de sinal do lado direito.
+const POSE_DE_ESPERA := [
+	["UpperLeg", Vector3.RIGHT, 0.35], ["LowerLeg", Vector3.RIGHT, 0.7], ["Foot", Vector3.RIGHT, 0.32],
+	["Spine", Vector3.RIGHT, 0.15], ["Chest", Vector3.RIGHT, 0.1],
+	["UpperArm", Vector3.UP, 0.6], ["LowerArm", Vector3.FORWARD, -0.6],
+]
+## Quanto o quadril desce na pose de espera (fração da altura do quadril em
+## pé), pra os pés continuarem no chão com os joelhos dobrados.
+const DESCIDA_DO_QUADRIL := 0.131
+## Animação que o atleta toca parado em quadra.
+const PARADO_NO_JOGO := "espera"
 
 ## Trecho de cada lance que vale: [início, fim] em segundos da animação, e
 ## opcionalmente a velocidade (1 = normal). O resto é preparo ou volta.
@@ -76,7 +90,7 @@ func preparar(personagem: Node3D, giro: float) -> bool:
 		return false
 	if not _player.has_animation_library(BIBLIOTECA):
 		_player.add_animation_library(BIBLIOTECA, biblioteca())
-	_tocar_loop("parado")
+	_tocar_loop(PARADO_NO_JOGO)
 	return true
 
 
@@ -167,7 +181,7 @@ func _process(delta: float) -> void:
 
 	var velocidade := andou.length()
 	if velocidade < PARADO_ABAIXO_DE:
-		_tocar_loop("parado")
+		_tocar_loop(PARADO_NO_JOGO)
 		_player.speed_scale = 1.0
 		_virar_para(giro_da_rede, delta)
 		return
@@ -216,7 +230,43 @@ static func biblioteca() -> AnimationLibrary:
 		animacao.loop_mode = Animation.LOOP_LINEAR if nome in EM_LOOP else Animation.LOOP_NONE
 		_no_lugar(animacao, nome in PULAM_NO_JOGO)
 		_biblioteca.add_animation(nome, animacao)
+	if _biblioteca.has_animation("parado"):
+		_biblioteca.add_animation("espera", _pose_de_espera(_biblioteca.get_animation("parado")))
 	return _biblioteca
+
+
+## A "parado" virada pose de espera (veja POSE_DE_ESPERA): cada chave de
+## rotação dos ossos da lista ganha o giro, e o quadril desce.
+static func _pose_de_espera(parado: Animation) -> Animation:
+	var espera := parado.duplicate(true) as Animation
+	espera.loop_mode = Animation.LOOP_LINEAR
+	var perfil := SkeletonProfileHumanoid.new()
+	for item in POSE_DE_ESPERA:
+		for lado in ["Left", "Right"]:
+			var osso: String = item[0] if item[0] in ["Spine", "Chest"] else lado + str(item[0])
+			if osso.begins_with("Right") and item[0] in ["Spine", "Chest"]:
+				continue
+			var angulo: float = item[2]
+			if osso.begins_with("Right") and str(item[0]).ends_with("Arm"):
+				angulo = -angulo
+			var giro := Quaternion(item[1], angulo)
+			var trilha := espera.find_track(NodePath("%GeneralSkeleton:" + osso), Animation.TYPE_ROTATION_3D)
+			if trilha < 0:
+				# Sem trilha: parte da pose de referência do perfil humanoide.
+				trilha = espera.add_track(Animation.TYPE_ROTATION_3D)
+				espera.track_set_path(trilha, NodePath("%GeneralSkeleton:" + osso))
+				var indice := perfil.find_bone(osso)
+				var base := perfil.get_reference_pose(indice).basis.get_rotation_quaternion() if indice >= 0 else Quaternion.IDENTITY
+				espera.rotation_track_insert_key(trilha, 0.0, base)
+			for chave in espera.track_get_key_count(trilha):
+				var valor: Quaternion = espera.track_get_key_value(trilha, chave)
+				espera.track_set_key_value(trilha, chave, valor * giro)
+	var quadril := espera.find_track(NodePath("%GeneralSkeleton:Hips"), Animation.TYPE_POSITION_3D)
+	if quadril >= 0:
+		for chave in espera.track_get_key_count(quadril):
+			var valor: Vector3 = espera.track_get_key_value(quadril, chave)
+			espera.track_set_key_value(quadril, chave, valor - Vector3(0.0, DESCIDA_DO_QUADRIL, 0.0))
+	return espera
 
 
 static func _carregar(caminho: String) -> Animation:
