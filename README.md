@@ -104,6 +104,7 @@ O jogo segue as regras oficiais (FIVB). Só o placar é do jogo: sets até 7, co
 | `scripts/comum/` | `dados.gd` lê os arquivos da pasta `dados/`. |
 | `fontes/` | Fonte Barlow Condensed (licença livre OFL, em `LICENCA_OFL.txt`). |
 | `shaders/` | Efeito anime: `anime.gdshader` (luz e sombra em faixas) e `contorno.gdshader` (contorno escuro). Cenário: `piso_de_madeira.gdshader`, `rede.gdshader` (malha vazada), `janela_entardecer.gdshader` e `grade.gdshader`. |
+| `assets/polyfork/` | Três modelos gratuitos da [Polyfork](https://polyfork.dev) usados no Ginásio Japonês (carrinho de bolas, quadro branco, banco de tábua), licença CC BY 4.0. Créditos em `assets/polyfork/LEIA-ME.md`, detalhes em `manifesto.json`. |
 | `scripts/cenario/` | O lugar da partida, montado em código: `cenario.gd` (quadra, linhas, rede com antenas, cadeira do juiz, árbitros, bancos com reservas e técnico, mesa do apontador), `ginasio_japones.gd` (ginásio de colégio ao entardecer) e `arena.gd` (arquibancadas, público, placas de LED e telão, pros outros três estádios). `pecas.gd` tem as peças simples (caixas, placas, textos, público instanciado). |
 | `scripts/visual/` | `visual_anime.gd` cria materiais anime prontos: `VisualAnime.material(cor)`. |
 | `dados/` | Times (atributos e cores), estádios (cores da quadra, do fundo, das placas e da luz) e cartas do Modo Caos, em JSON. Mudar um número aqui muda o jogo sem mexer em código. |

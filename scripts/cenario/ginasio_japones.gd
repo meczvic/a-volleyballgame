@@ -11,6 +11,13 @@ extends RefCounted
 ## externos. Os textos das faixas vêm de dados/estadios.json.
 
 const Pecas := preload("res://scripts/cenario/pecas.gd")
+const Polyfork := preload("res://scripts/cenario/polyfork.gd")
+## Bolas do carrinho da Polyfork: os gomos pretos viram azuis e as laranjas,
+## amarelas (cores de bola de vôlei). Veja assets/polyfork/manifesto.json.
+const BOLAS_DE_VOLEI := {
+	"ball-heap": {"080a0b": Color("#1E4FB8"), "e26202": Color("#F2C21B")},
+	"ball-mesh": {"e26202": Color("#F2C21B")},
+}
 const SHADER_PISO := preload("res://shaders/piso_de_madeira.gdshader")
 const SHADER_JANELA := preload("res://shaders/janela_entardecer.gdshader")
 const SHADER_GRADE := preload("res://shaders/grade.gdshader")
@@ -306,7 +313,7 @@ static func _palco(c) -> void:
 
 	# Quadro branco e carrinho de bolas na frente da porta da esquerda.
 	_quadro_branco(c, Vector3(-8.3, 0.0, z + 2.2), 0.25)
-	_carrinho_de_bolas(c, Vector3(-11.2, 0.0, z + 2.6))
+	_carrinho_de_bolas(c, Vector3(-11.2, 0.0, z + 2.6), 0.5)
 	_mesa_de_agua(c, Vector3(11.2, 0.0, z + 2.2))
 
 
@@ -320,6 +327,21 @@ static func _porta(c, base: Vector3, giro: float) -> void:
 
 
 static func _quadro_branco(c, base: Vector3, giro: float) -> void:
+	# Quadro da Polyfork num suporte com rodinhas; sem o arquivo, o desenhado.
+	var modelo := Polyfork.modelo("whiteboard-ea98f7")
+	if modelo != null:
+		var suporte := Node3D.new()
+		suporte.position = base
+		suporte.rotation.y = giro
+		c.add_child(suporte)
+		var metal := Pecas.material(Color("#9AA0A8"), 0.4, 0.5)
+		for lado in [-0.85, 0.85]:
+			Pecas.caixa(suporte, Vector3(0.05, 1.9, 0.05), Vector3(lado, 0.95, -0.08), metal)
+			Pecas.caixa(suporte, Vector3(0.05, 0.05, 0.55), Vector3(lado, 0.05, -0.08), metal)
+		# O quadro vem pendurado (a parte de baixo a 0,9 m); fica na mesma altura.
+		modelo.position = Vector3(0.0, 0.8, 0.0)
+		suporte.add_child(modelo)
+		return
 	var quadro := Node3D.new()
 	quadro.position = base
 	quadro.rotation.y = giro
@@ -337,7 +359,14 @@ static func _quadro_branco(c, base: Vector3, giro: float) -> void:
 		Pecas.caixa(quadro, Vector3(0.02, 0.5, 0.045), Vector3(x, 1.35, 0.0), azul)
 
 
-static func _carrinho_de_bolas(c, base: Vector3) -> void:
+static func _carrinho_de_bolas(c, base: Vector3, giro := 0.0) -> void:
+	# Carrinho da Polyfork com as bolas pintadas de vôlei; sem o arquivo, o desenhado.
+	var modelo := Polyfork.modelo("ball-cart-8274fd", BOLAS_DE_VOLEI)
+	if modelo != null:
+		modelo.position = base
+		modelo.rotation.y = giro
+		c.add_child(modelo)
+		return
 	var metal := Pecas.material(Color("#2F5DB8"), 0.5, 0.3)
 	Pecas.caixa(c, Vector3(0.9, 0.05, 0.6), base + Vector3(0, 0.25, 0), metal)
 	for dx in [-0.43, 0.43]:
@@ -403,8 +432,8 @@ static func _parede_das_portas(c) -> void:
 	Pecas.texto(c, str(faixa.get("texto", "")), 0.55, Color("#F5F2EB"), Vector3(7.6, 3.4, z - 0.07), giro)
 
 	_porta(c, Vector3(-10.6, 0.0, z - 0.04), giro)
-	_carrinho_de_bolas(c, Vector3(9.8, 0.0, z - 2.0))
-	_carrinho_de_bolas(c, Vector3(11.2, 0.0, z - 2.3))
+	_carrinho_de_bolas(c, Vector3(9.8, 0.0, z - 2.0), PI + 0.3)
+	_carrinho_de_bolas(c, Vector3(11.2, 0.0, z - 2.3), PI - 0.4)
 	# Cadeiras dobráveis azuis encostadas.
 	var azul := Pecas.material(Color("#2E5AA8"), 0.6)
 	for k in 6:

@@ -24,6 +24,7 @@ extends SceneTree
 ##   ginasio_geral    visão do alto, de um canto, com os 12 atletas (sem placar)
 ##   ginasio_geral_vazio  a mesma visão, sem atletas
 ##   ginasio_frente_vazio na altura dos olhos, do fundo (como a referência image-gen-1)
+##   detalhe_banco, detalhe_palco  closes do banco de um time e do canto do palco
 ##   placar_*         pontos marcados pela regra de verdade (_encerrar_rally):
 ##                    jogo (4 x 3), ponto (no meio da animação, 6 x 3), set_point,
 ##                    set (faixa SET!), match_point e fim. Cada um sai também
@@ -210,6 +211,14 @@ func _capturar_ginasio() -> void:
 	camera.look_at_from_position(Vector3(0.0, 3.4, 17.8), Vector3(0.0, 3.0, -8.0))
 	await _esperar(0.3)
 	_salvar("ginasio_frente_vazio")
+	# Closes dos objetos em volta da quadra (bancos, quadro, carrinho).
+	camera.fov = 40.0
+	camera.look_at_from_position(Vector3(5.2, 2.2, 3.2), Vector3(9.4, 0.5, 6.2))
+	await _esperar(0.3)
+	_salvar("detalhe_banco")
+	camera.look_at_from_position(Vector3(-6.5, 2.4, -11.0), Vector3(-9.8, 0.7, -16.6))
+	await _esperar(0.3)
+	_salvar("detalhe_palco")
 
 
 ## Mostra ou esconde tudo o que é do jogo (atletas, bola, anéis, marcas),
@@ -217,7 +226,12 @@ func _capturar_ginasio() -> void:
 func _mostrar_atletas(partida: Node, sim: bool) -> void:
 	for filho in partida.get_children():
 		if filho is Node3D and filho.name != "Cenario" and not filho is Camera3D:
-			(filho as Node3D).visible = sim
+			var no := filho as Node3D
+			if not sim:
+				no.set_meta("estava_visivel", no.visible)
+				no.visible = false
+			else:
+				no.visible = bool(no.get_meta("estava_visivel", true))
 
 
 func _pontos(partida: Node, a: int, b: int) -> void:

@@ -7,6 +7,8 @@ extends SceneTree
 const Cenario := preload("res://scripts/cenario/cenario.gd")
 const Bola := preload("res://scripts/partida/bola.gd")
 const Dados := preload("res://scripts/comum/dados.gd")
+const Polyfork := preload("res://scripts/cenario/polyfork.gd")
+const GinasioJapones := preload("res://scripts/cenario/ginasio_japones.gd")
 
 var falhas := 0
 
@@ -19,6 +21,7 @@ func _rodar() -> void:
 	for estadio in Dados.estadios():
 		await _teste_estadio(str(estadio["id"]), str(estadio.get("estilo", "ginasio")))
 	await _teste_camera_sem_tela_dividida()
+	await _teste_polyfork()
 	root.get_node("Configuracao").estadio = "ginasio_japones"
 
 	if falhas == 0:
@@ -98,4 +101,45 @@ func _teste_camera_sem_tela_dividida() -> void:
 	var camera: Camera3D = partida.cameras[0]
 	_verificar(partida.cameras.size() == 1, "sem tela dividida: uma câmera")
 	_verificar(not camera.get_cull_mask_value(Cenario.CAMADA_ATRAS_DO_TIME[0]), "sem tela dividida: câmera atrás do time 0 esconde o fundo dele")
+	_fechar(partida)
+
+
+## Modelos da Polyfork (Fase 05): carregam, usam a cor dos vértices, ficam no
+## chão, as bolas do carrinho viram de vôlei, e o ginásio usa os três.
+func _teste_polyfork() -> void:
+	for id in ["ball-cart-8274fd", "whiteboard-ea98f7", "plank-bench-c46528"]:
+		var modelo := Polyfork.modelo(id)
+		_verificar(modelo != null, "Polyfork: %s carrega" % id)
+		if modelo == null:
+			continue
+		root.add_child(modelo)
+		var malhas := modelo.find_children("*", "MeshInstance3D", true, false)
+		_verificar(not malhas.is_empty(), "Polyfork: %s tem malha" % id)
+		var caixa := AABB()
+		for i in malhas.size():
+			var mi := malhas[i] as MeshInstance3D
+			_verificar((mi.material_override as BaseMaterial3D).vertex_color_use_as_albedo, "Polyfork: %s usa a cor dos vértices" % id)
+			var c := mi.global_transform * mi.get_aabb()
+			caixa = c if i == 0 else caixa.merge(c)
+		_verificar(absf(caixa.position.y) < 0.01, "Polyfork: %s apoiado no chão (%.3f)" % [id, caixa.position.y])
+		root.remove_child(modelo)
+		modelo.free()
+
+	var carrinho := Polyfork.modelo("ball-cart-8274fd", GinasioJapones.BOLAS_DE_VOLEI)
+	var pretas := 0
+	var azuis := 0
+	for no in carrinho.find_children("ball-heap", "MeshInstance3D", true, false):
+		for cor in (no as MeshInstance3D).mesh.surface_get_arrays(0)[Mesh.ARRAY_COLOR]:
+			var hexa: String = (cor as Color).to_html(false)
+			if hexa == "080a0b":
+				pretas += 1
+			elif hexa == Color("#1E4FB8").to_html(false):
+				azuis += 1
+	_verificar(pretas == 0 and azuis > 0, "Polyfork: bolas do carrinho sem gomo preto, com azul (%d pretos, %d azuis)" % [pretas, azuis])
+	carrinho.free()
+
+	var partida = _nova_partida("ginasio_japones")
+	await process_frame
+	for id in ["ball-cart-8274fd", "whiteboard-ea98f7", "plank-bench-c46528"]:
+		_verificar(not partida.cenario.find_children(id, "Node3D", true, false).is_empty(), "Ginásio usa o modelo %s" % id)
 	_fechar(partida)

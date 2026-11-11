@@ -21,6 +21,7 @@ const Dados := preload("res://scripts/comum/dados.gd")
 const GeradorDeAtleta := preload("res://scripts/visual/gerador_de_atleta.gd")
 const Animador := preload("res://scripts/visual/animador.gd")
 const GinasioJapones := preload("res://scripts/cenario/ginasio_japones.gd")
+const Polyfork := preload("res://scripts/cenario/polyfork.gd")
 const Arena := preload("res://scripts/cenario/arena.gd")
 const SHADER_REDE := preload("res://shaders/rede.gdshader")
 
@@ -260,9 +261,16 @@ func _criar_bancos_e_mesa() -> void:
 	for time in 2:
 		var lado := 1.0 if time == 0 else -1.0
 		var centro := Vector3(x, 0.0, lado * 6.2)
-		Pecas.caixa(self, Vector3(0.45, 0.06, 4.6), centro + Vector3(0, 0.45, 0), assento)
-		for dz in [-2.1, 0.0, 2.1]:
-			Pecas.caixa(self, Vector3(0.4, 0.45, 0.05), centro + Vector3(0, 0.22, dz), assento)
+		# No ginásio, o banco de tábua da Polyfork; na arena (ou sem o arquivo), o desenhado.
+		var banco := Polyfork.modelo("plank-bench-c46528") if estilo() == "ginasio" else null
+		if banco != null:
+			banco.position = centro
+			banco.rotation.y = PI / 2.0
+			add_child(banco)
+		else:
+			Pecas.caixa(self, Vector3(0.45, 0.06, 4.6), centro + Vector3(0, 0.45, 0), assento)
+			for dz in [-2.1, 0.0, 2.1]:
+				Pecas.caixa(self, Vector3(0.4, 0.45, 0.05), centro + Vector3(0, 0.22, dz), assento)
 		var cores: Array = cores_do_time(time)
 		var numeros := _numeros_livres(time)
 		for k in 2:
