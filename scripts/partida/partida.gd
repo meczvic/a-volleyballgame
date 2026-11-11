@@ -1295,13 +1295,13 @@ func _encerrar_rally(vencedor: int, motivo: String) -> void:
 	var explicacao := _explicacao_do_ponto(motivo)
 	_mostrar_mensagem("Ponto %s!%s" % [nome, " (%s)" % explicacao if explicacao != "" else ""])
 	if motivo == "dentro" and saque_do_rally_em_jogo and vencedor == placar.quem_saca:
-		faixa.mostrar("ACE!", nome, _cor_do_time(vencedor))
+		faixa.mostrar("ACE!", nome, _cor_do_time(vencedor), vencedor)
 	elif motivo == "dentro" and vencedor == _ponto_de_bloqueio:
-		faixa.mostrar("BLOQUEIO!", nome, _cor_do_time(vencedor))
+		faixa.mostrar("BLOQUEIO!", nome, _cor_do_time(vencedor), vencedor)
 	elif motivo == "dentro":
-		faixa.mostrar("PONTO!", nome, _cor_do_time(vencedor))
+		faixa.mostrar("PONTO!", nome, _cor_do_time(vencedor), vencedor)
 	else:
-		faixa.mostrar("PONTO!", "%s  ·  %s" % [nome, explicacao], _cor_do_time(vencedor))
+		faixa.mostrar("PONTO!", "%s  ·  %s" % [nome, explicacao], _cor_do_time(vencedor), vencedor)
 	for atleta in atletas[vencedor]:
 		_animar(atleta, "comemoracao_palmas")
 	# Se foi o último ponto, o placar chama _ao_encerrar_partida aqui dentro.
@@ -1460,7 +1460,7 @@ func _ao_encerrar_partida(vencedor: int) -> void:
 	# A tela de fim de jogo já diz quem venceu.
 	_limpar_mensagens()
 	caixa_da_pausa.visible = false
-	faixa.mostrar("JOGO!", "%s venceu" % times_em_jogo[vencedor]["nome"], _cor_do_time(vencedor))
+	faixa.mostrar("JOGO!", "%s venceu" % times_em_jogo[vencedor]["nome"], _cor_do_time(vencedor), vencedor)
 	for atleta in atletas[vencedor]:
 		_animar(atleta, "comemoracao_torcida")
 
@@ -1484,7 +1484,7 @@ func _ao_encerrar_set(vencedor: int) -> void:
 	_atualizar_placar()
 	faixa.mostrar("SET!", "%s  %d x %d" % [
 		str(times_em_jogo[vencedor]["nome"]), placar.pontos[vencedor], placar.pontos[1 - vencedor],
-	], _cor_do_time(vencedor))
+	], _cor_do_time(vencedor), vencedor)
 	_mostrar_mensagem("Set %d: %s venceu! (%d x %d)" % [
 		placar.set_atual, times_em_jogo[vencedor]["nome"],
 		placar.pontos[vencedor], placar.pontos[1 - vencedor],
@@ -1864,9 +1864,10 @@ func _criar_interface() -> void:
 	camada.add_child(topo)
 	placar_visual = PlacarVisual.new()
 	topo.add_child(placar_visual)
+	var ids_dos_times := [str(times_em_jogo[0]["id"]), str(times_em_jogo[1]["id"])]
 	placar_visual.configurar(
 		[times_em_jogo[0]["nome"], times_em_jogo[1]["nome"]],
-		[_cor_do_time(0), _cor_do_time(1)])
+		[_cor_do_time(0), _cor_do_time(1)], ids_dos_times)
 
 	# Mensagem no meio, em cima. O CenterContainer mantém a caixa centralizada
 	# e do tamanho do texto.
@@ -1918,6 +1919,7 @@ func _criar_interface() -> void:
 
 	faixa = FaixaDePonto.new()
 	camada.add_child(faixa)
+	faixa.configurar(ids_dos_times)
 
 	# Cortina preta por cima de tudo (até da pausa), fechada até a cena abrir.
 	var camada_da_cortina := CanvasLayer.new()

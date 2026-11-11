@@ -27,6 +27,7 @@ func _rodar() -> void:
 	_teste_avisos_no_placar()
 	_teste_set_mostra_faixa_de_set()
 	_teste_onda_no_chao()
+	_teste_visual_do_placar()
 
 	if falhas == 0:
 		print("OK: todos os testes do placar na partida passaram.")
@@ -139,3 +140,39 @@ func _ondas(partida: Node) -> int:
 func _pontos(partida: Node, a: int, b: int) -> void:
 	partida.placar.pontos[0] = a
 	partida.placar.pontos[1] = b
+
+
+## Visual do placar (Fase 02): número amarelo no ponto, emblema na faixa, bola
+## de quem saca, bolinha de cada set na ordem de quem ganhou e "FIM" no final.
+func _teste_visual_do_placar() -> void:
+	var partida = _nova_partida()
+	var visual = partida.placar_visual
+	_verificar(visual.saque_visivel(0) and not visual.saque_visivel(1), "bola do saque no time que saca")
+	partida._encerrar_rally(1, "dentro")
+	_verificar(visual.numero_amarelo(1), "número de quem pontuou fica amarelo")
+	_verificar(not visual.numero_amarelo(0), "o do outro não")
+	_verificar(partida.faixa.tem_emblema(), "faixa de ponto mostra o emblema de quem pontuou")
+	_verificar(visual.saque_visivel(1) and not visual.saque_visivel(0), "bola do saque passa pra quem ganhou o ponto")
+
+	# Set 1 do time 1, set 2 do time 0: as bolinhas guardam a ordem.
+	_pontos(partida, 0, 6)
+	partida.estado = partida.Estado.RALLY
+	partida._encerrar_rally(1, "dentro")
+	_pontos(partida, 6, 0)
+	partida.estado = partida.Estado.RALLY
+	partida._encerrar_rally(0, "dentro")
+	_verificar(visual._vencedores_dos_sets == [1, 0], "ordem dos sets: time 1, depois time 0 (%s)" % [visual._vencedores_dos_sets])
+	_verificar(visual.sets_acesos(0) == 1 and visual.sets_acesos(1) == 1, "uma bolinha de cada time")
+	# No fim do set o placar mostra o resultado; o set novo aparece no próximo saque.
+	partida._preparar_saque()
+	_verificar(visual.texto_do_set() == "SET 3", "terceiro set no saque seguinte (%s)" % visual.texto_do_set())
+	_verificar(visual.texto_dos_pontos(0) == "0" and visual.texto_dos_pontos(1) == "0", "set novo começa 0 x 0")
+
+	# Fim de jogo: "FIM" no meio e nenhuma bola de saque.
+	_pontos(partida, 6, 0)
+	partida.estado = partida.Estado.RALLY
+	partida._encerrar_rally(0, "dentro")
+	_verificar(visual.texto_do_set() == "FIM", "fim de jogo mostra FIM (%s)" % visual.texto_do_set())
+	_verificar(visual.sets_acesos(0) == 2, "vencedor com 2 bolinhas")
+	_verificar(not visual.saque_visivel(0) and not visual.saque_visivel(1), "sem bola de saque no fim")
+	_fechar(partida)

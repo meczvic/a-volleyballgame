@@ -57,8 +57,8 @@ Tudo abaixo está neste repositório. Em 09/11/2026, os **23 testes automáticos
 - Na cortada, o atleta pula no botão e **a mão bate na bola no alto do pulo** (0,3 s depois).
 
 ### Placar e impacto visual
-- **Placar novo** (`scripts/partida/placar_visual.gd`), em cima e no meio: cores dos times, sets em bolinhas, quem saca, número que pula no ponto e aviso de SET POINT / MATCH POINT / PONTO DECISIVO (regra em `placar.gd`: `ponto_de_set`, `ponto_de_partida`, `aviso`).
-- **Faixa do ponto** (`faixa_de_ponto.gd`): PONTO!, ACE!, BLOQUEIO!, SET! e JOGO!, na cor do time.
+- **Placar de transmissão** (`scripts/partida/placar_visual.gd`, Fase 02, 10/11/2026), em cima e no meio: emblema e nome em blocos inclinados, caixas de pontos com a borda na cor do time, set atual com uma bolinha por set na cor de quem ganhou, bola de quem saca, efeito de ponto (clarão, risco de luz, número amarelo, tremor), FIM e brilho do vencedor, e aviso de SET POINT / MATCH POINT / PONTO DECISIVO (regra em `placar.gd`: `ponto_de_set`, `ponto_de_partida`, `aviso`).
+- **Faixa do ponto** (`faixa_de_ponto.gd`): PONTO!, ACE!, BLOQUEIO!, SET! e JOGO!, escura com a ponta na cor do time e o emblema de quem pontuou; menor que a antiga (680 x 104) pra cobrir menos a quadra.
 - **Efeitos**: onda no chão onde a bola cai (`scripts/visual/onda_no_chao.gd`) com tremor; bloqueio congela, treme e mostra "Bloqueio!".
 
 ### Jogadas e leitura do bloqueio

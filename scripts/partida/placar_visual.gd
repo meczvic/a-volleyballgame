@@ -1,121 +1,165 @@
 extends PanelContainer
-## Placar da partida: nome e cor de cada time, pontos grandes, bolinhas dos
-## sets, quem saca, o número do set e o aviso de SET POINT / MATCH POINT.
-## Quando sai um ponto, o número de quem pontuou pula e pisca na cor do time.
+## Placar da partida, no estilo de transmissão (referência: "Placar Anime
+## Karasuno vs Nekoma"): dois blocos inclinados com emblema e nome, a caixa de
+## pontos de cada time com a borda na cor dele, e no meio o set atual com uma
+## bolinha por set (pintada na cor de quem ganhou). A bola pequena mostra quem
+## saca. Embaixo aparece SET POINT / MATCH POINT / PONTO DECISIVO.
 ##
-## Uso: configurar(nomes, cores) uma vez; atualizar(...) a cada mudança;
+## No ponto, a caixa de quem pontuou pisca, um risco de luz passa por ela, o
+## número salta e fica amarelo um instante, e o placar treme de leve.
+##
+## Só desenha: a conta dos pontos é de scripts/regras/placar.gd.
+## Uso: configurar(nomes, cores, ids) uma vez; atualizar(...) a cada mudança;
 ## comemorar(time) no ponto.
 
 const Estilo := preload("res://scripts/menus/estilo.gd")
 
-## Quanto o número cresce no ponto e quanto tempo leva pra voltar (s).
-const PULO_DO_NUMERO := 1.7
-const DURACAO_DO_PULO := 0.45
 const SETS_PARA_VENCER := 2
+const TOTAL_DE_SETS := SETS_PARA_VENCER * 2 - 1
+const PASTA_EMBLEMAS := "res://arte/emblemas/%s.svg"
+const ICONE_DO_SAQUE := "res://arte/icones/saque.svg"
 
-var _faixas: Array[ColorRect] = []
+## Medidas (px na tela de 1600 x 900).
+const LARGURA_DO_BLOCO := 300.0
+const LARGURA_DOS_PONTOS := 112.0
+const LARGURA_DO_MEIO := 116.0
+const ALTURA := 70.0
+const LARGURA := LARGURA_DO_BLOCO * 2.0 + LARGURA_DOS_PONTOS * 2.0 + LARGURA_DO_MEIO
+const TAMANHO_DO_EMBLEMA := 60.0
+
+## Ponto: quanto o número cresce, quanto tempo leva pra voltar e quanto fica amarelo (s).
+const PULO_DO_NUMERO := 1.6
+const DURACAO_DO_PULO := 0.45
+const TEMPO_AMARELO := 1.1
+const AMARELO := Color("#FFD84A")
+const FUNDO_DO_BLOCO := Color(0.07, 0.08, 0.1, 0.94)
+const FUNDO_DOS_PONTOS := Color(0.04, 0.045, 0.06, 0.96)
+
+var _conteudo: Control
 var _nomes: Array[Label] = []
 var _pontos: Array[Label] = []
-## Bolinhas dos sets de cada time (desenhadas, não texto: a fonte não tem
-## "●" e no navegador não há fonte reserva).
-var _sets: Array = [[], []]
-var _saque: Array[Panel] = []
+var _caixas: Array[Panel] = []
+var _brilhos: Array[Panel] = []
+var _claroes: Array[ColorRect] = []
+var _emblemas: Array[TextureRect] = []
+var _riscos: Array = [[], []]
+var _blocos: Array[Panel] = []
+var _saque: Array[TextureRect] = []
+## Uma bolinha por set da partida (no meio).
+var _bolinhas: Array[Panel] = []
 var _rotulo_do_set: Label
 var _aviso: Label
 var _cores: Array[Color] = [Color.WHITE, Color.WHITE]
 var _tweens: Array = [null, null]
+var _tremor: Tween
+## Quem ganhou cada set já jogado, na ordem.
+var _vencedores_dos_sets: Array[int] = []
+var _ultimos_sets: Array[int] = [0, 0]
+var _vencedor := -1
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_theme_stylebox_override("panel",
-		Estilo.caixa(Color(0.06, 0.07, 0.09, 0.96), Estilo.INCLINACAO, 26.0, 6.0))
-	var coluna := VBoxContainer.new()
-	coluna.add_theme_constant_override("separation", 0)
-	add_child(coluna)
-	var linha := HBoxContainer.new()
-	linha.add_theme_constant_override("separation", 12)
-	linha.alignment = BoxContainer.ALIGNMENT_CENTER
-	coluna.add_child(linha)
+	add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	var base := Control.new()
+	base.custom_minimum_size = Vector2(LARGURA, ALTURA + 34.0)
+	base.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(base)
+	_conteudo = Control.new()
+	_conteudo.size = base.custom_minimum_size
+	_conteudo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	base.add_child(_conteudo)
+
 	for time in 2:
-		var faixa := ColorRect.new()
-		faixa.custom_minimum_size = Vector2(8.0, 44.0)
-		var saque := _bolinha(12.0)
-		var nome := _rotulo("", 30, true)
-		nome.custom_minimum_size.x = 170.0
-		nome.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if time == 0 else HORIZONTAL_ALIGNMENT_LEFT
-		var sets := HBoxContainer.new()
-		sets.add_theme_constant_override("separation", 5)
-		sets.alignment = BoxContainer.ALIGNMENT_CENTER
-		for i in SETS_PARA_VENCER:
-			var bolinha := _bolinha(11.0)
-			sets.add_child(bolinha)
-			_sets[time].append(bolinha)
-		var pontos := _rotulo("0", 48, true)
-		pontos.custom_minimum_size.x = 48.0
-		pontos.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		var ordem: Array = [faixa, saque, nome, sets, pontos]
-		if time == 1:
-			ordem.reverse()
-			linha.add_child(_rotulo("-", 36, true))
-		for no in ordem:
-			linha.add_child(no)
-		_faixas.append(faixa)
-		_saque.append(saque)
-		_nomes.append(nome)
-		_pontos.append(pontos)
-	var embaixo := HBoxContainer.new()
-	embaixo.alignment = BoxContainer.ALIGNMENT_CENTER
-	embaixo.add_theme_constant_override("separation", 14)
-	coluna.add_child(embaixo)
-	_rotulo_do_set = _rotulo("SET 1", 20, true)
-	_rotulo_do_set.add_theme_color_override("font_color", Estilo.TEXTO_SUAVE)
-	embaixo.add_child(_rotulo_do_set)
-	_aviso = Estilo.etiqueta("", Estilo.DESTAQUE, 20)
-	_aviso.visible = false
-	embaixo.add_child(_aviso)
+		_criar_bloco(time)
+		_criar_caixa_de_pontos(time)
+	_criar_meio()
 
 
-func configurar(nomes: Array, cores: Array) -> void:
+func configurar(nomes: Array, cores: Array, ids: Array = []) -> void:
 	for time in 2:
 		_cores[time] = cores[time]
 		_nomes[time].text = str(nomes[time]).to_upper()
-		_faixas[time].color = cores[time]
-		_pintar(_saque[time], cores[time], cores[time])
+		var caminho := PASTA_EMBLEMAS % (ids[time] if time < ids.size() else "")
+		_emblemas[time].texture = load(caminho) if ResourceLoader.exists(caminho) else null
+		_saque[time].self_modulate = cores[time].lightened(0.35)
+		for risco in _riscos[time]:
+			(risco as Panel).self_modulate = cores[time]
+		_pintar_caixa(time, false)
+		var estilo := Estilo.caixa(FUNDO_DO_BLOCO, Estilo.INCLINACAO)
+		estilo.border_width_bottom = 4
+		estilo.border_color = cores[time]
+		_blocos[time].add_theme_stylebox_override("panel", estilo)
 
 
 ## "aviso": { "texto", "quem" } (veja Placar.aviso()).
 func atualizar(pontos: Array, sets: Array, set_atual: int, quem_saca: int, aviso: Dictionary) -> void:
+	_lembrar_sets(sets)
+	_vencedor = -1
+	for time in 2:
+		if int(sets[time]) >= SETS_PARA_VENCER:
+			_vencedor = time
 	for time in 2:
 		_pontos[time].text = str(pontos[time])
-		for i in SETS_PARA_VENCER:
-			var ganho := i < int(sets[time])
-			_pintar(_sets[time][i], _cores[time] if ganho else Color(0, 0, 0, 0), Estilo.TEXTO)
-		_saque[time].modulate.a = 1.0 if time == quem_saca else 0.0
-	_rotulo_do_set.text = "SET %d" % set_atual
+		_saque[time].visible = time == quem_saca and _vencedor < 0
+		_pintar_caixa(time, time == _vencedor)
+
+	for i in TOTAL_DE_SETS:
+		var bolinha := _bolinhas[i]
+		if i < _vencedores_dos_sets.size():
+			var dono := _vencedores_dos_sets[i]
+			_pintar_bolinha(bolinha, _cores[dono], _cores[dono].lightened(0.4), 2)
+			bolinha.set_meta("dono", dono)
+		elif i == set_atual - 1 and _vencedor < 0:
+			_pintar_bolinha(bolinha, Color(1, 1, 1, 0.15), Estilo.TEXTO, 2)
+			bolinha.set_meta("dono", -1)
+		else:
+			_pintar_bolinha(bolinha, Color(0, 0, 0, 0), Estilo.TEXTO_APAGADO, 2)
+			bolinha.set_meta("dono", -1)
+	_rotulo_do_set.text = "FIM" if _vencedor >= 0 else "SET %d" % set_atual
+
 	var texto: String = aviso.get("texto", "")
 	_aviso.visible = texto != ""
 	if texto != "":
 		var quem: int = aviso.get("quem", -1)
-		_aviso.text = " %s " % texto
+		_aviso.text = texto
 		var cor: Color = _cores[quem] if quem >= 0 else Estilo.DESTAQUE
-		_aviso.add_theme_stylebox_override("normal", Estilo.caixa(cor, Estilo.INCLINACAO, 10.0, 2.0))
+		_aviso.add_theme_stylebox_override("normal", Estilo.caixa(cor, Estilo.INCLINACAO, 14.0, 1.0, 2, Color(1, 1, 1, 0.8)))
 		_aviso.add_theme_color_override("font_color", Estilo.FUNDO if cor.get_luminance() > 0.45 else Estilo.TEXTO)
 
 
-## O número de quem pontuou pula e pisca na cor do time.
+## Ponto de "time": a caixa pisca, o risco de luz passa, o número salta e fica
+## amarelo um instante, e o placar treme de leve.
 func comemorar(time: int) -> void:
 	var numero := _pontos[time]
 	numero.pivot_offset = numero.size / 2.0
 	if _tweens[time]:
 		_tweens[time].kill()
 	numero.scale = Vector2.ONE * PULO_DO_NUMERO
-	numero.modulate = _cores[time].lightened(0.35)
+	numero.add_theme_color_override("font_color", AMARELO)
+	var brilho := _brilhos[time]
+	brilho.visible = true
+	brilho.position.x = -60.0
+	var clarao := _claroes[time]
+	clarao.color = Color(_cores[time].lightened(0.5), 0.75)
+
 	var tween := create_tween().set_parallel()
 	tween.tween_property(numero, "scale", Vector2.ONE, DURACAO_DO_PULO) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(numero, "modulate", Color.WHITE, DURACAO_DO_PULO * 1.4)
+	tween.tween_property(clarao, "color:a", 0.0, 0.35)
+	tween.tween_property(brilho, "position:x", LARGURA_DOS_PONTOS + 20.0, 0.32) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	tween.chain().tween_callback(func() -> void: brilho.visible = false)
+	tween.tween_interval(TEMPO_AMARELO - 0.32)
+	tween.chain().tween_callback(func() -> void: numero.remove_theme_color_override("font_color"))
 	_tweens[time] = tween
+
+	if _tremor:
+		_tremor.kill()
+	_conteudo.position = Vector2.ZERO
+	_tremor = create_tween()
+	for passo in [5.0, -4.0, 3.0, -2.0, 0.0]:
+		_tremor.tween_property(_conteudo, "position:x", passo, 0.04)
 
 
 ## Pra testes e pro robô.
@@ -127,10 +171,11 @@ func texto_do_aviso() -> String:
 	return _aviso.text.strip_edges() if _aviso.visible else ""
 
 
+## Quantos sets o time já ganhou (bolinhas pintadas com a cor dele).
 func sets_acesos(time: int) -> int:
 	var n := 0
-	for bolinha in _sets[time]:
-		if bolinha.get_meta("acesa", false):
+	for bolinha in _bolinhas:
+		if int(bolinha.get_meta("dono", -1)) == time:
 			n += 1
 	return n
 
@@ -139,24 +184,175 @@ func numero_pulando(time: int) -> bool:
 	return _pontos[time].scale.x > 1.01
 
 
-func _bolinha(tamanho: float) -> Panel:
-	var bolinha := Panel.new()
-	bolinha.custom_minimum_size = Vector2(tamanho, tamanho)
-	bolinha.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	bolinha.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_pintar(bolinha, Color(0, 0, 0, 0), Estilo.TEXTO)
-	return bolinha
+func numero_amarelo(time: int) -> bool:
+	return _pontos[time].has_theme_color_override("font_color")
 
 
-## Bolinha cheia (cor com alfa) ou vazia (só a borda).
-func _pintar(bolinha: Panel, cor: Color, borda: Color) -> void:
+func saque_visivel(time: int) -> bool:
+	return _saque[time].visible
+
+
+func texto_do_set() -> String:
+	return _rotulo_do_set.text
+
+
+# --- Construção ---
+
+## Bloco do time: emblema na ponta de fora, nome, bola do saque e riscos na ponta de dentro.
+func _criar_bloco(time: int) -> void:
+	var direita := time == 1
+	var x := 0.0 if not direita else LARGURA - LARGURA_DO_BLOCO
+	var bloco := Panel.new()
+	bloco.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bloco.position = Vector2(x, 0.0)
+	bloco.size = Vector2(LARGURA_DO_BLOCO, ALTURA)
+	_conteudo.add_child(bloco)
+	_blocos.append(bloco)
+
+	var emblema := TextureRect.new()
+	emblema.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	emblema.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	emblema.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	emblema.flip_h = direita
+	emblema.position = Vector2(x + (18.0 if not direita else LARGURA_DO_BLOCO - 18.0 - TAMANHO_DO_EMBLEMA), 5.0)
+	emblema.size = Vector2.ONE * TAMANHO_DO_EMBLEMA
+	_conteudo.add_child(emblema)
+	_emblemas.append(emblema)
+
+	var nome := _rotulo("", 32, true)
+	nome.position = Vector2(x + (90.0 if not direita else 30.0), 0.0)
+	nome.size = Vector2(LARGURA_DO_BLOCO - 120.0, ALTURA - 6.0)
+	nome.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT if not direita else HORIZONTAL_ALIGNMENT_RIGHT
+	nome.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	nome.clip_text = true
+	_conteudo.add_child(nome)
+	_nomes.append(nome)
+
+	# Bola pequena de quem saca, no canto de dentro, em cima.
+	var saque := TextureRect.new()
+	saque.texture = load(ICONE_DO_SAQUE) if ResourceLoader.exists(ICONE_DO_SAQUE) else null
+	saque.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	saque.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	saque.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	saque.position = Vector2(x + (LARGURA_DO_BLOCO - 34.0 if not direita else 12.0), 6.0)
+	saque.size = Vector2(22.0, 22.0)
+	_conteudo.add_child(saque)
+	_saque.append(saque)
+
+	# Três riscos inclinados na ponta de dentro, embaixo.
+	for k in 3:
+		var risco := Estilo.painel(Color.WHITE, Estilo.INCLINACAO * 3.0)
+		risco.size = Vector2(9.0, 10.0)
+		var inicio := x + (LARGURA_DO_BLOCO - 56.0 if not direita else 18.0)
+		risco.position = Vector2(inicio + k * 14.0, ALTURA - 18.0)
+		_conteudo.add_child(risco)
+		_riscos[time].append(risco)
+
+
+## Caixa do número de pontos, colada no bloco, do lado do meio.
+func _criar_caixa_de_pontos(time: int) -> void:
+	var x := LARGURA_DO_BLOCO if time == 0 else LARGURA - LARGURA_DO_BLOCO - LARGURA_DOS_PONTOS
+	var caixa := Panel.new()
+	caixa.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	caixa.position = Vector2(x, -4.0)
+	caixa.size = Vector2(LARGURA_DOS_PONTOS, ALTURA + 8.0)
+	caixa.clip_contents = true
+	_conteudo.add_child(caixa)
+	_caixas.append(caixa)
+
+	var clarao := ColorRect.new()
+	clarao.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	clarao.color = Color(1, 1, 1, 0)
+	clarao.position = Vector2.ZERO
+	clarao.size = caixa.size
+	caixa.add_child(clarao)
+	_claroes.append(clarao)
+
+	var numero := _rotulo("0", 60, true)
+	numero.position = Vector2(0.0, 0.0)
+	numero.size = caixa.size
+	numero.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	caixa.add_child(numero)
+	_pontos.append(numero)
+
+	# Risco de luz que atravessa a caixa no ponto.
+	var brilho := Estilo.painel(Color(1.0, 0.95, 0.75, 0.85), -0.9)
+	brilho.size = Vector2(14.0, caixa.size.y)
+	brilho.position = Vector2(-60.0, 0.0)
+	brilho.visible = false
+	caixa.add_child(brilho)
+	_brilhos.append(brilho)
+
+
+## Meio: "SET n" em cima, uma bolinha por set embaixo; aviso por baixo do placar.
+func _criar_meio() -> void:
+	var x := LARGURA_DO_BLOCO + LARGURA_DOS_PONTOS
+	var meio := Estilo.painel(Color(0.03, 0.035, 0.05, 0.96), Estilo.INCLINACAO, 2, Color(1, 1, 1, 0.18))
+	meio.position = Vector2(x, 6.0)
+	meio.size = Vector2(LARGURA_DO_MEIO, ALTURA - 12.0)
+	_conteudo.add_child(meio)
+
+	_rotulo_do_set = _rotulo("SET 1", 22, true)
+	_rotulo_do_set.position = Vector2(x, 6.0)
+	_rotulo_do_set.size = Vector2(LARGURA_DO_MEIO, 30.0)
+	_rotulo_do_set.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_conteudo.add_child(_rotulo_do_set)
+
+	var tamanho := 14.0
+	var espaco := 10.0
+	var largura_das_bolinhas := TOTAL_DE_SETS * tamanho + (TOTAL_DE_SETS - 1) * espaco
+	for i in TOTAL_DE_SETS:
+		var bolinha := Panel.new()
+		bolinha.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bolinha.size = Vector2(tamanho, tamanho)
+		bolinha.position = Vector2(x + (LARGURA_DO_MEIO - largura_das_bolinhas) / 2.0 + i * (tamanho + espaco), 40.0)
+		_conteudo.add_child(bolinha)
+		_bolinhas.append(bolinha)
+		_pintar_bolinha(bolinha, Color(0, 0, 0, 0), Estilo.TEXTO_APAGADO, 2)
+
+	var centro := CenterContainer.new()
+	centro.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	centro.position = Vector2(0.0, ALTURA + 4.0)
+	centro.size = Vector2(LARGURA, 30.0)
+	_conteudo.add_child(centro)
+	_aviso = Estilo.etiqueta("", Estilo.DESTAQUE, 22)
+	_aviso.visible = false
+	centro.add_child(_aviso)
+
+
+# --- Ajudantes ---
+
+## Borda da caixa de pontos na cor do time; o vencedor da partida ganha brilho.
+func _pintar_caixa(time: int, venceu: bool) -> void:
+	var estilo := Estilo.caixa(FUNDO_DOS_PONTOS, Estilo.INCLINACAO, 0.0, 0.0, 3, _cores[time])
+	if venceu:
+		estilo.border_color = _cores[time].lightened(0.3)
+		estilo.set_border_width_all(4)
+		estilo.shadow_color = Color(_cores[time], 0.7)
+		estilo.shadow_size = 14
+	_caixas[time].add_theme_stylebox_override("panel", estilo)
+
+
+func _pintar_bolinha(bolinha: Panel, cor: Color, borda: Color, espessura: int) -> void:
 	var estilo := StyleBoxFlat.new()
 	estilo.bg_color = cor
-	estilo.set_corner_radius_all(int(bolinha.custom_minimum_size.x))
-	estilo.set_border_width_all(2)
+	estilo.set_corner_radius_all(int(bolinha.size.x))
+	estilo.set_border_width_all(espessura)
 	estilo.border_color = borda
 	bolinha.add_theme_stylebox_override("panel", estilo)
-	bolinha.set_meta("acesa", cor.a > 0.0)
+
+
+## Descobre quem ganhou cada set comparando com a última atualização.
+func _lembrar_sets(sets: Array) -> void:
+	var agora: Array[int] = [int(sets[0]), int(sets[1])]
+	if agora[0] + agora[1] < _vencedores_dos_sets.size():
+		# Partida recomeçou (ou o placar voltou): refaz a lista sem saber a ordem.
+		_vencedores_dos_sets.clear()
+		_ultimos_sets = [0, 0]
+	for time in 2:
+		for i in agora[time] - _ultimos_sets[time]:
+			_vencedores_dos_sets.append(time)
+	_ultimos_sets = agora
 
 
 func _rotulo(texto: String, tamanho: int, titulo: bool) -> Label:
