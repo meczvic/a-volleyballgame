@@ -2208,8 +2208,10 @@ func _criar_marcas_de_ataque(time: int) -> void:
 		texto.text = "%s %s" % [EscolhaAtaque.seta_de(alvo, centro, _lado_da_camera(time)), ATAQUES[i]["nome"]]
 		texto.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		texto.no_depth_test = true
-		texto.font_size = 48
-		texto.outline_size = 12
+		# Discreto: o nome ajuda, mas não pode tapar a quadra.
+		texto.font_size = 30
+		texto.outline_size = 8
+		texto.modulate = Color(1, 1, 1, 0.85)
 		texto.pixel_size = 0.01
 		texto.position = Vector3(alvo.x, 0.6, alvo.z)
 		grupo.add_child(texto)

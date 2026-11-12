@@ -82,6 +82,36 @@ const MERGULHO_DIREITA := "mergulho_direita"
 ## Mão que bate na bola na cortada, e em que segundo da animação ela bate.
 const MAO_DA_CORTADA := "LeftHand"
 const BATIDA_DA_CORTADA := 1.62
+## Gesto da cortada, escrito à mão: a animação do DeepMotion deixava o braço
+## esticado pra cima e depois cobria o rosto, sem puxar o braço pra trás nem
+## chicotear. Cada linha é [segundo da animação, { osso: giro em graus }]; o giro
+## é aplicado em cima da pose de referência do esqueleto humanoide (a mesma em
+## todos os atletas). Eixos medidos num modelo do VRoid: nos braços, X negativo
+## levanta e positivo abaixa, Z leva pra frente (esquerdo +, direito -); no
+## cotovelo, Z dobra; no tronco, X positivo curva pra frente e negativo arqueia.
+## O braço que bate é o esquerdo (MAO_DA_CORTADA); a batida é em BATIDA_DA_CORTADA.
+const GESTO_DA_CORTADA := [
+	# Armar: tronco arqueado, cotovelo alto atrás, o outro braço aponta a bola.
+	[1.25, {"Spine": Vector3(-12, 12, 0), "Chest": Vector3(-12, 12, 0),
+		"LeftUpperArm": Vector3(-20, 0, -25), "LeftLowerArm": Vector3(0, 0, 100),
+		"RightUpperArm": Vector3(-60, 0, -50), "RightLowerArm": Vector3.ZERO}],
+	# O cotovelo vem na frente, a mão ainda atrás (o "chicote" carregando).
+	[1.46, {"Spine": Vector3(-18, 8, 0), "Chest": Vector3(-18, 8, 0),
+		"LeftUpperArm": Vector3(-55, 0, 5), "LeftLowerArm": Vector3(0, 0, 90),
+		"RightUpperArm": Vector3(-30, 0, -45), "RightLowerArm": Vector3(0, 0, -30)}],
+	# Batida: braço esticado, tronco solto, o outro braço recolhido.
+	[1.62, {"Spine": Vector3(2, -5, 0), "Chest": Vector3(2, -5, 0),
+		"LeftUpperArm": Vector3(-80, 0, 25), "LeftLowerArm": Vector3.ZERO,
+		"RightUpperArm": Vector3(65, 0, -20), "RightLowerArm": Vector3(0, 0, -70)}],
+	# Finalização: o tronco dobra pra frente e o braço desce cruzando.
+	[1.82, {"Spine": Vector3(25, -10, 0), "Chest": Vector3(20, -10, 0),
+		"LeftUpperArm": Vector3(10, 0, 60), "LeftLowerArm": Vector3(0, 0, 30),
+		"RightUpperArm": Vector3(60, 0, -10), "RightLowerArm": Vector3.ZERO}],
+	[2.0, {"Spine": Vector3(25, -10, 0), "Chest": Vector3(20, -10, 0),
+		"LeftUpperArm": Vector3(15, 0, 55), "LeftLowerArm": Vector3(0, 0, 25),
+		"RightUpperArm": Vector3(60, 0, -10), "RightLowerArm": Vector3.ZERO}],
+]
+
 ## Lances em que o jogo já faz o atleta subir: aí a animação não sobe junto.
 const PULAM_NO_JOGO := ["cortada", "bloqueio"]
 
@@ -279,6 +309,8 @@ static func biblioteca() -> AnimationLibrary:
 			continue
 		animacao.loop_mode = Animation.LOOP_LINEAR if nome in EM_LOOP else Animation.LOOP_NONE
 		_no_lugar(animacao, nome in PULAM_NO_JOGO)
+		if nome == "cortada":
+			_gesto_da_cortada(animacao)
 		_biblioteca.add_animation(nome, animacao)
 	if _biblioteca.has_animation("parado"):
 		_biblioteca.add_animation("espera", _pose_de_espera(_biblioteca.get_animation("parado")))
@@ -317,6 +349,33 @@ static func _pose_de_espera(parado: Animation) -> Animation:
 			var valor: Vector3 = espera.track_get_key_value(quadril, chave)
 			espera.track_set_key_value(quadril, chave, valor - Vector3(0.0, DESCIDA_DO_QUADRIL, 0.0))
 	return espera
+
+
+## Troca o movimento do tronco e dos braços da cortada pelo GESTO_DA_CORTADA
+## (as pernas e o resto continuam os da animação).
+static func _gesto_da_cortada(animacao: Animation) -> void:
+	var perfil := SkeletonProfileHumanoid.new()
+	var ossos := {}
+	for chave in GESTO_DA_CORTADA:
+		for osso in chave[1]:
+			ossos[osso] = true
+	# Mesmo nó das outras trilhas (o do esqueleto), pra a trilha nova casar.
+	var no_do_esqueleto := "%GeneralSkeleton"
+	var trilha_do_quadril := animacao.find_track(NodePath("%GeneralSkeleton:Hips"), Animation.TYPE_POSITION_3D)
+	if trilha_do_quadril >= 0:
+		no_do_esqueleto = str(animacao.track_get_path(trilha_do_quadril).get_concatenated_names())
+	for osso in ossos:
+		var caminho := NodePath(no_do_esqueleto + ":" + str(osso))
+		var trilha := animacao.find_track(caminho, Animation.TYPE_ROTATION_3D)
+		if trilha >= 0:
+			animacao.remove_track(trilha)
+		trilha = animacao.add_track(Animation.TYPE_ROTATION_3D)
+		animacao.track_set_path(trilha, caminho)
+		var base := perfil.get_reference_pose(perfil.find_bone(str(osso))).basis.get_rotation_quaternion()
+		for chave in GESTO_DA_CORTADA:
+			var graus: Vector3 = chave[1].get(osso, Vector3.ZERO)
+			var giro := Quaternion.from_euler(Vector3(deg_to_rad(graus.x), deg_to_rad(graus.y), deg_to_rad(graus.z)))
+			animacao.rotation_track_insert_key(trilha, float(chave[0]), base * giro)
 
 
 static func _carregar(caminho: String) -> Animation:
