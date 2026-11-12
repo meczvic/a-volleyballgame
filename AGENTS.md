@@ -5,5 +5,6 @@ Antes de mexer no projeto, leia [docs/ESTADO_DO_PROJETO.md](docs/ESTADO_DO_PROJE
 Resumo do essencial:
 - Tudo em português (BR), em linguagem simples.
 - Godot 4.7.2. Branch principal: `claude/project-thread-o4s5hf` (não existe `main`).
-- Personagens: os 42 atletas são gerados por código a partir de `dados/aparencia.json` (decisão do Victor em 10/11/2026). Modelos VRoid detalhados continuam por conta dele e do amigo.
+- Personagens: desde 11/11/2026 os 42 atletas têm `.vrm` do VRoid em `personagens/<time>/`. O gerado por código (`dados/aparencia.json`) só entra se faltar o `.vrm`.
+- Handoff mais recente: [docs/HANDOFF.md](docs/HANDOFF.md).
 - Rode todos os testes de `testes/` antes de subir qualquer mudança.

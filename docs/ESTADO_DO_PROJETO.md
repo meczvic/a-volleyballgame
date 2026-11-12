@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em **09/11/2026** (à noite, depois do polimento da partida). Este documento resume o que é o jogo, o que já foi feito, o que falta, o que precisa melhorar e os próximos passos. Os detalhes de como jogar e rodar estão no [README](../README.md). A [seção 6](#6-para-devs-e-agentes-de-ia) é o guia técnico para quem for mexer no código (pessoa ou agente de IA).
+Atualizado em **11/11/2026** (os 42 atletas em VRM; resumo rápido em [HANDOFF.md](HANDOFF.md)). Este documento resume o que é o jogo, o que já foi feito, o que falta, o que precisa melhorar e os próximos passos. Os detalhes de como jogar e rodar estão no [README](../README.md). A [seção 6](#6-para-devs-e-agentes-de-ia) é o guia técnico para quem for mexer no código (pessoa ou agente de IA).
 
 ---
 
@@ -104,7 +104,7 @@ Feito depois de um robô jogar partidas inteiras e listar o que parecia estranho
 
 ### Personagens (Victor e amigo)
 - Desde 10/11/2026 os 42 atletas aparecem como **personagens gerados por código** (humanoides estilizados, cel-shaded, diferenciados por altura, porte, pele, cabelo e uniforme). Não são retratos: a aparência vem de `dados/aparencia.json`, que o Victor pode editar.
-- Quem quiser um modelo mais detalhado exporta o `.vrm` do VRoid para `personagens/<time>/` com o nome certo: o jogo passa a usar o VRM no lugar do gerado, sem mexer em código. **Feito: Hinata (11/11/2026).** Faltam os outros 41, no mesmo padrão (veja "Personagens" na seção 6).
+- Quem quiser um modelo mais detalhado exporta o `.vrm` do VRoid para `personagens/<time>/` com o nome certo: o jogo passa a usar o VRM no lugar do gerado, sem mexer em código. **Feito: os 42 atletas (11/11/2026).** Aproximações e pendências em [HANDOFF.md](HANDOFF.md).
 - O Hinata do VRoid ainda não tem joelheiras (o VRoid não tem joelheira pronta).
 - Falta o Victor **avaliar a aparência** dos gerados em partida e dizer o que ajustar (cores, cabelos, porte) em `dados/aparencia.json`.
 
