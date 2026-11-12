@@ -83,7 +83,7 @@ func _teste_energia_na_partida() -> void:
 	partida._encerrar_rally(0, "dentro")
 	_verificar(is_equal_approx(partida.energias[0].valor, Energia.GANHO_DO_PONTO), "quem faz o ponto ganha energia")
 	_verificar(is_equal_approx(partida.energias[1].valor, Energia.GANHO_DO_PONTO_PERDIDO), "quem toma o ponto ganha um pouco")
-	_verificar(is_equal_approx(partida.barras_de_energia[0].fracao(), Energia.GANHO_DO_PONTO), "a barra na tela acompanha")
+	_verificar(is_equal_approx(partida.interface.barras_de_energia[0].fracao(), Energia.GANHO_DO_PONTO), "a barra na tela acompanha")
 	partida._ganhar_energia(0, 1.0)
 	_verificar(partida.energias[0].cheia(), "dá pra encher a energia")
 	_verificar(partida.sons.historico.has("perfeito"), "avisa com o sininho quando enche")
@@ -117,7 +117,7 @@ func _teste_super_cortada() -> void:
 			"bloqueio": partida._bloqueio_do_ataque,
 			"energia": partida.energias[0].valor,
 			"forca": partida._forca_da_cortada,
-			"mensagem": str(partida.rotulos_do_time[0].text),
+			"mensagem": str(partida.interface.rotulos_do_time[0].text),
 		}
 		_fechar(partida)
 	_verificar(resultados[false]["bloqueio"] > Energia.BLOQUEIO_DA_SUPER, "sem energia cheia o bloqueio pega normal")

@@ -62,11 +62,11 @@ func _fechar(partida: Node) -> void:
 func _teste_ponto_atualiza_e_pula() -> void:
 	var partida = _nova_partida()
 	partida._encerrar_rally(1, "dentro")
-	_verificar(partida.placar_visual.texto_dos_pontos(1) == "1", "placar mostra o ponto do time 1")
-	_verificar(partida.placar_visual.texto_dos_pontos(0) == "0", "placar do time 0 continua 0")
-	_verificar(partida.placar_visual.numero_pulando(1), "o número de quem pontuou pula")
-	_verificar(not partida.placar_visual.numero_pulando(0), "o do outro não")
-	_verificar(partida.faixa.texto() == "PONTO!", "faixa de PONTO! (%s)" % partida.faixa.texto())
+	_verificar(partida.interface.placar_visual.texto_dos_pontos(1) == "1", "placar mostra o ponto do time 1")
+	_verificar(partida.interface.placar_visual.texto_dos_pontos(0) == "0", "placar do time 0 continua 0")
+	_verificar(partida.interface.placar_visual.numero_pulando(1), "o número de quem pontuou pula")
+	_verificar(not partida.interface.placar_visual.numero_pulando(0), "o do outro não")
+	_verificar(partida.interface.faixa.texto() == "PONTO!", "faixa de PONTO! (%s)" % partida.interface.faixa.texto())
 	_fechar(partida)
 
 
@@ -74,7 +74,7 @@ func _teste_ace() -> void:
 	var partida = _nova_partida()
 	partida.saque_em_jogo = true
 	partida._encerrar_rally(0, "dentro")
-	_verificar(partida.faixa.texto() == "ACE!", "saque que cai dentro sem ninguém tocar é ACE! (%s)" % partida.faixa.texto())
+	_verificar(partida.interface.faixa.texto() == "ACE!", "saque que cai dentro sem ninguém tocar é ACE! (%s)" % partida.interface.faixa.texto())
 	_fechar(partida)
 
 
@@ -83,15 +83,15 @@ func _teste_ponto_de_bloqueio() -> void:
 	partida.ultimo_toque = 0
 	partida._ao_bola_ser_bloqueada()
 	partida._encerrar_rally(1, "dentro")
-	_verificar(partida.faixa.texto() == "BLOQUEIO!", "bola bloqueada que cai é BLOQUEIO! (%s)" % partida.faixa.texto())
+	_verificar(partida.interface.faixa.texto() == "BLOQUEIO!", "bola bloqueada que cai é BLOQUEIO! (%s)" % partida.interface.faixa.texto())
 	_fechar(partida)
 
 
 func _teste_falta_mostra_o_motivo() -> void:
 	var partida = _nova_partida()
 	partida._encerrar_rally(1, "4 toques")
-	_verificar(partida.faixa.texto() == "PONTO!", "falta também mostra PONTO!")
-	_verificar(partida.faixa._subtitulo.text.contains("4 toques"), "com o motivo embaixo")
+	_verificar(partida.interface.faixa.texto() == "PONTO!", "falta também mostra PONTO!")
+	_verificar(partida.interface.faixa._subtitulo.text.contains("4 toques"), "com o motivo embaixo")
 	_fechar(partida)
 
 
@@ -99,14 +99,14 @@ func _teste_avisos_no_placar() -> void:
 	var partida = _nova_partida()
 	_pontos(partida, 6, 2)
 	partida._atualizar_placar()
-	_verificar(partida.placar_visual.texto_do_aviso() == "SET POINT", "6 x 2 mostra SET POINT (%s)" % partida.placar_visual.texto_do_aviso())
+	_verificar(partida.interface.placar_visual.texto_do_aviso() == "SET POINT", "6 x 2 mostra SET POINT (%s)" % partida.interface.placar_visual.texto_do_aviso())
 	partida.placar.sets[1] = 1
 	_pontos(partida, 2, 6)
 	partida._atualizar_placar()
-	_verificar(partida.placar_visual.texto_do_aviso() == "MATCH POINT", "com 1 set, mostra MATCH POINT")
+	_verificar(partida.interface.placar_visual.texto_do_aviso() == "MATCH POINT", "com 1 set, mostra MATCH POINT")
 	_pontos(partida, 3, 3)
 	partida._atualizar_placar()
-	_verificar(partida.placar_visual.texto_do_aviso() == "", "3 x 3: sem aviso")
+	_verificar(partida.interface.placar_visual.texto_do_aviso() == "", "3 x 3: sem aviso")
 	_fechar(partida)
 
 
@@ -114,9 +114,9 @@ func _teste_set_mostra_faixa_de_set() -> void:
 	var partida = _nova_partida()
 	_pontos(partida, 6, 0)
 	partida._encerrar_rally(0, "dentro")
-	_verificar(partida.faixa.texto() == "SET!", "último ponto do set mostra SET! (%s)" % partida.faixa.texto())
-	_verificar(partida.placar_visual.sets_acesos(0) == 1 and partida.placar_visual.sets_acesos(1) == 0, "bolinha do set ganho acesa")
-	_verificar(partida.placar_visual.texto_do_aviso() == "", "no fim do set, sem aviso de set/match point")
+	_verificar(partida.interface.faixa.texto() == "SET!", "último ponto do set mostra SET! (%s)" % partida.interface.faixa.texto())
+	_verificar(partida.interface.placar_visual.sets_acesos(0) == 1 and partida.interface.placar_visual.sets_acesos(1) == 0, "bolinha do set ganho acesa")
+	_verificar(partida.interface.placar_visual.texto_do_aviso() == "", "no fim do set, sem aviso de set/match point")
 	_fechar(partida)
 
 
@@ -146,14 +146,14 @@ func _pontos(partida: Node, a: int, b: int) -> void:
 ## de quem saca, bolinha de cada set na ordem de quem ganhou e "FIM" no final.
 func _teste_visual_do_placar() -> void:
 	var partida = _nova_partida()
-	var visual = partida.placar_visual
+	var visual = partida.interface.placar_visual
 	_verificar(visual.saque_visivel(0) and not visual.saque_visivel(1), "bola do saque no time que saca")
 	partida._encerrar_rally(1, "dentro")
 	_verificar(visual.numero_amarelo(1), "número de quem pontuou fica amarelo")
 	_verificar(not visual.numero_amarelo(0), "o do outro não")
 	_verificar(visual._faiscas[1].size() == visual.QUANTAS_FAISCAS, "efeito de ponto solta as faíscas na caixa de quem pontuou")
 	_verificar(visual._faiscas[0].is_empty(), "e não na do outro")
-	_verificar(partida.faixa.tem_emblema(), "faixa de ponto mostra o emblema de quem pontuou")
+	_verificar(partida.interface.faixa.tem_emblema(), "faixa de ponto mostra o emblema de quem pontuou")
 	_verificar(visual.saque_visivel(1) and not visual.saque_visivel(0), "bola do saque passa pra quem ganhou o ponto")
 
 	# Set 1 do time 1, set 2 do time 0: as bolinhas guardam a ordem.

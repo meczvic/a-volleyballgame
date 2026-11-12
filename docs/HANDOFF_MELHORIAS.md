@@ -10,7 +10,8 @@ Os testes não foram rodados nesta análise (o Godot não estava instalado no am
 | --- | --- |
 | **A. Rede de segurança** | **Feita em 12/11/2026** (branch `claude/fases-a-b-seguranca`). `ferramentas/rodar_testes.sh` e `.github/workflows/testes.yml`. Contagem de testes corrigida (33). |
 | **B. Aleatório controlado** | **Feita em 12/11/2026** (mesmo branch). `partida.sorteio` com `Configuracao.semente`, robô com `semente=`, impacto contando quadros de física, `teste_partida_com_semente.gd`. |
-| C, D, E, F | Não começadas. |
+| **C. Quebrar `partida.gd`** | **Começada em 12/11/2026** (branch `claude/fase-c-interface`). Pedaço 1 (interface e mensagens) feito: `scripts/partida/interface_da_partida.gd` (placar, mensagens, faixa do ponto, barras, comandos, lembrete da pausa, cartas na tela, cortina). `partida.gd` foi de 2.464 pra ~2.260 linhas e fala com a interface por `partida.interface`. Testes ajustados; os 40 passam, inclusive o da partida com semente (o jogo não mudou). Faltam os pedaços 2 a 5 (cenário e atletas, cartas, IA, bloqueio/cortada/toque). |
+| D, E, F | Não começadas. |
 
 Correções ao que está abaixo, achadas ao executar a Fase A:
 - O código de saída **funciona** nos testes (eles chamam `quit(1)` quando falham). O problema real é outro: um **erro de script trava o Godot sem fechar**, e o laço `for` fica parado para sempre. O script novo usa limite de tempo por teste.

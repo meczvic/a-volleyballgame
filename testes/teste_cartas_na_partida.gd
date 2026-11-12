@@ -116,7 +116,7 @@ func _teste_levantador_preciso() -> void:
 	partida.cartas_dos_times[0] = ["levantador_preciso"]
 	partida._aplicar_cartas()
 	_verificar(partida._qualidade_do_toque("levantamento", 0) == Q.PERFEITO, "Levantador Preciso: levantamento sempre perfeito")
-	_verificar(partida.rotulos_de_cartas[0].text.contains("Levantador Preciso"), "o nome da carta aparece na tela")
+	_verificar(partida.interface.rotulos_de_cartas[0].text.contains("Levantador Preciso"), "o nome da carta aparece na tela")
 	_fechar(partida)
 
 

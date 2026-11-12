@@ -53,6 +53,7 @@ const VisualAnime := preload("res://scripts/visual/visual_anime.gd")
 const Dados := preload("res://scripts/comum/dados.gd")
 const MenuDePausa := preload("res://scripts/menus/menu_de_pausa.gd")
 const Estilo := preload("res://scripts/menus/estilo.gd")
+const InterfaceDaPartida := preload("res://scripts/partida/interface_da_partida.gd")
 const Animador := preload("res://scripts/visual/animador.gd")
 const TempoDoToque := preload("res://scripts/regras/tempo_do_toque.gd")
 const Trajetoria := preload("res://scripts/regras/trajetoria.gd")
@@ -64,15 +65,10 @@ const Rastro := preload("res://scripts/visual/rastro.gd")
 const Mira := preload("res://scripts/regras/mira.gd")
 const Atributos := preload("res://scripts/regras/atributos.gd")
 const MiraVisual := preload("res://scripts/partida/mira_visual.gd")
-const PlacarVisual := preload("res://scripts/partida/placar_visual.gd")
-const FaixaDePonto := preload("res://scripts/partida/faixa_de_ponto.gd")
 const Cenario := preload("res://scripts/cenario/cenario.gd")
 const OndaNoChao := preload("res://scripts/visual/onda_no_chao.gd")
 const AnelDoControlado := preload("res://scripts/partida/anel_do_controlado.gd")
 const CameraDaPartida := preload("res://scripts/partida/camera_da_partida.gd")
-const Cortina := preload("res://scripts/menus/cortina.gd")
-const BarraDeForca := preload("res://scripts/partida/barra_de_forca.gd")
-const BarraDeEnergia := preload("res://scripts/partida/barra_de_energia.gd")
 const Energia := preload("res://scripts/regras/energia.gd")
 const Cartas := preload("res://scripts/regras/cartas.gd")
 const EscolhaDeCartas := preload("res://scripts/partida/escolha_de_cartas.gd")
@@ -286,11 +282,10 @@ var marcas_de_ataque: Array[Node3D] = [null, null]
 var bola
 var marcador
 var menu
-var placar_visual: PanelContainer
+## Tudo que aparece por cima da partida (interface_da_partida.gd).
+var interface: Node
 ## Quadra, rede e ginásio em volta (scripts/cenario/cenario.gd).
 var cenario: Node3D
-## Faixa grande do ponto ("PONTO!", "ACE!", "BLOQUEIO!", "SET!").
-var faixa: Control
 ## Time que bloqueou por último no rally (pra saber se o ponto foi de
 ## bloqueio). -1 depois de qualquer toque.
 var _ponto_de_bloqueio := -1
@@ -307,34 +302,13 @@ var _qualidade_do_bloqueio: Array = [Qualidade.BOM, Qualidade.BOM]
 var _rumo_do_bloqueio: Array = [0.0, 0.0]
 ## Qualidade (int de Qualidade) da última cortada, pra recepção. -1 = nenhuma.
 var _forca_da_cortada := -1
-var rotulo_mensagem: Label
-## Caixa escura atrás da mensagem; some quando não tem mensagem.
-var caixa_da_mensagem: PanelContainer
-## Mensagem de cada time, na metade da tela dele (saque, levantamento, largada).
-var rotulos_do_time: Array[Label] = []
-var caixas_do_time: Array[PanelContainer] = []
-## Barra de força do saque de cada time.
-var barras_de_forca: Array = [null, null]
 ## Medidor de energia de cada time e a barra dele na tela (Etapa 4).
 var energias: Array = [Energia.new(), Energia.new()]
-var barras_de_energia: Array = [null, null]
-## Lembrete "Esc ou Start: pausa"; some no fim de jogo.
-var caixa_da_pausa: PanelContainer
-## Quanto tempo os avisos rápidos ficam na tela (s).
-const DURACAO_DA_MENSAGEM := 1.8
-## Conta de mensagens por lugar (meio, time 0, time 1), pra saber se a de um
-## aviso rápido ainda é a que está na tela.
-var _validade_da_mensagem := [0, 0, 0]
-## Textos de comandos (um por jogador): somem depois do primeiro saque.
-var ajudas_de_comandos: Array[Label] = []
-var _ajuda_escondida := false
 ## Espera depois de cada ponto. É um nó (e não um "await") pra parar junto
 ## quando o jogo pausa e sumir junto quando a cena fecha.
 var temporizador_do_ponto: Timer
 ## Câmeras (uma por jogador na tela dividida), pro tremor do impacto.
 var cameras: Array[Camera3D] = []
-## Cortina preta das trocas de cena.
-var cortina: ColorRect
 ## Anel que mostra a hora de apertar, um por time.
 var aneis_de_tempo: Array = [null, null]
 ## Qualidade do último passe de cada time (decide o levantamento).
@@ -362,8 +336,6 @@ var ultima_carta: Array = ["", ""]
 var dados_das_cartas: Dictionary = {}
 var pontos_jogados := 0
 var escolha_de_cartas = null
-## Texto das cartas de cada time, no canto da quadra (só no Modo Caos).
-var rotulos_de_cartas: Array[Label] = []
 
 
 func _ready() -> void:
@@ -450,7 +422,7 @@ func _ready() -> void:
 
 	_conectar_placar()
 	_preparar_saque()
-	cortina.abrir()
+	interface.cortina.abrir()
 	# Modo Caos: os dois escolhem a primeira carta antes do 1º saque.
 	if modo_caos:
 		_abrir_escolha_de_cartas(Callable())
@@ -953,7 +925,7 @@ func _sacar(time: int, flutuante: bool, forca := 0.4, alvo := Mira.ALVO_INICIAL)
 	if falta_de_posicao >= 0:
 		_encerrar_rally(1 - falta_de_posicao, "posição errada no saque")
 		return
-	_esconder_ajuda()
+	interface.esconder_ajuda()
 	_bloqueio_do_ataque = 1.0
 	_forca_da_cortada = -1
 	_ultimo_levantamento = [{}, {}]
@@ -968,24 +940,8 @@ func _sacar(time: int, flutuante: bool, forca := 0.4, alvo := Mira.ALVO_INICIAL)
 	bola.lancar(destino, Mira.altura_do_saque(forca, flutuante), VelocidadeDaBola.do_saque(forca, flutuante))
 	ultimo_toque = time
 	estado = Estado.RALLY
-	_limpar_mensagens()
+	interface.limpar_mensagens()
 	_ao_lancar_bola()
-
-
-## Some com os textos de comandos e o lembrete da pausa (só valem no começo).
-func _esconder_ajuda() -> void:
-	if _ajuda_escondida:
-		return
-	_ajuda_escondida = true
-	var alvos: Array = []
-	alvos.append_array(ajudas_de_comandos)
-	alvos.append(caixa_da_pausa)
-	for alvo in alvos:
-		if not is_instance_valid(alvo):
-			continue
-		var tween := create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
-		tween.tween_property(alvo, "modulate:a", 0.0, 0.8)
-		tween.tween_callback(alvo.hide)
 
 
 ## Soma energia ao time. Quando enche, avisa que a super cortada está pronta.
@@ -996,11 +952,11 @@ func _ganhar_energia(time: int, quanto: float) -> void:
 	_atualizar_barra_de_energia(time)
 	if encheu:
 		sons.tocar("perfeito")
-		_mostrar_mensagem("Super pronta!", time, false)
+		interface.mostrar_mensagem("Super pronta!", time, false)
 
 
 func _atualizar_barra_de_energia(time: int) -> void:
-	var barra = barras_de_energia[time]
+	var barra = interface.barras_de_energia[time]
 	if barra != null:
 		barra.mostrar(energias[time].valor, energias[time].cheia())
 
@@ -1072,7 +1028,7 @@ func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> bool:
 		var antes := qualidade
 		qualidade = JeitosDeDefender.qualidade_da_recepcao(qualidade, cortada_recebida)
 		if qualidade != antes:
-			_mostrar_mensagem("Cortada forte!", time, false)
+			interface.mostrar_mensagem("Cortada forte!", time, false)
 	if atacando or numero <= 2:
 		_avisar_qualidade(controlados[time], qualidade)
 	# Energia do toque (a cortada soma depois de sair, pra não gastar o que acabou de ganhar).
@@ -1145,7 +1101,7 @@ func _levantar(time: int, qualidade: Qualidade) -> void:
 	_ultimo_levantamento[time] = { "nome": nome, "rapido": rapido }
 	# Só o levantamento rápido merece texto: o resto o jogador já vê pela bola.
 	if rapido:
-		_mostrar_mensagem("Rápido: %s" % nome, time, false)
+		interface.mostrar_mensagem("Rápido: %s" % nome, time, false)
 
 
 ## Pra onde o levantador manda: a direção apertada, só entre os ataques que
@@ -1300,7 +1256,7 @@ func _cortar(time: int, qualidade: Qualidade = Qualidade.BOM) -> void:
 		if super_cortada:
 			_bloqueio_do_ataque = minf(_bloqueio_do_ataque, Energia.ajuste("bloqueio_da_super", Energia.BLOQUEIO_DA_SUPER))
 		if efeito["nome"] != "":
-			_mostrar_mensagem(efeito["nome"], time, false)
+			interface.mostrar_mensagem(efeito["nome"], time, false)
 	var ponto_da_batida: Vector3 = bola.position
 	_forca_da_cortada = int(Qualidade.PERFEITO) if super_cortada else int(qualidade)
 	bola.lancar(destino, bola.position.y + subida, VelocidadeDaBola.da_cortada(qualidade, super_cortada))
@@ -1314,7 +1270,7 @@ func _cortar(time: int, qualidade: Qualidade = Qualidade.BOM) -> void:
 		impacto.cortada(true)
 		Estouro.mostrar(self, ponto_da_batida, COR_DA_SUPER_CORTADA, 1.6)
 		rastro.destacar(COR_DA_SUPER_CORTADA)
-		_mostrar_mensagem("SUPER CORTADA!", time, false)
+		interface.mostrar_mensagem("SUPER CORTADA!", time, false)
 	elif qualidade != Qualidade.RUIM:
 		var perfeita := qualidade == Qualidade.PERFEITO
 		impacto.cortada(perfeita)
@@ -1333,7 +1289,7 @@ func _largar(time: int, qualidade: Qualidade, mensagem := "Largada!") -> void:
 	bola.lancar(destino, bola.position.y + SUBIDA_DA_LARGADA)
 	_ao_lancar_bola()
 	sons.tocar("levantamento", 0.6)
-	_mostrar_mensagem(mensagem, time, false)
+	interface.mostrar_mensagem(mensagem, time, false)
 
 
 ## Ponto do mundo na quadra do outro time: "alvo" (x = lado, y = distância
@@ -1565,9 +1521,9 @@ func _atualizar_mira(time: int, delta: float) -> void:
 		var ponto := Vector3(alvo_do_saque.x, 0.0, alvo_do_saque.y * lado_do_alvo)
 		var arriscada: bool = forca >= Mira.FORCA_ARRISCADA
 		mira.mostrar(ponto, _erro_do_saque(time, forca), arriscada)
-		barras_de_forca[time].mostrar(forca, arriscada)
+		interface.barras_de_forca[time].mostrar(forca, arriscada)
 		return
-	barras_de_forca[time].esconder()
+	interface.barras_de_forca[time].esconder()
 	var vai_atacar: bool = estado == Estado.RALLY and (not cortadas[time].is_empty() \
 		or (toques.time_com_a_bola == time and toques.toques == 2 and bola.em_voo and _lado_da_queda() == time))
 	if not vai_atacar:
@@ -1631,7 +1587,7 @@ func _contar_tempo_do_saque(delta: float) -> void:
 		return
 	if restam <= 3 and restam != _segundos_mostrados:
 		_segundos_mostrados = restam
-		_mostrar_mensagem("Saque: segure e solte (%d)" % restam, placar.quem_saca)
+		interface.mostrar_mensagem("Saque: segure e solte (%d)" % restam, placar.quem_saca)
 
 
 func _e_da_rede(time: int, atleta: Node3D) -> bool:
@@ -1678,30 +1634,30 @@ func _encerrar_rally(vencedor: int, motivo: String) -> void:
 	saque_em_jogo = false
 	marcador.esconder()
 	_mostrar_marcas_de_ataque(-1)
-	_limpar_mensagens()
+	interface.limpar_mensagens()
 	var nome := str(times_em_jogo[vencedor]["nome"])
 	var explicacao := _explicacao_do_ponto(motivo)
-	_mostrar_mensagem("Ponto %s!%s" % [nome, " (%s)" % explicacao if explicacao != "" else ""])
+	interface.mostrar_mensagem("Ponto %s!%s" % [nome, " (%s)" % explicacao if explicacao != "" else ""])
 	# Apito do juiz e a torcida (mais forte nos pontos bonitos).
 	sons.tocar("apito")
 	var torcida := 0.6
 	if motivo == "dentro" and saque_do_rally_em_jogo and vencedor == placar.quem_saca:
-		faixa.mostrar("ACE!", nome, _cor_do_time(vencedor), vencedor)
+		interface.faixa.mostrar("ACE!", nome, _cor_do_time(vencedor), vencedor)
 		torcida = 1.0
 	elif motivo == "dentro" and vencedor == _ponto_de_bloqueio:
-		faixa.mostrar("BLOQUEIO!", nome, _cor_do_time(vencedor), vencedor)
+		interface.faixa.mostrar("BLOQUEIO!", nome, _cor_do_time(vencedor), vencedor)
 		torcida = 1.0
 	elif motivo == "dentro":
-		faixa.mostrar("PONTO!", nome, _cor_do_time(vencedor), vencedor)
+		interface.faixa.mostrar("PONTO!", nome, _cor_do_time(vencedor), vencedor)
 		torcida = 0.8
 	else:
-		faixa.mostrar("PONTO!", "%s  ·  %s" % [nome, explicacao], _cor_do_time(vencedor), vencedor)
+		interface.faixa.mostrar("PONTO!", "%s  ·  %s" % [nome, explicacao], _cor_do_time(vencedor), vencedor)
 	sons.tocar("torcida", torcida)
 	_ganhar_energia(vencedor, Energia.ajuste("ganho_do_ponto", Energia.GANHO_DO_PONTO))
 	_ganhar_energia(1 - vencedor, Energia.ajuste("ganho_do_ponto_perdido", Energia.GANHO_DO_PONTO_PERDIDO))
 	# A faixa já diz quem pontuou e o motivo: a caixa do meio fica escondida
 	# (o texto continua lá, pros testes e pro robô).
-	caixa_da_mensagem.visible = false
+	interface.esconder_caixa_do_meio()
 	_animar_fim_do_ponto(vencedor)
 	# Se foi o último ponto, o placar chama _ao_encerrar_partida aqui dentro.
 	placar.marcar_ponto(vencedor)
@@ -1779,7 +1735,7 @@ func _abrir_escolha_de_cartas(depois: Callable) -> void:
 			depois.call()
 		return
 	# Tira a mensagem do ponto da frente da tela de escolha.
-	_limpar_mensagens()
+	interface.limpar_mensagens()
 	escolha_de_cartas = EscolhaDeCartas.new()
 	escolha_de_cartas.name = "EscolhaDeCartas"
 	escolha_de_cartas.sorteio = sorteio
@@ -1842,13 +1798,13 @@ func _ao_escolher_cartas(escolhas: Array) -> void:
 func _aplicar_cartas() -> void:
 	for time in 2:
 		times_em_jogo[time]["modificadores"] = Cartas.modificadores(dados_das_cartas, cartas_dos_times[time])
-		if rotulos_de_cartas.size() > time:
+		if interface.rotulos_de_cartas.size() > time:
 			var nomes := _nomes_das_cartas(time)
 			var texto := ", ".join(PackedStringArray(nomes)) if not nomes.is_empty() else ""
 			var bonus := Cartas.bonus_ativos(dados_das_cartas, cartas_dos_times[time])
 			if not bonus.is_empty():
 				texto += "\n" + " · ".join(PackedStringArray(bonus))
-			rotulos_de_cartas[time].text = texto
+			interface.mostrar_cartas(time, texto)
 
 
 func _nomes_das_cartas(time: int) -> Array:
@@ -1893,9 +1849,9 @@ func _preparar_saque() -> void:
 		passador = rodizios[outro].atleta_na(5)
 	controlados[outro] = atletas[outro][passador]
 
-	_mostrar_mensagem("")
-	_mostrar_mensagem("Saque: segure e solte", time)
-	_mostrar_mensagem("Recepção: vá ao anel e aperte Passe", outro)
+	interface.mostrar_mensagem("")
+	interface.mostrar_mensagem("Saque: segure e solte", time)
+	interface.mostrar_mensagem("Recepção: vá ao anel e aperte Passe", outro)
 
 
 func _ao_encerrar_partida(vencedor: int) -> void:
@@ -1903,9 +1859,9 @@ func _ao_encerrar_partida(vencedor: int) -> void:
 	marcador.esconder()
 	_mostrar_marcas_de_ataque(-1)
 	# A tela de fim de jogo já diz quem venceu.
-	_limpar_mensagens()
-	caixa_da_pausa.visible = false
-	faixa.mostrar("JOGO!", "%s venceu" % times_em_jogo[vencedor]["nome"], _cor_do_time(vencedor), vencedor)
+	interface.limpar_mensagens()
+	interface.esconder_lembrete_da_pausa()
+	interface.faixa.mostrar("JOGO!", "%s venceu" % times_em_jogo[vencedor]["nome"], _cor_do_time(vencedor), vencedor)
 	sons.tocar("torcida", 1.3)
 	for atleta in atletas[vencedor]:
 		_animar(atleta, "comemoracao_torcida")
@@ -1917,7 +1873,7 @@ func _conectar_placar() -> void:
 	placar.sortear_primeiro_saque()
 	placar.ponto_marcado.connect(func(time: int) -> void:
 		_atualizar_placar()
-		placar_visual.comemorar(time))
+		interface.placar_visual.comemorar(time))
 	placar.rodizio.connect(func(time: int) -> void: rodizios[time].girar())
 	placar.set_encerrado.connect(_ao_encerrar_set)
 	placar.partida_encerrada.connect(_ao_encerrar_partida)
@@ -1930,18 +1886,18 @@ func _ao_encerrar_set(vencedor: int) -> void:
 	for rodizio in rodizios:
 		rodizio.reiniciar()
 	_atualizar_placar()
-	faixa.mostrar("SET!", "%s  %d x %d" % [
+	interface.faixa.mostrar("SET!", "%s  %d x %d" % [
 		str(times_em_jogo[vencedor]["nome"]), placar.pontos[vencedor], placar.pontos[1 - vencedor],
 	], _cor_do_time(vencedor), vencedor)
-	_mostrar_mensagem("Set %d: %s venceu! (%d x %d)" % [
+	interface.mostrar_mensagem("Set %d: %s venceu! (%d x %d)" % [
 		placar.set_atual, times_em_jogo[vencedor]["nome"],
 		placar.pontos[vencedor], placar.pontos[1 - vencedor],
 	])
-	caixa_da_mensagem.visible = false
+	interface.esconder_caixa_do_meio()
 
 
 func _atualizar_placar() -> void:
-	placar_visual.atualizar(placar.pontos, placar.sets, placar.set_atual, placar.quem_saca, placar.aviso())
+	interface.placar_visual.atualizar(placar.pontos, placar.sets, placar.set_atual, placar.quem_saca, placar.aviso())
 
 
 ## Cor do time no placar e nos efeitos: a do menu (ou a do uniforme reserva,
@@ -2268,176 +2224,16 @@ func _adicionar_camera(onde: Node, time: int) -> void:
 	cameras.append(camera)
 
 
+## Cria a interface (placar, mensagens, barras...) por cima da partida.
 func _criar_interface() -> void:
-	var camada := CanvasLayer.new()
-	camada.name = "Interface"
-	camada.layer = 1
-	add_child(camada)
-
-	if tela_dividida:
-		# Linha separando as duas metades.
-		var divisoria := ColorRect.new()
-		divisoria.color = Color("#0F1620")
-		divisoria.anchor_left = 0.5
-		divisoria.anchor_right = 0.5
-		divisoria.anchor_top = 0.0
-		divisoria.anchor_bottom = 1.0
-		divisoria.offset_left = -2.0
-		divisoria.offset_right = 2.0
-		camada.add_child(divisoria)
-
-	# Placar em cima, no meio (em cima da divisória na tela dividida).
-	var topo := CenterContainer.new()
-	topo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	topo.position = Vector2(0.0, 10.0)
-	topo.size = Vector2(1600.0, 100.0)
-	camada.add_child(topo)
-	placar_visual = PlacarVisual.new()
-	topo.add_child(placar_visual)
-	var ids_dos_times := [str(times_em_jogo[0]["id"]), str(times_em_jogo[1]["id"])]
-	placar_visual.configurar(
+	interface = InterfaceDaPartida.new()
+	interface.name = "InterfaceDaPartida"
+	add_child(interface)
+	interface.montar(tela_dividida,
 		[times_em_jogo[0]["nome"], times_em_jogo[1]["nome"]],
-		[_cor_do_time(0), _cor_do_time(1)], ids_dos_times)
-
-	# Mensagem no meio, em cima. O CenterContainer mantém a caixa centralizada
-	# e do tamanho do texto.
-	var centro := CenterContainer.new()
-	centro.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	centro.position = Vector2(0.0, 118.0)
-	centro.size = Vector2(1600.0, 56.0)
-	camada.add_child(centro)
-	caixa_da_mensagem = _caixa_da_interface()
-	centro.add_child(caixa_da_mensagem)
-	rotulo_mensagem = _rotulo_da_interface(32, true)
-	caixa_da_mensagem.add_child(rotulo_mensagem)
-
-	# Mensagem de cada time, embaixo da mensagem geral, na metade dele
-	# (sem tela dividida, as duas ficam lado a lado na mesma tela).
-	for time in 2:
-		var centro_do_time := CenterContainer.new()
-		centro_do_time.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		centro_do_time.position = Vector2(800.0 * time, 182.0)
-		centro_do_time.size = Vector2(800.0, 48.0)
-		camada.add_child(centro_do_time)
-		var caixa := _caixa_da_interface()
-		caixa.visible = false
-		centro_do_time.add_child(caixa)
-		var rotulo := _rotulo_da_interface(24, true)
-		caixa.add_child(rotulo)
-		caixas_do_time.append(caixa)
-		rotulos_do_time.append(rotulo)
-
-		# Barra de força do saque, embaixo, na metade do time.
-		var centro_da_barra := CenterContainer.new()
-		centro_da_barra.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		centro_da_barra.position = Vector2(800.0 * time, 760.0)
-		centro_da_barra.size = Vector2(800.0, 70.0)
-		camada.add_child(centro_da_barra)
-		var barra := BarraDeForca.new()
-		barra.name = "BarraDeForca%d" % time
-		centro_da_barra.add_child(barra)
-		barras_de_forca[time] = barra
-
-		# Medidor de energia (super cortada), acima da barra de força.
-		var centro_da_energia := CenterContainer.new()
-		centro_da_energia.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		centro_da_energia.position = Vector2(800.0 * time, 690.0)
-		centro_da_energia.size = Vector2(800.0, 60.0)
-		camada.add_child(centro_da_energia)
-		var barra_de_energia := BarraDeEnergia.new()
-		barra_de_energia.name = "BarraDeEnergia%d" % time
-		centro_da_energia.add_child(barra_de_energia)
-		barras_de_energia[time] = barra_de_energia
-
-		# Modo Caos: as cartas do time, no canto da metade dele.
-		if modo_caos:
-			var cartas_do_time := _rotulo_da_interface(18, false)
-			cartas_do_time.position = Vector2(20.0 + 800.0 * time, 700.0)
-			cartas_do_time.size = Vector2(360.0, 50.0)
-			cartas_do_time.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			camada.add_child(cartas_do_time)
-			rotulos_de_cartas.append(cartas_do_time)
-
-	faixa = FaixaDePonto.new()
-	camada.add_child(faixa)
-	faixa.configurar(ids_dos_times)
-
-	# Cortina preta por cima de tudo (até da pausa), fechada até a cena abrir.
-	var camada_da_cortina := CanvasLayer.new()
-	camada_da_cortina.name = "CamadaDaCortina"
-	camada_da_cortina.layer = 20
-	add_child(camada_da_cortina)
-	cortina = Cortina.nova(camada_da_cortina)
-
-	# Comandos de cada jogador embaixo da metade dele (ou só do J1, sem tela dividida).
-	# Curtos: somem no primeiro saque (o resto fica por conta do jogo ensinar).
-	var ajudas_teclado := [
-		"Teclado: WASD move · J passe · K saque/cortada · I flutuante · L bloqueio · Espaço mergulho",
-		"Teclado: setas movem · 1 passe · 2 saque/cortada · 5 flutuante · 3 bloqueio · 0 mergulho",
-	]
-	var ajuda_do_controle := "Controle: A passe · X saque/cortada · RB flutuante · Y bloqueio · B mergulho"
-	var controles_ligados := Input.get_connected_joypads().size()
-	for jogador in (2 if tela_dividida else 1):
-		var ajuda := _rotulo_da_interface(16, false)
-		ajuda.text = ajuda_do_controle if controles_ligados > jogador else ajudas_teclado[jogador]
-		ajuda.position = Vector2(20.0 + jogador * 800.0, 860.0)
-		camada.add_child(ajuda)
-		ajudas_de_comandos.append(ajuda)
-
-	# Lembrete da pausa no canto direito, crescendo pra esquerda.
-	caixa_da_pausa = _caixa_da_interface()
-	caixa_da_pausa.anchor_left = 1.0
-	caixa_da_pausa.anchor_right = 1.0
-	caixa_da_pausa.offset_left = -18.0
-	caixa_da_pausa.offset_right = -18.0
-	caixa_da_pausa.offset_top = 16.0
-	caixa_da_pausa.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	camada.add_child(caixa_da_pausa)
-	var dica_da_pausa := _rotulo_da_interface(18, true)
-	dica_da_pausa.text = "Esc ou Start: pausa"
-	caixa_da_pausa.add_child(dica_da_pausa)
-
-
-## Mostra uma mensagem no meio da tela (time = -1) ou na metade de um time.
-## Texto vazio esconde a caixa.
-## "fixa" = false: a mensagem some sozinha depois de DURACAO_DA_MENSAGEM
-## (avisos rápidos). Fixa: fica até outra mensagem ou o próximo lance.
-func _mostrar_mensagem(texto: String, time := -1, fixa := true) -> void:
-	_validade_da_mensagem[time + 1] += 1
-	var numero: int = _validade_da_mensagem[time + 1]
-	if time < 0:
-		rotulo_mensagem.text = texto
-		caixa_da_mensagem.visible = texto != ""
-	else:
-		rotulos_do_time[time].text = texto
-		caixas_do_time[time].visible = texto != ""
-	if fixa or texto == "" or not is_inside_tree():
-		return
-	await get_tree().create_timer(DURACAO_DA_MENSAGEM, true, false, true).timeout
-	# Se outra mensagem entrou nesse meio tempo, deixa ela em paz.
-	if is_inside_tree() and _validade_da_mensagem[time + 1] == numero:
-		_mostrar_mensagem("", time)
-
-
-## Esconde a mensagem do meio e as dos dois times.
-func _limpar_mensagens() -> void:
-	_mostrar_mensagem("")
-	for time in 2:
-		_mostrar_mensagem("", time)
-
-
-## Caixa escura e inclinada (como as dos menus) atrás dos textos da partida.
-func _caixa_da_interface() -> PanelContainer:
-	var caixa := PanelContainer.new()
-	caixa.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	caixa.add_theme_stylebox_override("panel",
-		Estilo.caixa(Color(0.06, 0.07, 0.09, 0.72), Estilo.INCLINACAO, 22.0, 4.0))
-	return caixa
-
-
-## Texto da interface com contorno escuro, pra ler bem em cima da quadra.
-func _rotulo_da_interface(tamanho: int, titulo: bool) -> Label:
-	return Estilo.rotulo_com_contorno(tamanho, titulo)
+		[_cor_do_time(0), _cor_do_time(1)],
+		[str(times_em_jogo[0]["id"]), str(times_em_jogo[1]["id"])],
+		modo_caos)
 
 
 func _caixa(tamanho: Vector3, posicao: Vector3, cor: Color) -> MeshInstance3D:

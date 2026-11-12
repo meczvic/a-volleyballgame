@@ -55,11 +55,11 @@ func _fechar(partida: Node) -> void:
 
 func _teste_mensagens_do_saque_por_time() -> void:
 	var partida = _nova_partida()
-	_verificar(partida.rotulos_do_time[0].text.begins_with("Saque"), "quem saca vê a instrução do saque na metade dele")
-	_verificar(partida.rotulos_do_time[1].text.begins_with("Recepção"), "quem recebe vê a instrução da recepção")
-	_verificar(partida.rotulo_mensagem.text == "", "nada no meio da tela antes do saque")
+	_verificar(partida.interface.rotulos_do_time[0].text.begins_with("Saque"), "quem saca vê a instrução do saque na metade dele")
+	_verificar(partida.interface.rotulos_do_time[1].text.begins_with("Recepção"), "quem recebe vê a instrução da recepção")
+	_verificar(partida.interface.rotulo_mensagem.text == "", "nada no meio da tela antes do saque")
 	partida._sacar(0, false)
-	_verificar(partida.rotulos_do_time[0].text == "" and partida.rotulos_do_time[1].text == "",
+	_verificar(partida.interface.rotulos_do_time[0].text == "" and partida.interface.rotulos_do_time[1].text == "",
 		"o saque limpa as mensagens dos dois lados")
 	_fechar(partida)
 
@@ -68,25 +68,25 @@ func _teste_texto_do_ponto() -> void:
 	var partida = _nova_partida()
 	partida._sacar(0, false)
 	partida._encerrar_rally(0, "dentro")
-	_verificar(partida.rotulo_mensagem.text == "Ponto %s!" % partida.times_em_jogo[0]["nome"],
-		"bola dentro: só 'Ponto X!' (%s)" % partida.rotulo_mensagem.text)
+	_verificar(partida.interface.rotulo_mensagem.text == "Ponto %s!" % partida.times_em_jogo[0]["nome"],
+		"bola dentro: só 'Ponto X!' (%s)" % partida.interface.rotulo_mensagem.text)
 	_fechar(partida)
 	partida = _nova_partida()
 	partida._sacar(0, false)
 	partida._encerrar_rally(1, "fora")
-	_verificar(partida.rotulo_mensagem.text.ends_with("(bola fora)"), "bola fora diz 'bola fora' (%s)" % partida.rotulo_mensagem.text)
-	_verificar(partida.faixa._subtitulo.text.ends_with("bola fora"), "a faixa também")
+	_verificar(partida.interface.rotulo_mensagem.text.ends_with("(bola fora)"), "bola fora diz 'bola fora' (%s)" % partida.interface.rotulo_mensagem.text)
+	_verificar(partida.interface.faixa._subtitulo.text.ends_with("bola fora"), "a faixa também")
 	_fechar(partida)
 	partida = _nova_partida()
 	partida._sacar(0, false)
 	partida._encerrar_rally(1, "toque na rede")
-	_verificar(partida.rotulo_mensagem.text.ends_with("(toque na rede)"), "falta mostra o motivo (%s)" % partida.rotulo_mensagem.text)
+	_verificar(partida.interface.rotulo_mensagem.text.ends_with("(toque na rede)"), "falta mostra o motivo (%s)" % partida.interface.rotulo_mensagem.text)
 	_fechar(partida)
 
 
 func _teste_barra_de_forca() -> void:
 	var partida = _nova_partida()
-	var barra = partida.barras_de_forca[0]
+	var barra = partida.interface.barras_de_forca[0]
 	_verificar(not barra.visible, "barra escondida antes de carregar")
 	partida._ao_receber_comando(1, "ataque")
 	for i in 20:
@@ -94,7 +94,7 @@ func _teste_barra_de_forca() -> void:
 	_verificar(barra.visible, "segurando Ataque, a barra aparece")
 	_verificar(barra.fracao() > 0.2 and barra.fracao() < 0.6,
 		"a barra acompanha a força (%.2f)" % barra.fracao())
-	_verificar(not partida.barras_de_forca[1].visible, "a barra do outro time fica escondida")
+	_verificar(not partida.interface.barras_de_forca[1].visible, "a barra do outro time fica escondida")
 	partida._ao_soltar_botao(1, "ataque")
 	partida._physics_process(PASSO)
 	_verificar(not barra.visible, "soltou: a barra some")
@@ -116,7 +116,7 @@ func _teste_avisos_empilham() -> void:
 func _teste_fim_de_jogo_limpa_a_tela() -> void:
 	var partida = _nova_partida()
 	partida._ao_encerrar_partida(0)
-	_verificar(partida.rotulo_mensagem.text == "", "no fim de jogo a mensagem do meio some (a tela de fim já diz quem venceu)")
-	_verificar(not partida.caixa_da_pausa.visible, "o lembrete 'Esc ou Start: pausa' some no fim de jogo")
-	_verificar(partida.faixa.texto() == "JOGO!", "a faixa JOGO! aparece")
+	_verificar(partida.interface.rotulo_mensagem.text == "", "no fim de jogo a mensagem do meio some (a tela de fim já diz quem venceu)")
+	_verificar(not partida.interface.caixa_da_pausa.visible, "o lembrete 'Esc ou Start: pausa' some no fim de jogo")
+	_verificar(partida.interface.faixa.texto() == "JOGO!", "a faixa JOGO! aparece")
 	_fechar(partida)

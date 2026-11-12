@@ -68,7 +68,7 @@ func _fechar(partida: Node) -> void:
 
 func _ponto_por(partida: Node, motivo: String) -> bool:
 	return partida.estado == partida.Estado.PONTO \
-		and partida.rotulo_mensagem.text.contains("(%s)" % motivo)
+		and partida.interface.rotulo_mensagem.text.contains("(%s)" % motivo)
 
 
 func _pontos(partida: Node) -> Array:
