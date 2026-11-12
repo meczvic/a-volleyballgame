@@ -19,10 +19,25 @@ const ARQUIVOS := {
 	"bloqueio": "res://animacoes/bloqueio.fbx",
 	"saque": "res://animacoes/saque.fbx",
 	"mergulho": "res://animacoes/mergulho.fbx",
+	"mergulho_direita": "res://animacoes/mergulho_direita.fbx",
+	"espera_defesa": "res://animacoes/espera_defesa.fbx",
 	"comemoracao_palmas": "res://animacoes/comemoracao_palmas.fbx",
 	"comemoracao_torcida": "res://animacoes/comemoracao_torcida.fbx",
+	"comemoracao_punho": "res://animacoes/comemoracao_punho.fbx",
+	"comemoracao_pulo": "res://animacoes/comemoracao_pulo.fbx",
+	"ponto_perdido_frustrado": "res://animacoes/ponto_perdido_frustrado.fbx",
+	"ponto_perdido_desanimado": "res://animacoes/ponto_perdido_desanimado.fbx",
 }
-const EM_LOOP := ["parado", "espera", "correr", "lateral_esquerda", "lateral_direita", "comemoracao_palmas", "comemoracao_torcida"]
+const EM_LOOP := ["parado", "espera", "espera_defesa", "correr", "lateral_esquerda", "lateral_direita",
+	"comemoracao_palmas", "comemoracao_torcida", "comemoracao_punho", "comemoracao_pulo"]
+## Lances que param assim que o atleta anda (ele não escorrega deitado nem
+## fazendo a reação). As de EM_LOOP também param. Nos primeiros CARENCIA
+## segundos não param (o mergulho já começa com um deslocamento curto).
+const SAEM_AO_ANDAR := ["mergulho", "mergulho_direita", "ponto_perdido_frustrado", "ponto_perdido_desanimado"]
+const CARENCIA := 0.25
+## Comemorações do ponto e reações de quem perdeu: cada atleta faz uma.
+const COMEMORACOES := ["comemoracao_palmas", "comemoracao_punho", "comemoracao_pulo"]
+const REACOES_AO_PONTO_PERDIDO := ["ponto_perdido_desanimado", "ponto_perdido_desanimado", "ponto_perdido_frustrado"]
 ## Pose de espera do jogo (Fase 06): a "parado" com os joelhos dobrados, o
 ## quadril mais baixo, o tronco inclinado pra frente e os braços na frente do
 ## corpo, como um atleta pronto pra receber. [osso, eixo local, ângulo (rad)];
@@ -52,8 +67,18 @@ const TRECHOS := {
 	"cortada": [1.25, 2.0, 1.23],
 	"bloqueio": [0.55, 1.6],
 	"saque": [1.0, 2.0],
-	"mergulho": [0.3, 2.8],
+	# Mergulho a 2,2x: deita em ~0,45 s e começa a levantar em ~0,8 s, quando o
+	# atleta pode andar de novo (TEMPO_NO_CHAO da partida).
+	"mergulho": [0.5, 2.8, 2.2],
+	"mergulho_direita": [0.5, 2.75, 2.2],
+	# Nas reações, o começo e o fim são quase parados.
+	"ponto_perdido_frustrado": [0.6, 3.0],
+	"ponto_perdido_desanimado": [0.1, 2.4],
 }
+## Os dois mergulhos: "mergulho" vai pra esquerda do atleta (+x da animação),
+## "mergulho_direita" pra direita.
+const MERGULHO_ESQUERDA := "mergulho"
+const MERGULHO_DIREITA := "mergulho_direita"
 ## Mão que bate na bola na cortada, e em que segundo da animação ela bate.
 const MAO_DA_CORTADA := "LeftHand"
 const BATIDA_DA_CORTADA := 1.62
@@ -71,10 +96,15 @@ static var _biblioteca: AnimationLibrary
 
 ## Pra onde o personagem olha quando está parado (a rede).
 var giro_da_rede := 0.0
+## Animação de quando ele está parado em quadra: "espera" (pronto) ou
+## "espera_defesa" (agachado esperando o ataque do outro time). A partida troca.
+var parado_no_jogo := PARADO_NO_JOGO
 var _personagem: Node3D
 var _player: AnimationPlayer
 var _ultima_posicao := Vector3.ZERO
 var _tempo_do_lance := 0.0
+var _sai_ao_andar := false
+var _carencia := 0.0
 var _em_loop := ""
 var _altura_da_mao := -1.0
 
@@ -106,8 +136,13 @@ func tocar(lance: String) -> void:
 	var nome := BIBLIOTECA + "/" + lance
 	if lance in EM_LOOP:
 		_tocar_loop(lance)
+		_player.speed_scale = 1.0
 		_tempo_do_lance = 9999.0
+		_sai_ao_andar = true
+		_carencia = 0.0
 		return
+	_sai_ao_andar = lance in SAEM_AO_ANDAR
+	_carencia = CARENCIA
 	var trecho: Array = TRECHOS.get(lance, [0.0, _player.get_animation(nome).length])
 	_player.play(nome, MISTURA)
 	_player.seek(trecho[0], true)
@@ -116,6 +151,20 @@ func tocar(lance: String) -> void:
 	_tempo_do_lance = (trecho[1] - trecho[0]) / velocidade
 	_em_loop = ""
 	_personagem.rotation.y = giro_da_rede
+
+
+## Mergulho pro lado do "rumo" (direção no chão, x e z do mundo) em relação a
+## pra onde o atleta olha (a rede).
+func mergulhar(rumo: Vector2) -> void:
+	tocar(lance_do_mergulho(rumo, giro_da_rede))
+
+
+## Qual dos dois mergulhos vai pro lado do "rumo", com o atleta virado em "giro".
+## O personagem olha pro +z dele; a esquerda dele é o +x, que no mundo fica em
+## (cos giro, -sen giro).
+static func lance_do_mergulho(rumo: Vector2, giro: float) -> String:
+	var esquerda := Vector2(cos(giro), -sin(giro))
+	return MERGULHO_ESQUERDA if rumo.dot(esquerda) >= 0.0 else MERGULHO_DIREITA
 
 
 ## Onde está agora a mão que bate na cortada (no mundo), ou null se o
@@ -175,13 +224,14 @@ func _process(delta: float) -> void:
 
 	if _tempo_do_lance > 0.0:
 		_tempo_do_lance -= delta
-		if _tempo_do_lance < 9000.0 or andou.length() < PARADO_ABAIXO_DE:
+		_carencia -= delta
+		if not _sai_ao_andar or _carencia > 0.0 or andou.length() < PARADO_ABAIXO_DE:
 			return
 		_tempo_do_lance = 0.0
 
 	var velocidade := andou.length()
 	if velocidade < PARADO_ABAIXO_DE:
-		_tocar_loop(PARADO_NO_JOGO)
+		_tocar_loop(parado_no_jogo)
 		_player.speed_scale = 1.0
 		_virar_para(giro_da_rede, delta)
 		return

@@ -97,6 +97,9 @@ const ALTURA_MAXIMA_CORTADA := 3.5
 const PAUSA_DEPOIS_DO_PONTO := 1.8
 ## Depois do ponto, todo mundo anda mais rápido pra formação (multiplicador).
 const PRESSA_DEPOIS_DO_PONTO := 1.6
+## Segundos que os atletas ficam parados comemorando (ou reagindo) depois do
+## ponto, antes de andar pro lugar do próximo saque.
+const COMEMORACAO_ANTES_DE_VOLTAR := 0.8
 ## Botão apertado um pouco cedo (bola ainda fora do alcance) vale por esse
 ## tempo (s): o toque sai assim que der. Depois disso o anel do atleta pisca.
 const TEMPO_DO_PEDIDO := 0.15
@@ -216,6 +219,10 @@ var toques = Toques.new()
 var rodizios: Array = [Rodizio.new(), Rodizio.new()]
 var estado := Estado.SAQUE
 var ultimo_toque := -1
+## Quantos pontos já tiveram comemoração (só pra variar a animação).
+var _pontos_animados := 0
+## _relogio na hora do último ponto (os atletas comemoram antes de voltar).
+var _relogio_do_ponto := -100.0
 ## Função de cada atleta: funcoes[time][índice] = "levantador", "ponteiro",
 ## "central" ou "oposto" (veja escalacao.gd).
 var funcoes: Array = [{}, {}]
@@ -405,8 +412,10 @@ func _physics_process(delta: float) -> void:
 				var atleta: Node3D = atletas[time][i]
 				if atleta != controlado:
 					_mover_ia(atleta, _alvo_da_ia(time, i), delta, _atributo(time, "velocidade"))
-		elif estado == Estado.PONTO:
-			# Todo mundo anda até o lugar do próximo saque enquanto o ponto é mostrado.
+		elif estado == Estado.PONTO and _tempo_desde_o_ponto() >= COMEMORACAO_ANTES_DE_VOLTAR:
+			# Depois de comemorar (ou reagir) um pouco, todo mundo anda até o
+			# lugar do próximo saque enquanto o ponto é mostrado. Só visual: no
+			# saque, _colocar_na_formacao põe cada um no lugar de qualquer jeito.
 			for i in 6:
 				_mover_ia(atletas[time][i], _alvo_depois_do_ponto(time, i), delta, PRESSA_DEPOIS_DO_PONTO)
 
@@ -415,6 +424,7 @@ func _physics_process(delta: float) -> void:
 		aneis_do_controlado[time].seguir(controlado)
 		_atualizar_anel_de_tempo(time)
 		_atualizar_mira(time, delta)
+	_atualizar_poses_de_espera()
 
 	# Antes do saque, a bola fica na mão de quem saca.
 	if estado == Estado.SAQUE:
@@ -659,6 +669,22 @@ func _animar(atleta: Node3D, lance: String) -> void:
 	var animador = _animador_de(atleta)
 	if animador:
 		animador.tocar(lance)
+
+
+## Parado em quadra, quem espera o saque ou o ataque do outro time fica
+## agachado na defesa ("espera_defesa"); quem está com a bola fica na "espera".
+func _atualizar_poses_de_espera() -> void:
+	var defendendo := -1
+	if estado == Estado.SAQUE:
+		defendendo = 1 - placar.quem_saca
+	elif estado == Estado.RALLY and ultimo_toque >= 0:
+		defendendo = 1 - ultimo_toque
+	for time in 2:
+		var pose := "espera_defesa" if time == defendendo else Animador.PARADO_NO_JOGO
+		for atleta in atletas[time]:
+			var animador = _animador_de(atleta)
+			if animador:
+				animador.parado_no_jogo = pose
 
 
 ## O animador do personagem do atleta, ou null (cápsula, sem personagem).
@@ -1147,7 +1173,6 @@ func _mergulhar(time: int) -> void:
 	var atleta := controlados[time]
 	if atleta == null or _esta_no_chao(atleta) or _esta_pulando(atleta):
 		return
-	_animar(atleta, "mergulho")
 	atleta.set_meta("no_chao_ate", _relogio + TEMPO_NO_CHAO * Atributos.escala_do_tempo_no_chao(times_em_jogo[time]))
 	var alcance := ALCANCE_DO_MERGULHO + Atributos.alcance_extra_do_mergulho(times_em_jogo[time])
 	var ate_a_bola := Vector2(bola.position.x - atleta.position.x, bola.position.z - atleta.position.z)
@@ -1155,12 +1180,22 @@ func _mergulhar(time: int) -> void:
 		and ate_a_bola.length() <= alcance
 	if alcanca:
 		_tentar_tocar(time, false, true)
-		# Se joga até perto da bola.
+		# Se joga até perto da bola. A animação vem depois do toque, pra
+		# manchete do passe não tomar o lugar do mergulho.
 		var passo := ate_a_bola.limit_length(maxf(ate_a_bola.length() - 0.5, 0.0))
 		_deslocar(atleta, time, passo)
+		_animar_mergulho(atleta, ate_a_bola)
 		return
 	var rumo := ate_a_bola.normalized() if bola.em_voo else _direcao_no_mundo(time).normalized()
 	_deslocar(atleta, time, rumo * MERGULHO_NO_VAZIO)
+	_animar_mergulho(atleta, rumo)
+
+
+## Mergulho pro lado do "rumo" (esquerda ou direita de quem mergulha).
+func _animar_mergulho(atleta: Node3D, rumo: Vector2) -> void:
+	var animador = _animador_de(atleta)
+	if animador:
+		animador.mergulhar(rumo)
 
 
 ## Move o atleta "passo" metros no chão, sem passar da rede nem sair da área.
@@ -1313,11 +1348,28 @@ func _encerrar_rally(vencedor: int, motivo: String) -> void:
 	# A faixa já diz quem pontuou e o motivo: a caixa do meio fica escondida
 	# (o texto continua lá, pros testes e pro robô).
 	caixa_da_mensagem.visible = false
-	for atleta in atletas[vencedor]:
-		_animar(atleta, "comemoracao_palmas")
+	_animar_fim_do_ponto(vencedor)
 	# Se foi o último ponto, o placar chama _ao_encerrar_partida aqui dentro.
 	placar.marcar_ponto(vencedor)
 	temporizador_do_ponto.start()
+
+
+## Segundos desde que o último ponto foi marcado (no relógio da partida).
+func _tempo_desde_o_ponto() -> float:
+	return _relogio - _relogio_do_ponto
+
+
+## Quem fez o ponto comemora e quem perdeu reage. Cada atleta faz uma
+## animação, e ela muda de um ponto pro outro (sem usar o sorteio, pra não
+## mudar as partidas com semente).
+func _animar_fim_do_ponto(vencedor: int) -> void:
+	_pontos_animados += 1
+	_relogio_do_ponto = _relogio
+	for i in 6:
+		var comemoracoes: Array = Animador.COMEMORACOES
+		var reacoes: Array = Animador.REACOES_AO_PONTO_PERDIDO
+		_animar(atletas[vencedor][i], comemoracoes[(i + _pontos_animados) % comemoracoes.size()])
+		_animar(atletas[1 - vencedor][i], reacoes[(i + _pontos_animados) % reacoes.size()])
 
 
 ## O que aparece pro jogador como motivo do ponto. Bola dentro não precisa
@@ -1502,6 +1554,8 @@ func _ao_encerrar_partida(vencedor: int) -> void:
 	faixa.mostrar("JOGO!", "%s venceu" % times_em_jogo[vencedor]["nome"], _cor_do_time(vencedor), vencedor)
 	for atleta in atletas[vencedor]:
 		_animar(atleta, "comemoracao_torcida")
+	for atleta in atletas[1 - vencedor]:
+		_animar(atleta, "ponto_perdido_frustrado")
 
 
 func _conectar_placar() -> void:

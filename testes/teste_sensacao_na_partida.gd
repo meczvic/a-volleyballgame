@@ -190,8 +190,14 @@ func _teste_atletas_andam_depois_do_ponto() -> void:
 	_verificar(partida.estado == partida.Estado.PONTO, "o ponto está sendo mostrado")
 	var alvo: Vector3 = partida._alvo_depois_do_ponto(1, partida.atletas[1].find(atleta))
 	var antes := atleta.position.distance_to(alvo)
-	_passar(partida, 0.5)
+	# Primeiro todo mundo fica parado comemorando (ou reagindo)...
+	_passar(partida, partida.COMEMORACAO_ANTES_DE_VOLTAR - 0.2)
+	var comemorando := atleta.position.distance_to(alvo)
+	_verificar(is_equal_approx(comemorando, antes), "logo depois do ponto o atleta fica parado (%.1f -> %.1f m)" % [antes, comemorando])
+	# ...e depois anda pro lugar do próximo saque, ainda na pausa do ponto.
+	_passar(partida, 0.7)
 	var depois := atleta.position.distance_to(alvo)
+	_verificar(partida.estado == partida.Estado.PONTO, "ainda é a pausa do ponto")
 	_verificar(depois < antes - 1.0, "o atleta anda pra formação durante a pausa do ponto (%.1f -> %.1f m)" % [antes, depois])
 	# Quem vai sacar anda pra trás da linha de fundo.
 	var sacador: Node3D = partida.atletas[0][partida.rodizios[0].atleta_na(1)]
