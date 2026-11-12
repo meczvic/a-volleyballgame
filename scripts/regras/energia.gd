@@ -4,6 +4,7 @@ extends RefCounted
 ## vira a SUPER CORTADA: rápida, certeira, difícil de bloquear e de receber.
 ## Só regras e números (sem tela), pra testar sozinho.
 
+const Ajustes := preload("res://scripts/comum/ajustes.gd")
 const TempoDoToque := preload("res://scripts/regras/tempo_do_toque.gd")
 const Qualidade := TempoDoToque.Qualidade
 
@@ -59,3 +60,9 @@ static func ganho_do_toque(tipo: String, qualidade: Qualidade) -> float:
 		"cortada":
 			return GANHO_DA_CORTADA[qualidade]
 	return 0.0
+
+
+## Número de equilíbrio: vem de dados/ajustes.json (grupo "energia") ou, se faltar lá,
+## do valor padrão que está no código.
+static func ajuste(chave: String, padrao: float) -> float:
+	return Ajustes.pegar("energia", chave, padrao)

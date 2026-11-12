@@ -777,7 +777,7 @@ func _tipo_do_bloqueio(ponto_na_rede: Vector3, lado_destino: float) -> Bloqueio:
 			# Bloqueio perfeito devolve mais forte e pro lado apertado.
 			var qualidade_do_bloqueio: Qualidade = _qualidade_do_bloqueio[time]
 			bola.forca_do_bloqueio = JeitosDeDefender.forca_do_rebote(qualidade_do_bloqueio)
-			bola.empurrao_do_bloqueio = float(_rumo_do_bloqueio[time]) * JeitosDeDefender.EMPURRAO_LATERAL_PERFEITO \
+			bola.empurrao_do_bloqueio = float(_rumo_do_bloqueio[time]) * JeitosDeDefender.valor("empurrao_lateral_perfeito", JeitosDeDefender.EMPURRAO_LATERAL_PERFEITO) \
 				if qualidade_do_bloqueio == Qualidade.PERFEITO else 0.0
 			return Bloqueio.DEVOLVE
 		resultado = Bloqueio.TOQUE
@@ -804,7 +804,7 @@ func _ao_bola_ser_bloqueada() -> void:
 	_bloqueio_do_ataque = 1.0
 	_forca_da_cortada = -1
 	_ponto_de_bloqueio = time_que_bloqueou
-	_ganhar_energia(time_que_bloqueou, Energia.GANHO_DO_BLOQUEIO_QUE_DEVOLVE)
+	_ganhar_energia(time_que_bloqueou, Energia.ajuste("ganho_do_bloqueio_que_devolve", Energia.GANHO_DO_BLOQUEIO_QUE_DEVOLVE))
 	impacto.bloqueio()
 	sons.tocar("bloqueio")
 	Estouro.mostrar(self, bola.position, _cor_do_time(time_que_bloqueou), 0.8)
@@ -827,7 +827,7 @@ func _ao_bola_tocar_bloqueio() -> void:
 	_bloqueio_do_ataque = 1.0
 	_forca_da_cortada = -1
 	_ponto_de_bloqueio = -1
-	_ganhar_energia(time_que_bloqueou, Energia.GANHO_DO_TOQUE_NO_BLOQUEIO)
+	_ganhar_energia(time_que_bloqueou, Energia.ajuste("ganho_do_toque_no_bloqueio", Energia.GANHO_DO_TOQUE_NO_BLOQUEIO))
 	impacto.ponto()
 	sons.tocar("bloqueio", 0.45)
 	AvisoDeToque.mostrar(self, bola.position + Vector3(0.0, 0.8, 0.0), "Toque no bloqueio", Color(0.95, 0.95, 0.95))
@@ -1033,7 +1033,7 @@ func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> bool:
 	# Energia do toque (a cortada soma depois de sair, pra não gastar o que acabou de ganhar).
 	var ganho := 0.0
 	if mergulho:
-		ganho = Energia.GANHO_DO_MERGULHO if qualidade != Qualidade.RUIM else 0.0
+		ganho = Energia.ajuste("ganho_do_mergulho", Energia.GANHO_DO_MERGULHO) if qualidade != Qualidade.RUIM else 0.0
 	elif atacando:
 		ganho = Energia.ganho_do_toque("cortada", qualidade) if numero != 2 and not atleta_que_tocou.get_meta("largada", false) else 0.0
 	elif numero == 1:
@@ -1088,7 +1088,7 @@ func _levantar(time: int, qualidade: Qualidade) -> void:
 			and passe != Qualidade.RUIM and qualidade != Qualidade.RUIM:
 		altura = TempoDoToque.ALTURA_DO_LEVANTAMENTO_RAPIDO
 		if passe != Qualidade.PERFEITO or qualidade != Qualidade.PERFEITO:
-			raio *= JeitosDeAtacar.ERRO_DO_RAPIDO_FORCADO
+			raio *= JeitosDeAtacar.valor("erro_do_rapido_forcado", JeitosDeAtacar.ERRO_DO_RAPIDO_FORCADO)
 	var erro := _erro_aleatorio(raio)
 	var alvo: Vector3 = alvos_de_ataque[time][escolhido] + Vector3(erro.x, 0.0, erro.y)
 	bola.lancar(alvo, altura)
@@ -1244,17 +1244,17 @@ func _cortar(time: int, qualidade: Qualidade = Qualidade.BOM) -> void:
 	var super_cortada: bool = energias[time].cheia() and qualidade != Qualidade.RUIM
 	var erro_da_mira := maxf(float(jeito["erro_da_mira"]) + float(efeito["erro_a_mais"]), 0.1)
 	if super_cortada:
-		erro_da_mira = minf(erro_da_mira, Energia.ERRO_DA_SUPER)
+		erro_da_mira = minf(erro_da_mira, Energia.ajuste("erro_da_super", Energia.ERRO_DA_SUPER))
 	var destino := _destino_na_quadra_do_outro(time, alvo, erro_da_mira)
 	miras[time].esconder()
 	var subida := maxf(float(jeito["subida"]) - Atributos.cortada_mais_forte(times_em_jogo[time]) - float(efeito["subida_a_menos"]), 0.05)
 	if super_cortada:
-		subida = minf(subida, Energia.SUBIDA_DA_SUPER)
+		subida = minf(subida, Energia.ajuste("subida_da_super", Energia.SUBIDA_DA_SUPER))
 	if qualidade != Qualidade.RUIM:
 		# Cortada ruim não aproveita o jeito: o bloqueio pega normal.
 		_bloqueio_do_ataque = float(efeito["bloqueio"])
 		if super_cortada:
-			_bloqueio_do_ataque = minf(_bloqueio_do_ataque, Energia.BLOQUEIO_DA_SUPER)
+			_bloqueio_do_ataque = minf(_bloqueio_do_ataque, Energia.ajuste("bloqueio_da_super", Energia.BLOQUEIO_DA_SUPER))
 		if efeito["nome"] != "":
 			_mostrar_mensagem(efeito["nome"], time)
 	var ponto_da_batida: Vector3 = bola.position
@@ -1649,8 +1649,8 @@ func _encerrar_rally(vencedor: int, motivo: String) -> void:
 	else:
 		faixa.mostrar("PONTO!", "%s  ·  %s" % [nome, explicacao], _cor_do_time(vencedor), vencedor)
 	sons.tocar("torcida", torcida)
-	_ganhar_energia(vencedor, Energia.GANHO_DO_PONTO)
-	_ganhar_energia(1 - vencedor, Energia.GANHO_DO_PONTO_PERDIDO)
+	_ganhar_energia(vencedor, Energia.ajuste("ganho_do_ponto", Energia.GANHO_DO_PONTO))
+	_ganhar_energia(1 - vencedor, Energia.ajuste("ganho_do_ponto_perdido", Energia.GANHO_DO_PONTO_PERDIDO))
 	# A faixa já diz quem pontuou e o motivo: a caixa do meio fica escondida
 	# (o texto continua lá, pros testes e pro robô).
 	caixa_da_mensagem.visible = false

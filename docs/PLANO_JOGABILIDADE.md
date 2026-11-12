@@ -20,7 +20,7 @@ Escrito em **12/11/2026**, a partir das respostas do Victor. Objetivo: deixar a 
 | **2. IA e modo contra o computador** | Dificuldades, menu de 1 jogador, IA dos companheiros, robô medindo o rally | **Feita em 12/11/2026**, testada no Godot; falta você jogar |
 | **3. Estratégia no rally** | Ataques novos (3A) e defesa nova (3B) | **Feita em 12/11/2026** (3A e 3B), falta você jogar |
 | **4. Super golpe** | Medidor de energia e super cortada | **Feita em 12/11/2026**, falta você jogar |
-| 5. Ajuste e arrumação | Números de equilíbrio em `dados/ajustes.json`, quebrar o `partida.gd` onde as etapas mexerem | Não começada |
+| **5. Ajuste e arrumação** | Números de equilíbrio em `dados/ajustes.json` (feito); dividir o `partida.gd` (ainda não) | **Feita em parte em 12/11/2026** |
 
 ## Etapa 1: o que mudou
 
@@ -136,3 +136,10 @@ Você deixou as decisões comigo ("seguir todas as etapas"), então escolhi o je
 - O computador também enche e usa a super.
 - Teste novo: `testes/teste_energia.gd`. Teste com semente regravado (3 rallies, maior com 47 toques).
 - **O que conferir jogando:** enche rápido ou devagar demais? A super é forte demais ou fraca? Faz falta um botão pra escolher quando usar?
+
+
+### Etapa 5: feita em parte (12/11/2026)
+- **`dados/ajustes.json`**: 29 números de equilíbrio das Etapas 3 e 4 (bloqueio de cada ataque, pipe, paralela, diagonal, bloqueio com tempo, mergulho arriscado, ganhos e força da super). Pra mudar um número, edite o JSON e rode o jogo; se a chave faltar ou o arquivo quebrar, vale o padrão que está no código. Leitor: `scripts/comum/ajustes.gd`. Os ganhos de energia por toque (passe, levantamento e cortada) ficam na tabela de `scripts/regras/energia.gd`.
+- **Teste novo:** `testes/teste_ajustes.gd` (o JSON bate com o código, mudar o JSON muda o jogo, sem a chave vale o padrão).
+- **A partida com semente não mudou** (os valores do JSON são os mesmos do código).
+- **Não fiz a divisão do `partida.gd`** (2.400 linhas). Os jeitos novos já nasceram em arquivos separados (`jeitos_de_atacar.gd`, `jeitos_de_defender.gd`, `energia.gd`), mas cortar o `partida.gd` ao meio mexe em muita coisa ligada, e sem você jogando pra conferir eu não quis arriscar. Fica pra depois do seu teste em casa.
