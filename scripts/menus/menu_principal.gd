@@ -1,11 +1,13 @@
 extends Control
-## Menu principal: partida rápida, modos que ainda vão chegar, controles e sair.
+## Menu principal: 1 jogador (contra o computador), 2 jogadores, Modo Caos,
+## modos que ainda vão chegar, controles e sair.
 ##
 ## Navega com setas, WASD ou direcional. Escolhe com Enter, J ou A.
 ## Volta com Esc ou B.
 
 const Estilo := preload("res://scripts/menus/estilo.gd")
 const Dados := preload("res://scripts/comum/dados.gd")
+const EntradaDoComputador := preload("res://scripts/entrada/entrada_do_computador.gd")
 
 const CENA_SELECAO := "res://cenas/selecao_de_times.tscn"
 
@@ -25,6 +27,9 @@ var _botoes: Array[Button] = []
 var _botao_controles: Button
 var _tela_de_controles: Control
 var _botao_voltar: Button
+var _botao_um_jogador: Button
+var _tela_de_dificuldade: Control
+var _botoes_de_dificuldade: Array[Button] = []
 var _saindo := false
 
 
@@ -35,6 +40,7 @@ func _ready() -> void:
 	_criar_titulo()
 	_criar_botoes()
 	_criar_tela_de_controles()
+	_criar_tela_de_dificuldade()
 	Estilo.aparecer(self)
 	_botoes[0].grab_focus.call_deferred()
 
@@ -43,17 +49,45 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _tela_de_controles.visible and event.is_action_pressed("ui_cancel"):
 		_fechar_controles()
 		get_viewport().set_input_as_handled()
+	elif _tela_de_dificuldade.visible and event.is_action_pressed("ui_cancel"):
+		_fechar_dificuldade()
+		get_viewport().set_input_as_handled()
 
 
 # --- Ações dos botões ---
 
-func _partida_rapida() -> void:
+func _um_jogador() -> void:
+	_tela_de_dificuldade.visible = true
+	# Começa no nível escolhido da última vez.
+	var foco := 0
+	var niveis := EntradaDoComputador.niveis()
+	for i in niveis.size():
+		if str(niveis[i].get("id", "")) == str(Configuracao.dificuldade):
+			foco = i
+	_botoes_de_dificuldade[mini(foco, _botoes_de_dificuldade.size() - 1)].grab_focus()
+
+
+func _escolher_dificuldade(id: String) -> void:
 	Configuracao.modo = "rapida"
+	Configuracao.contra_computador = true
+	Configuracao.dificuldade = id
+	_trocar_de_cena(CENA_SELECAO)
+
+
+func _fechar_dificuldade() -> void:
+	_tela_de_dificuldade.visible = false
+	_botao_um_jogador.grab_focus()
+
+
+func _dois_jogadores() -> void:
+	Configuracao.modo = "rapida"
+	Configuracao.contra_computador = false
 	_trocar_de_cena(CENA_SELECAO)
 
 
 func _modo_caos() -> void:
 	Configuracao.modo = "caos"
+	Configuracao.contra_computador = false
 	_trocar_de_cena(CENA_SELECAO)
 
 
@@ -118,7 +152,7 @@ func _criar_titulo() -> void:
 	var titulo := Estilo.rotulo("JOGO DE VÔLEI", 96, Estilo.TEXTO, true)
 	titulo.position = Vector2(110.0, 128.0)
 	add_child(titulo)
-	var subtitulo := Estilo.rotulo("6 contra 6  ·  2 jogadores  ·  anime", 30, Estilo.TEXTO_SUAVE)
+	var subtitulo := Estilo.rotulo("6 contra 6  ·  1 ou 2 jogadores  ·  anime", 30, Estilo.TEXTO_SUAVE)
 	subtitulo.position = Vector2(116.0, 248.0)
 	add_child(subtitulo)
 
@@ -133,14 +167,15 @@ func _criar_titulo() -> void:
 
 func _criar_botoes() -> void:
 	var lista := VBoxContainer.new()
-	lista.position = Vector2(110.0, 330.0)
+	lista.position = Vector2(110.0, 310.0)
 	lista.custom_minimum_size = Vector2(440.0, 0.0)
 	lista.add_theme_constant_override("separation", 14)
 	add_child(lista)
 
 	# [texto, ação]. Sem ação = ainda não existe (aparece apagado).
 	var opcoes := [
-		["PARTIDA RÁPIDA", _partida_rapida],
+		["1 JOGADOR", _um_jogador],
+		["2 JOGADORES", _dois_jogadores],
 		["MODO CAOS", _modo_caos],
 		["ONLINE  ·  EM BREVE", Callable()],
 		["CONTROLES", _mostrar_controles],
@@ -159,6 +194,8 @@ func _criar_botoes() -> void:
 		lista.add_child(botao)
 		if opcao[0] == "CONTROLES":
 			_botao_controles = botao
+		elif opcao[0] == "1 JOGADOR":
+			_botao_um_jogador = botao
 
 	# Do último botão, "baixo" volta pro primeiro (e vice-versa).
 	var primeiro := _botoes[0]
@@ -215,3 +252,67 @@ func _criar_tela_de_controles() -> void:
 	# Com a tela de controles aberta, o foco não sai do "Voltar".
 	for lado in ["focus_neighbor_top", "focus_neighbor_bottom", "focus_neighbor_left", "focus_neighbor_right", "focus_next", "focus_previous"]:
 		_botao_voltar.set(lado, NodePath("."))
+
+
+## Escolha da dificuldade do computador (abre no "1 JOGADOR").
+func _criar_tela_de_dificuldade() -> void:
+	_tela_de_dificuldade = Control.new()
+	_tela_de_dificuldade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_tela_de_dificuldade.visible = false
+	add_child(_tela_de_dificuldade)
+
+	var escurecer := ColorRect.new()
+	escurecer.color = Color(0.0, 0.0, 0.0, 0.75)
+	escurecer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_tela_de_dificuldade.add_child(escurecer)
+
+	var painel := Estilo.painel(Estilo.PAINEL, 0.0, 2, Estilo.PAINEL_CLARO)
+	painel.position = Vector2(400.0, 150.0)
+	painel.size = Vector2(800.0, 600.0)
+	_tela_de_dificuldade.add_child(painel)
+
+	var titulo := Estilo.rotulo("CONTRA O COMPUTADOR", 52, Estilo.TEXTO, true)
+	titulo.position = Vector2(40.0, 20.0)
+	painel.add_child(titulo)
+	var subtitulo := Estilo.rotulo("Escolha a dificuldade", 24, Estilo.TEXTO_SUAVE)
+	subtitulo.position = Vector2(44.0, 96.0)
+	painel.add_child(subtitulo)
+
+	var lista := VBoxContainer.new()
+	lista.position = Vector2(44.0, 150.0)
+	lista.add_theme_constant_override("separation", 10)
+	painel.add_child(lista)
+	_botoes_de_dificuldade = []
+	for nivel in EntradaDoComputador.niveis():
+		var botao := Estilo.botao(str(nivel.get("nome", "")).to_upper(), 30)
+		botao.custom_minimum_size = Vector2(320.0, 58.0)
+		var id := str(nivel.get("id", ""))
+		botao.pressed.connect(func() -> void: _escolher_dificuldade(id))
+		var linha := HBoxContainer.new()
+		linha.add_theme_constant_override("separation", 20)
+		linha.add_child(botao)
+		var descricao := Estilo.rotulo(str(nivel.get("descricao", "")), 20, Estilo.TEXTO_SUAVE)
+		descricao.custom_minimum_size = Vector2(370.0, 58.0)
+		descricao.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		descricao.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		linha.add_child(descricao)
+		lista.add_child(linha)
+		_botoes_de_dificuldade.append(botao)
+
+	var voltar := Estilo.botao("VOLTAR", 28)
+	voltar.custom_minimum_size = Vector2(240.0, 58.0)
+	voltar.pressed.connect(_fechar_dificuldade)
+	lista.add_child(voltar)
+	_botoes_de_dificuldade.append(voltar)
+
+	# O foco anda só entre os botões desta tela (e dá a volta).
+	for i in _botoes_de_dificuldade.size():
+		var botao := _botoes_de_dificuldade[i]
+		var anterior := _botoes_de_dificuldade[posmod(i - 1, _botoes_de_dificuldade.size())]
+		var proximo := _botoes_de_dificuldade[posmod(i + 1, _botoes_de_dificuldade.size())]
+		botao.focus_neighbor_top = botao.get_path_to(anterior)
+		botao.focus_neighbor_bottom = botao.get_path_to(proximo)
+		botao.focus_neighbor_left = NodePath(".")
+		botao.focus_neighbor_right = NodePath(".")
+		botao.focus_previous = botao.get_path_to(anterior)
+		botao.focus_next = botao.get_path_to(proximo)

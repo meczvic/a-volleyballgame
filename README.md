@@ -1,6 +1,6 @@
 # Jogo de Vôlei
 
-Vôlei de quadra 6 contra 6 em 3D, estilo anime cel-shaded, para 2 jogadores (no mesmo PC ou online). Feito em Godot 4.
+Vôlei de quadra 6 contra 6 em 3D, estilo anime cel-shaded, para 1 jogador (contra o computador, em Fácil, Normal ou Difícil) ou 2 jogadores (no mesmo PC ou online). Feito em Godot 4.
 
 Por enquanto o projeto tem: menu principal, seleção de times e estádio, a partida com 3 toques, bloqueio, rodízio, tela dividida e visual anime, pausa e tela de fim de jogo, com câmera que acompanha a bola, botão guardado quando você aperta um pouco cedo e toque no bloqueio. Os 42 atletas (6 por time, sem líbero) são personagens gerados pelo próprio jogo a partir de `dados/aparencia.json`, já animados: correm, param e fazem cada lance (veja `animacoes/LEIA-ME.md`). Quando o `.vrm` de um atleta existir em `personagens/`, o jogo usa ele no lugar do gerado (veja `producao/LEIA-ME.md`).
 
@@ -34,7 +34,8 @@ Nos menus: setas, WASD ou direcional navegam; **Enter, J ou A** escolhem; **Esc 
 
 ### Menus
 
-1. **Menu principal:** Partida rápida, Modo Caos, Controles e Sair. Online aparece como "em breve".
+1. **Menu principal:** 1 Jogador, 2 Jogadores, Modo Caos, Controles e Sair. Online aparece como "em breve".
+   - **1 Jogador:** escolha a dificuldade (**Fácil**, **Normal** ou **Difícil**) e jogue contra o computador em tela cheia. Na seleção de times, você escolhe o seu time e depois o do computador. O jeito de jogar de cada nível fica em `dados/dificuldades.json`.
    - **Modo Caos:** igual à partida rápida, mas antes do 1º saque e a cada 3 pontos cada jogador escolhe 1 de 3 cartas na metade dele (esquerda/direita escolhe, Passe confirma; 60 s, depois sorteia). Cada carta mostra a raridade (**prata**, **ouro** ou **prismática**, cada uma com moldura e fundo próprios), o atleta destaque do seu time fazendo a jogada da carta, o ícone do conjunto, o nome e o efeito. **Bloqueio** (L, 3 numérico ou Y) troca as 3 cartas por outras 3, uma vez por partida (`trocas_por_partida` em `dados/cartas.json`). Só 8 cartas já têm efeito (veja `docs/ESTADO_DO_PROJETO.md`).
 2. **Seleção de times:** cada jogador move o próprio cursor (Jogador 1: A/D, Jogador 2: setas, ou o direcional do seu controle) e confirma com **Passe** (J, 1 numérico ou A). Na metade de cada um aparecem o emblema e o nome do time, os atributos com ícone e barra, e o atleta destaque em 3D (o mesmo personagem da partida), que comemora quando você confirma. **Mergulho** (Espaço, 0 numérico ou B) desfaz.
 3. Com os dois confirmados, qualquer um escolhe o **estádio** (esquerda/direita) e confirma pra começar.
@@ -114,7 +115,7 @@ O jogo segue as regras oficiais (FIVB). Só o placar é do jogo: sets até 7, co
 
 ## Rodar os testes
 
-São 34 arquivos em `testes/`. Pra rodar todos de uma vez, no Git Bash (Windows) ou no terminal, dentro da pasta do projeto:
+São 35 arquivos em `testes/`. Pra rodar todos de uma vez, no Git Bash (Windows) ou no terminal, dentro da pasta do projeto:
 
 ```
 GODOT="/caminho/do/Godot_v4.7.2-stable_win64_console.exe" ferramentas/rodar_testes.sh
