@@ -1,0 +1,40 @@
+# Roda todos os testes de testes/ no Godot sem janela, a cada push no branch
+# principal e em todo PR. Se algum teste falhar, o GitHub marca com um X vermelho.
+# O mesmo script roda no PC: ferramentas/rodar_testes.sh
+name: Testes
+
+on:
+  push:
+    branches: [claude/project-thread-o4s5hf]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GODOT_VERSAO: "4.7.2"
+    steps:
+      - name: Baixar o projeto
+        uses: actions/checkout@v4
+
+      - name: Baixar o Godot
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/godot.zip" \
+            "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSAO}-stable/Godot_v${GODOT_VERSAO}-stable_linux.x86_64.zip"
+          unzip -q "$RUNNER_TEMP/godot.zip" -d "$RUNNER_TEMP/godot"
+          echo "GODOT=$RUNNER_TEMP/godot/Godot_v${GODOT_VERSAO}-stable_linux.x86_64" >> "$GITHUB_ENV"
+
+      # A pasta .godot guarda os .vrm e .fbx já importados. Guardar entre
+      # rodadas evita importar ~580 MB de personagens toda vez. Se um arquivo
+      # mudar, o Godot reimporta só ele.
+      - name: Reaproveitar a importação
+        uses: actions/cache@v4
+        with:
+          path: .godot
+          key: godot-importacao-${{ env.GODOT_VERSAO }}-${{ hashFiles('**/*.import') }}
+          restore-keys: godot-importacao-${{ env.GODOT_VERSAO }}-
+
+      - name: Rodar os testes
+        run: bash ferramentas/rodar_testes.sh

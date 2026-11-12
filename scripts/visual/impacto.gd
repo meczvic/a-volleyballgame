@@ -85,5 +85,9 @@ func _process(_delta: float) -> void:
 
 
 
+## Relógio de verdade contado em quadros de física: eles continuam no mesmo
+## ritmo com o jogo congelado (só o delta encolhe). Assim a congelada dura
+## sempre os mesmos quadros e a partida com semente fixa se repete igual
+## (com o relógio do sistema, ela durava quadros diferentes a cada vez).
 func _agora() -> float:
-	return Time.get_ticks_msec() / 1000.0
+	return float(Engine.get_physics_frames()) / Engine.physics_ticks_per_second

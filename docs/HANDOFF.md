@@ -55,7 +55,7 @@ for t in testes/teste_*.gd; do "$G" --headless --path . --script "$t"; done
 "$G" --position -30000,-30000 --path . --script res://ferramentas/robo.gd -- times=brasil,karasuno segundos=60 prints=<pasta>
 ```
 
-Cada teste precisa terminar com uma linha `OK:`. O código de saída é 0 mesmo quando falha, então procure `FALHOU` na saída.
+Cada teste precisa terminar com uma linha `OK:`. Desde 12/11/2026 há `ferramentas/rodar_testes.sh`, que roda todos e sai com erro se algum falhar (`GODOT="$G" ferramentas/rodar_testes.sh`). O laço acima não pega um teste travado: um erro de script deixa o Godot aberto para sempre.
 
 ## Próximos passos sugeridos
 

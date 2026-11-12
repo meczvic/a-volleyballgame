@@ -10,6 +10,10 @@ var times := ["karasuno", "nekoma"]
 var estadio := "ginasio_japones"
 ## "rapida" (partida normal) ou "caos" (com cartas, veja scripts/regras/cartas.gd).
 var modo := "rapida"
+## Semente do sorteio da partida (erro do saque, quem saca primeiro, cartas...).
+## -1: cada partida sai diferente. 0 ou mais: com as mesmas teclas nos mesmos
+## quadros, a partida se repete igual (o robô e os testes usam isso).
+var semente := -1
 
 
 func definir_partida(time_jogador_1: String, time_jogador_2: String, id_do_estadio: String) -> void:
