@@ -137,7 +137,7 @@ func _bloqueio_com(partida: Node, altura: float, desvio: float) -> int:
 			var lugar: Vector3 = partida._no_mundo(1, Vector2(0.0, 0.6))
 			atleta.position = Vector3(ponto.x + desvio, altura, lugar.z)
 			atleta.set_meta("tempo_do_pulo", partida.DURACAO_DO_PULO / 2.0)
-	return partida._tipo_do_bloqueio(ponto, signf(partida._no_mundo(1, Vector2(0.0, 1.0)).z))
+	return partida.bloqueios._tipo_do_bloqueio(ponto, signf(partida._no_mundo(1, Vector2(0.0, 1.0)).z))
 
 
 func _teste_bloqueio_no_alto_devolve() -> void:
@@ -171,7 +171,7 @@ func _teste_toque_no_bloqueio_nao_conta_toque() -> void:
 	# O time 1 atacou (3 toques) e o time 0 raspou no bloqueio.
 	partida.toques.registrar(1, 1)
 	partida.toques.registrar(1, 2)
-	partida._ao_bola_tocar_bloqueio()
+	partida.bloqueios._ao_bola_tocar_bloqueio()
 	_verificar(partida.estado == partida.Estado.RALLY, "o rally continua")
 	_verificar(partida.toques.time_com_a_bola == 0 and partida.toques.toques == 0,
 		"quem tocou no bloqueio ainda tem os 3 toques")
@@ -188,7 +188,7 @@ func _teste_atletas_andam_depois_do_ponto() -> void:
 	atleta.position = longe
 	partida._encerrar_rally(0, "dentro")
 	_verificar(partida.estado == partida.Estado.PONTO, "o ponto está sendo mostrado")
-	var alvo: Vector3 = partida._alvo_depois_do_ponto(1, partida.atletas[1].find(atleta))
+	var alvo: Vector3 = partida.ia._alvo_depois_do_ponto(1, partida.atletas[1].find(atleta))
 	var antes := atleta.position.distance_to(alvo)
 	# Primeiro todo mundo fica parado comemorando (ou reagindo)...
 	_passar(partida, partida.COMEMORACAO_ANTES_DE_VOLTAR - 0.2)
@@ -202,7 +202,7 @@ func _teste_atletas_andam_depois_do_ponto() -> void:
 	# Quem vai sacar anda pra trás da linha de fundo.
 	var sacador: Node3D = partida.atletas[0][partida.rodizios[0].atleta_na(1)]
 	var lugar_do_sacador: Vector3 = partida._no_mundo(0, partida.POSICAO_DO_SACADOR)
-	_verificar(partida._alvo_depois_do_ponto(0, partida.atletas[0].find(sacador)).is_equal_approx(lugar_do_sacador),
+	_verificar(partida.ia._alvo_depois_do_ponto(0, partida.atletas[0].find(sacador)).is_equal_approx(lugar_do_sacador),
 		"quem saca vai pro lugar do saque")
 	_fechar(partida)
 

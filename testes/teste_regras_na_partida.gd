@@ -105,7 +105,7 @@ func _teste_escalacao_e_formacao_no_saque() -> void:
 				"time %d: o levantador da escalação é o do elenco" % time)
 		_verificar(partida.rodizios[time].posicao_de(levantador) == 1, "time %d: levantador começa na 1" % time)
 		var ignorar := 1 if time == partida.placar.quem_saca else 0
-		var faltas: Array = Formacao.faltas(partida._lugares_do_time(time), ignorar)
+		var faltas: Array = Formacao.faltas(partida.ia._lugares_do_time(time), ignorar)
 		_verificar(faltas.is_empty(), "time %d começa na ordem do rodízio: %s" % [time, faltas])
 	_fechar(partida)
 
@@ -136,7 +136,7 @@ func _teste_quem_sacou_nao_toca_no_saque() -> void:
 	partida._sacar(0, false)
 	var sacador: Node3D = partida.controlados[0]
 	partida.bola.position = sacador.position + Vector3(0.0, 1.0, 0.0)
-	partida._tentar_tocar(0, false)
+	partida.lances._tentar_tocar(0, false)
 	_verificar(partida.estado == partida.Estado.RALLY, "o toque de quem sacou é ignorado")
 	_verificar(partida.toques.toques == 1 and partida.toques.time_com_a_bola == 0, "não contou toque")
 	_fechar(partida)
@@ -145,7 +145,7 @@ func _teste_quem_sacou_nao_toca_no_saque() -> void:
 func _teste_bloqueio_no_saque() -> void:
 	var partida = _nova_partida()
 	partida._sacar(0, false)
-	partida._ao_bola_ser_bloqueada()
+	partida.bloqueios._ao_bola_ser_bloqueada()
 	_verificar(_ponto_por(partida, "bloqueio no saque"), "bloquear o saque é falta")
 	_verificar(_pontos(partida) == [1, 0], "o ponto é de quem sacou")
 	_fechar(partida)
@@ -156,7 +156,7 @@ func _teste_ataque_no_saque() -> void:
 	partida._sacar(0, false)
 	# Quem recebe ataca o saque com a bola acima da rede, perto dela.
 	_preparar_toque(partida, 1, _na_posicao(partida, 1, 3), Vector2(0.0, 1.5), 3.0)
-	partida._tentar_tocar(1, true)
+	partida.lances._tentar_tocar(1, true)
 	_verificar(_ponto_por(partida, "ataque no saque"), "atacar o saque acima da rede é falta")
 	_fechar(partida)
 
@@ -168,7 +168,7 @@ func _teste_dois_toques() -> void:
 	var atleta := _na_posicao(partida, 0, 6)
 	partida.toques.registrar(0, partida.atletas[0].find(atleta))
 	_preparar_toque(partida, 0, atleta, Vector2(0.0, 5.0), 1.0)
-	partida._tentar_tocar(0, false)
+	partida.lances._tentar_tocar(0, false)
 	_verificar(_ponto_por(partida, "dois toques"), "o mesmo atleta tocar duas vezes seguidas é falta")
 	_verificar(_pontos(partida) == [0, 1], "o ponto é do outro time")
 	_fechar(partida)
@@ -178,7 +178,7 @@ func _teste_ataque_do_fundo() -> void:
 	var partida = _nova_partida()
 	_rally(partida)
 	_preparar_toque(partida, 0, _na_posicao(partida, 0, 6), Vector2(0.0, 1.5), 3.0)
-	partida._tentar_tocar(0, true)
+	partida.lances._tentar_tocar(0, true)
 	_verificar(_ponto_por(partida, "ataque do fundo"), "do fundo, atacar na frente da linha de 3 m é falta")
 	_fechar(partida)
 
@@ -187,7 +187,7 @@ func _teste_ataque_do_fundo_atras_da_linha_vale() -> void:
 	var partida = _nova_partida()
 	_rally(partida)
 	_preparar_toque(partida, 0, _na_posicao(partida, 0, 6), Vector2(0.0, 4.0), 3.0)
-	partida._tentar_tocar(0, true)
+	partida.lances._tentar_tocar(0, true)
 	_verificar(partida.estado == partida.Estado.RALLY, "do fundo, atacar atrás da linha de 3 m vale")
 	_verificar(partida.toques.time_com_a_bola == 0 and partida.toques.toques == 1, "contou o toque")
 	_fechar(partida)
@@ -198,7 +198,7 @@ func _teste_toque_na_rede_no_bloqueio() -> void:
 	_rally(partida)
 	var atleta := _na_posicao(partida, 0, 3)
 	atleta.position = partida._no_mundo(0, Vector2(0.0, 0.45))
-	partida._bloquear(0)
+	partida.bloqueios._bloquear(0)
 	_verificar(_ponto_por(partida, "toque na rede"), "pular colado na rede é toque na rede")
 	_verificar(_pontos(partida) == [0, 1], "o ponto é do outro time")
 	_fechar(partida)
@@ -222,7 +222,7 @@ func _teste_bloqueio_nao_conta_como_toque() -> void:
 	partida.ultimo_toque = 1
 	for atleta in [0, 1, 2]:
 		partida.toques.registrar(1, atleta)
-	partida._ao_bola_ser_bloqueada()
+	partida.bloqueios._ao_bola_ser_bloqueada()
 	_verificar(partida.estado == partida.Estado.RALLY, "bloqueio normal não encerra o rally")
 	_verificar(partida.toques.time_com_a_bola == 0 and partida.toques.toques == 0,
 		"depois do bloqueio, o time 0 ainda tem 3 toques")

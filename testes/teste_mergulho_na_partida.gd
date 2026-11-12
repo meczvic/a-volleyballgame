@@ -78,16 +78,16 @@ func _teste_mergulho_alcanca_bola_longe_e_baixa() -> void:
 	var partida = _nova_partida()
 	var atleta := _bola_ao_lado(partida, 2.6, 0.6)
 	var x_antes := atleta.position.x
-	partida._tentar_tocar(0, false)
+	partida.lances._tentar_tocar(0, false)
 	_verificar(partida.toques.toques == 0, "sem mergulho, bola a 2,6 m não é alcançada")
-	partida._mergulhar(0)
+	partida.lances._mergulhar(0)
 	_verificar(partida.toques.toques == 1, "mergulho alcança bola a 2,6 m")
 	_verificar(partida.qualidade_do_passe[0] == Q.RUIM, "bola de mergulho longe sai ruim")
 	_verificar(atleta.position.x > x_antes + 1.5, "atleta se joga na direção da bola")
 	_verificar(partida._esta_no_chao(atleta), "atleta fica no chão depois do mergulho")
 	# No chão, não se mexe nem mergulha de novo.
 	var antes := atleta.position
-	partida._mover_ia(atleta, antes + Vector3(3, 0, 0), 0.5)
+	partida.ia._mover_ia(atleta, antes + Vector3(3, 0, 0), 0.5)
 	_verificar(atleta.position == antes, "atleta no chão não anda")
 	partida._relogio += partida.TEMPO_NO_CHAO + 0.01
 	_verificar(not partida._esta_no_chao(atleta), "depois de um instante ele levanta")
@@ -97,7 +97,7 @@ func _teste_mergulho_alcanca_bola_longe_e_baixa() -> void:
 func _teste_mergulho_perto_vale_no_maximo_bom() -> void:
 	var partida = _nova_partida()
 	_bola_ao_lado(partida, 0.5, TempoDoToque.ALTURA_IDEAL["passe"], -5.0)
-	partida._mergulhar(0)
+	partida.lances._mergulhar(0)
 	_verificar(partida.toques.toques == 1, "mergulho perto toca na bola")
 	_verificar(partida.qualidade_do_passe[0] == Q.BOM, "mergulho na hora certa vale no máximo bom")
 	_fechar(partida)
@@ -107,7 +107,7 @@ func _teste_mergulho_no_vazio() -> void:
 	var partida = _nova_partida()
 	var atleta := _bola_ao_lado(partida, 6.0, 0.6)
 	var x_antes := atleta.position.x
-	partida._mergulhar(0)
+	partida.lances._mergulhar(0)
 	_verificar(partida.toques.toques == 0, "bola longe demais: mergulho não toca")
 	_verificar(atleta.position.x > x_antes + 1.0, "mesmo sem tocar, ele se joga")
 	_verificar(partida._esta_no_chao(atleta), "e fica no chão")
@@ -117,7 +117,7 @@ func _teste_mergulho_no_vazio() -> void:
 func _teste_bola_alta_nao_da_pra_mergulhar() -> void:
 	var partida = _nova_partida()
 	_bola_ao_lado(partida, 1.0, 2.5)
-	partida._mergulhar(0)
+	partida.lances._mergulhar(0)
 	_verificar(partida.toques.toques == 0, "bola alta não se pega de mergulho")
 	_fechar(partida)
 
@@ -125,12 +125,12 @@ func _teste_bola_alta_nao_da_pra_mergulhar() -> void:
 func _teste_defesa_aumenta_o_alcance_do_mergulho() -> void:
 	var forte = _nova_partida({ "defesa": 5 })
 	_bola_ao_lado(forte, 3.5, 0.6)
-	forte._mergulhar(0)
+	forte.lances._mergulhar(0)
 	_verificar(forte.toques.toques == 1, "defesa 5 alcança bola a 3,5 m")
 	_fechar(forte)
 	var fraco = _nova_partida({ "defesa": 1 })
 	_bola_ao_lado(fraco, 3.5, 0.6)
-	fraco._mergulhar(0)
+	fraco.lances._mergulhar(0)
 	_verificar(fraco.toques.toques == 0, "defesa 1 não alcança bola a 3,5 m")
 	_fechar(fraco)
 
@@ -139,7 +139,7 @@ func _distancia_andada(velocidade: int) -> float:
 	var partida = _nova_partida({ "velocidade": velocidade })
 	var atleta: Node3D = partida.atletas[0][partida.rodizios[0].atleta_na(6)]
 	var antes := atleta.position
-	partida._mover(atleta, 0, Vector2(1, 0), 0.1)
+	partida.ia._mover(atleta, 0, Vector2(1, 0), 0.1)
 	var andou := (atleta.position - antes).length()
 	_fechar(partida)
 	return andou

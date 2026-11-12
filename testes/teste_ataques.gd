@@ -111,7 +111,7 @@ func _teste_levantamento_rapido_forcado() -> void:
 	# Sem segurar o botão, passe bom + levantamento bom dá levantamento normal.
 	var partida = _nova_partida()
 	_montar_levantamento(partida, Qualidade.BOM)
-	partida._levantar(0, Qualidade.BOM)
+	partida.lances._levantar(0, Qualidade.BOM)
 	_verificar(not partida._ultimo_levantamento[0]["rapido"], "sem o botão extra o levantamento não é rápido")
 	_fechar(partida)
 
@@ -119,7 +119,7 @@ func _teste_levantamento_rapido_forcado() -> void:
 	partida = _nova_partida()
 	_montar_levantamento(partida, Qualidade.BOM)
 	partida._ao_receber_comando(1, "saque_flutuante")
-	partida._levantar(0, Qualidade.BOM)
+	partida.lances._levantar(0, Qualidade.BOM)
 	_verificar(partida._ultimo_levantamento[0]["rapido"], "segurando o botão extra o levantamento é rápido")
 	_verificar(partida._ultimo_levantamento[0]["nome"] == "Meio", "sem direção, o rápido vai pro meio")
 	# Soltou: o próximo levantamento volta ao normal.
@@ -131,7 +131,7 @@ func _teste_levantamento_rapido_forcado() -> void:
 	partida = _nova_partida()
 	_montar_levantamento(partida, Qualidade.RUIM)
 	partida._ao_receber_comando(1, "saque_flutuante")
-	partida._levantar(0, Qualidade.BOM)
+	partida.lances._levantar(0, Qualidade.BOM)
 	_verificar(not partida._ultimo_levantamento[0]["rapido"], "passe ruim não deixa levantar rápido")
 	_fechar(partida)
 
@@ -146,7 +146,7 @@ func _teste_bola_de_segunda() -> void:
 	ponto.y = 3.3
 	partida.bola.position = ponto
 	partida.bola._comecar_voo(ponto, Vector3.ZERO)
-	partida._comecar_cortada(0)
+	partida.lances._comecar_cortada(0)
 	_passar(partida, partida.TEMPO_ATE_A_BATIDA + PASSO)
 	_verificar(partida.toques.toques == 2, "a bola de segunda é o 2º toque")
 	var queda: Vector3 = partida.bola.ponto_previsto
@@ -175,7 +175,7 @@ func _alcance_do_bloqueio(fator: float) -> float:
 				atleta.set_meta("tempo_do_pulo", partida.DURACAO_DO_PULO / 2.0)
 			else:
 				partida.atletas[1][i].position = partida._no_mundo(1, Vector2(0.0, 8.0))
-		if partida._tipo_do_bloqueio(ponto, lado) == partida.Bloqueio.DEVOLVE:
+		if partida.bloqueios._tipo_do_bloqueio(ponto, lado) == partida.Bloqueio.DEVOLVE:
 			alcance = afastamento
 	_fechar(partida)
 	return alcance

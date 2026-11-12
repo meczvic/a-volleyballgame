@@ -70,8 +70,8 @@ func _teste_bate_no_alto_do_pulo() -> void:
 	var partida := _montar(4, Vector2(-3.0, 1.5), Vector2(-2.6, 1.3), 3.3)
 	var atleta: Node3D = partida.controlados[0]
 	var lancamentos: int = partida.bola.lancamentos
-	partida._comecar_cortada(0)
-	_verificar(partida._esta_pulando(atleta), "apertou Ataque com a bola ao alcance: sai do chão")
+	partida.lances._comecar_cortada(0)
+	_verificar(partida.bloqueios._esta_pulando(atleta), "apertou Ataque com a bola ao alcance: sai do chão")
 	_verificar(partida.toques.toques == 0, "a bola ainda não foi tocada no botão")
 	_passar(partida, partida.TEMPO_ATE_A_BATIDA * 0.5)
 	_verificar(partida.bola.lancamentos == lancamentos, "na metade da subida ainda não bateu")
@@ -86,8 +86,8 @@ func _teste_bate_no_alto_do_pulo() -> void:
 func _teste_bola_longe_nao_pula() -> void:
 	var partida := _montar(4, Vector2(-3.0, 1.5), Vector2(3.0, 1.5), 3.3)
 	var atleta: Node3D = partida.controlados[0]
-	partida._comecar_cortada(0)
-	_verificar(not partida._esta_pulando(atleta), "bola longe: não pula")
+	partida.lances._comecar_cortada(0)
+	_verificar(not partida.bloqueios._esta_pulando(atleta), "bola longe: não pula")
 	_verificar(partida.cortadas[0].is_empty(), "bola longe: não tem cortada")
 	_fechar(partida)
 
@@ -96,7 +96,7 @@ func _teste_bola_longe_nao_pula() -> void:
 ## pra encontrar a bola: vale, porque a regra olha de onde ele saiu.
 func _teste_ataque_do_fundo_vale_de_onde_saiu() -> void:
 	var partida := _montar(6, Vector2(0.0, 3.4), Vector2(0.0, 2.0), 3.3)
-	partida._comecar_cortada(0)
+	partida.lances._comecar_cortada(0)
 	_passar(partida, partida.TEMPO_ATE_A_BATIDA + PASSO)
 	_verificar(partida.estado == partida.Estado.RALLY, "saiu de trás da linha: o ataque do fundo vale")
 	_verificar(partida.toques.toques == 1, "contou o toque")
@@ -105,7 +105,7 @@ func _teste_ataque_do_fundo_vale_de_onde_saiu() -> void:
 
 func _teste_rally_acaba_antes_da_batida() -> void:
 	var partida := _montar(4, Vector2(-3.0, 1.5), Vector2(-2.6, 1.3), 3.3)
-	partida._comecar_cortada(0)
+	partida.lances._comecar_cortada(0)
 	partida._encerrar_rally(1, "teste")
 	var lancamentos: int = partida.bola.lancamentos
 	_passar(partida, partida.TEMPO_ATE_A_BATIDA + PASSO)

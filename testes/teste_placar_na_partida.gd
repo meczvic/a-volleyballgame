@@ -81,7 +81,7 @@ func _teste_ace() -> void:
 func _teste_ponto_de_bloqueio() -> void:
 	var partida = _nova_partida()
 	partida.ultimo_toque = 0
-	partida._ao_bola_ser_bloqueada()
+	partida.bloqueios._ao_bola_ser_bloqueada()
 	partida._encerrar_rally(1, "dentro")
 	_verificar(partida.interface.faixa.texto() == "BLOQUEIO!", "bola bloqueada que cai é BLOQUEIO! (%s)" % partida.interface.faixa.texto())
 	_fechar(partida)

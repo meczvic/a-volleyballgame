@@ -111,7 +111,7 @@ func _physics_process(delta: float) -> void:
 	if partida == null or partida.bola == null:
 		return
 	_relogio += delta
-	if partida._escolhendo_cartas():
+	if partida.caos._escolhendo_cartas():
 		return
 	var time := jogador - 1
 	match partida.estado:
@@ -279,7 +279,7 @@ func _tentar_ataque(time: int, atleta: Node3D) -> void:
 	var prevista: Vector3 = bola.posicao_daqui_a(partida.TEMPO_ATE_A_BATIDA)
 	var no_chao := Vector2(prevista.x - atleta.position.x, prevista.z - atleta.position.z).length()
 	var alcanca: bool = no_chao <= partida.ALCANCE and prevista.y >= partida.ALTURA_MINIMA_CORTADA \
-		and prevista.y <= partida.ALTURA_MAXIMA_CORTADA and not partida._esta_pulando(atleta)
+		and prevista.y <= partida.ALTURA_MAXIMA_CORTADA and not partida.bloqueios._esta_pulando(atleta)
 	var erro := TempoDoToque.erro_do_botao("cortada", bola.position, bola.velocidade_atual(), partida.TEMPO_ATE_A_BATIDA, bola.gravidade)
 	if alcanca and erro <= float(_plano.get("tempo", 0.0)):
 		_escolher_ataque(time)

@@ -172,7 +172,7 @@ func _cartas_fixas(partida: Node) -> Node:
 	if escolha.get_method_argument_count("configurar") >= 10:
 		argumentos.append(partida.times_em_jogo)
 		argumentos.append([1, 1])
-		argumentos.append(partida._trocar_cartas)
+		argumentos.append(partida.caos._trocar_cartas)
 	escolha.callv("configurar", argumentos)
 	partida.escolha_de_cartas = escolha
 	return escolha

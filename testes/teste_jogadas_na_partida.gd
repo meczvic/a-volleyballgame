@@ -98,13 +98,13 @@ func _bloqueia(ponto: Vector3) -> bool:
 			var lugar: Vector3 = partida._no_mundo(1, Vector2(0.0, 0.6))
 			atleta.position = Vector3(ponto.x, partida.ALTURA_DO_PULO, lugar.z)
 			atleta.set_meta("tempo_do_pulo", partida.DURACAO_DO_PULO / 2.0)
-	var bloqueou: bool = partida._tem_bloqueio(ponto, signf(partida._no_mundo(1, Vector2(0.0, 1.0)).z))
+	var bloqueou: bool = partida.bloqueios._tem_bloqueio(ponto, signf(partida._no_mundo(1, Vector2(0.0, 1.0)).z))
 	_fechar(partida)
 	return bloqueou
 
 
 func _atacar(partida: Node, largada: bool) -> void:
-	partida._comecar_cortada(0)
+	partida.lances._comecar_cortada(0)
 	if largada:
 		partida._ao_receber_comando(1, "passe")
 
@@ -163,13 +163,13 @@ func _teste_bloqueio_le_o_levantamento() -> void:
 	var x_do_levantamento: float = partida.bola.posicao_daqui_a(ate).x
 	var central := _bloqueador(partida, "central")
 	_verificar(central >= 0, "time 1 tem central na rede")
-	var alvo: Vector3 = partida._alvo_da_ia(1, central)
+	var alvo: Vector3 = partida.ia._alvo_da_ia(1, central)
 	_verificar(absf(alvo.x - x_do_levantamento) < 0.3, "central corre pra onde foi o levantamento")
 	# Um dos da ponta fica longe: só ajuda quem está do lado da bola.
 	var longe := 0
 	for funcao in ["ponteiro", "oposto"]:
 		var i := _bloqueador(partida, funcao)
-		if i >= 0 and absf(partida._alvo_da_ia(1, i).x - x_do_levantamento) > 3.0:
+		if i >= 0 and absf(partida.ia._alvo_da_ia(1, i).x - x_do_levantamento) > 3.0:
 			longe += 1
 	_verificar(longe == 1, "o bloqueador do outro lado fica no lugar dele")
 	_fechar(partida)

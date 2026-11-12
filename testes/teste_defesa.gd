@@ -124,7 +124,7 @@ func _por_na_rede(partida: Node) -> Array[int]:
 func _pulando(partida: Node, indices: Array[int]) -> int:
 	var total := 0
 	for i in indices:
-		if partida._esta_pulando(partida.atletas[1][i]):
+		if partida.bloqueios._esta_pulando(partida.atletas[1][i]):
 			total += 1
 	return total
 
@@ -137,7 +137,7 @@ func _teste_quantos_pulam_na_partida() -> void:
 		var da_rede := _por_na_rede(partida)
 		var tela_y: float = float(caso[0]) * partida._lado(0) * float(partida._lado_da_camera(1))
 		partida.entradas[1].direcao = Vector2(0.0, tela_y)
-		partida._bloquear(1)
+		partida.bloqueios._bloquear(1)
 		_verificar(_pulando(partida, da_rede) == caso[1],
 			"direção %.0f: %d pulam (pularam %d)" % [caso[0], caso[1], _pulando(partida, da_rede)])
 		_fechar(partida)
@@ -145,13 +145,13 @@ func _teste_quantos_pulam_na_partida() -> void:
 
 func _teste_qualidade_do_botao_na_partida() -> void:
 	var partida = _nova_partida()
-	_verificar(partida._qualidade_do_botao_do_bloqueio(1) == Qualidade.RUIM, "sem ataque vindo o bloqueio sai ruim")
+	_verificar(partida.bloqueios._qualidade_do_botao_do_bloqueio(1) == Qualidade.RUIM, "sem ataque vindo o bloqueio sai ruim")
 	var atacante: Node3D = partida.atletas[0][0]
 	partida.cortadas[0] = { "atleta": atacante, "tempo": 0.1, "de": Vector2.ZERO }
-	_verificar(partida._qualidade_do_botao_do_bloqueio(1) == Qualidade.PERFEITO,
+	_verificar(partida.bloqueios._qualidade_do_botao_do_bloqueio(1) == Qualidade.PERFEITO,
 		"apertar logo depois do pulo do atacante é perfeito")
 	partida.cortadas[0] = { "atleta": atacante, "tempo": 0.0, "de": Vector2.ZERO }
-	_verificar(partida._qualidade_do_botao_do_bloqueio(1) != Qualidade.RUIM, "e junto com o pulo ainda é bom")
+	_verificar(partida.bloqueios._qualidade_do_botao_do_bloqueio(1) != Qualidade.RUIM, "e junto com o pulo ainda é bom")
 	partida.cortadas[0] = {}
 	_fechar(partida)
 
@@ -167,7 +167,7 @@ func _teste_bloqueio_ruim_so_toca() -> void:
 			atleta.set_meta("tempo_do_pulo", partida.DURACAO_DO_PULO / 2.0)
 		partida._qualidade_do_bloqueio[1] = qualidade
 		var lado := signf(partida._no_mundo(1, Vector2(0.0, 1.0)).z)
-		resultados.append(partida._tipo_do_bloqueio(Vector3(0.0, 2.4, 0.0), lado))
+		resultados.append(partida.bloqueios._tipo_do_bloqueio(Vector3(0.0, 2.4, 0.0), lado))
 		_fechar(partida)
 	_verificar(resultados[0] == 1, "bloqueio bom devolve a bola")
 	_verificar(resultados[1] == 2, "bloqueio ruim só raspa (toque)")
@@ -177,7 +177,7 @@ func _teste_mergulho_no_vazio_demora() -> void:
 	var partida = _nova_partida()
 	partida.bola.em_voo = false
 	var atleta: Node3D = partida.controlados[0]
-	partida._mergulhar(0)
+	partida.lances._mergulhar(0)
 	var demora: float = float(atleta.get_meta("no_chao_ate")) - partida._relogio
 	_verificar(demora > partida.TEMPO_NO_CHAO * 1.2, "mergulho no vazio fica mais tempo no chão (%.2f s)" % demora)
 	_fechar(partida)

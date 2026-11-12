@@ -109,7 +109,7 @@ func _teste_super_cortada() -> void:
 		partida.bola._comecar_voo(ponto, Vector3.ZERO)
 		if cheia:
 			partida.energias[0].encher(1.0)
-		_verificar(partida._comecar_cortada(0), "a cortada começa")
+		_verificar(partida.lances._comecar_cortada(0), "a cortada começa")
 		atleta.set_meta("qualidade_da_cortada", Qualidade.BOM)
 		_passar(partida, partida.TEMPO_ATE_A_BATIDA + PASSO)
 		_verificar(partida.toques.toques == 3, "a cortada saiu no 3º toque")

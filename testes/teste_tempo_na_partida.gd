@@ -73,7 +73,7 @@ func _teste_passe_na_hora_e_perfeito() -> void:
 	var partida = _nova_partida()
 	var atleta := _atleta(partida, 6)
 	_bola_no_atleta(partida, atleta, TempoDoToque.ALTURA_IDEAL["passe"], -5.0)
-	partida._tentar_tocar(0, false)
+	partida.lances._tentar_tocar(0, false)
 	_verificar(partida.qualidade_do_passe[0] == Q.PERFEITO, "passe na altura certa é perfeito")
 	var alvo: Vector3 = partida._no_mundo(0, partida.PONTO_DO_LEVANTADOR)
 	var queda: Vector3 = partida.bola.ponto_previsto
@@ -87,12 +87,12 @@ func _teste_passe_cedo_e_ruim_e_limita_o_levantamento() -> void:
 	var atleta := _atleta(partida, 6)
 	# Bola ainda a 2,9 m, caindo devagar: falta muito pra altura do passe.
 	_bola_no_atleta(partida, atleta, 2.9, -0.5)
-	partida._tentar_tocar(0, false)
+	partida.lances._tentar_tocar(0, false)
 	_verificar(partida.qualidade_do_passe[0] == Q.RUIM, "passe muito cedo é ruim")
 	# Sem direção, passe ruim faz o levantador mandar na ponta (não no meio).
-	var escolhido: int = partida._ataque_escolhido(0, Q.RUIM)
+	var escolhido: int = partida.lances._ataque_escolhido(0, Q.RUIM)
 	_verificar(partida.ATAQUES[escolhido]["nome"] == "Ponta", "passe ruim: levantamento na ponta")
-	_verificar(partida._ataque_escolhido(0, Q.BOM) == partida.ATAQUE_PADRAO, "passe bom: levantamento no meio")
+	_verificar(partida.lances._ataque_escolhido(0, Q.BOM) == partida.ATAQUE_PADRAO, "passe bom: levantamento no meio")
 	_fechar(partida)
 
 
@@ -106,7 +106,7 @@ func _teste_levantamento_rapido() -> void:
 	partida.toques.registrar(0, partida.atletas[0].find(passador))
 	partida.qualidade_do_passe[0] = Q.PERFEITO
 	_bola_no_atleta(partida, levantador, TempoDoToque.ALTURA_IDEAL["levantamento"], -4.0)
-	partida._tentar_tocar(0, false)
+	partida.lances._tentar_tocar(0, false)
 	# A mensagem do levantamento aparece na metade da tela do time que levantou.
 	_verificar(partida.interface.rotulos_do_time[0].text.begins_with("Rápido"),
 		"passe e levantamento perfeitos dão o rápido (%s)" % partida.interface.rotulos_do_time[0].text)
@@ -122,7 +122,7 @@ func _teste_cortada_ruim_sai_fraca() -> void:
 		atacante.position = partida._no_mundo(0, Vector2(-3.0, 1.2))
 		_bola_no_atleta(partida, atacante, TempoDoToque.ALTURA_IDEAL["cortada"], -3.0)
 		atacante.set_meta("qualidade_da_cortada", qualidade)
-		partida._tentar_tocar(0, true)
+		partida.lances._tentar_tocar(0, true)
 		subidas[qualidade] = partida.bola.velocidade_atual().y
 		_verificar(not atacante.has_meta("qualidade_da_cortada"), "a qualidade da cortada é usada uma vez só")
 		Engine.time_scale = 1.0
@@ -140,7 +140,7 @@ func _teste_qualidade_da_cortada_no_botao() -> void:
 	var vy := -3.0
 	var altura: float = TempoDoToque.ALTURA_IDEAL["cortada"] - vy * t + 0.5 * 9.8 * t * t
 	_bola_no_atleta(partida, atacante, altura, vy)
-	partida._comecar_cortada(0)
+	partida.lances._comecar_cortada(0)
 	_verificar(atacante.get_meta("qualidade_da_cortada", -1) == Q.PERFEITO, "apertar Ataque na hora certa é perfeito")
 	Engine.time_scale = 1.0
 	_fechar(partida)
