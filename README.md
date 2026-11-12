@@ -114,32 +114,27 @@ O jogo segue as regras oficiais (FIVB). Só o placar é do jogo: sets até 7, co
 
 ## Rodar os testes
 
-No terminal, dentro da pasta do projeto:
+São 33 arquivos em `testes/`. Pra rodar todos de uma vez, no Git Bash (Windows) ou no terminal, dentro da pasta do projeto:
 
 ```
-godot --headless --script res://testes/teste_placar.gd
-godot --headless --script res://testes/teste_trajetoria.gd
-godot --headless --script res://testes/teste_toques.gd
-godot --headless --script res://testes/teste_escolha_ataque.gd
-godot --headless --script res://testes/teste_rodizio.gd
-godot --headless --script res://testes/teste_escalacao.gd
-godot --headless --script res://testes/teste_formacao.gd
-godot --headless --script res://testes/teste_regras_na_partida.gd
-godot --headless --script res://testes/teste_selecao.gd
-godot --headless --script res://testes/teste_dados.gd
-godot --headless --script res://testes/teste_animacoes.gd
-godot --headless --script res://testes/teste_animador.gd
+GODOT="/caminho/do/Godot_v4.7.2-stable_win64_console.exe" ferramentas/rodar_testes.sh
 ```
 
-Ou todos de uma vez (31 arquivos, incluindo tempo do toque, mira, cortada, atributos, mergulho, jogadas e placar):
+O script importa os arquivos, roda cada teste e mostra `ok` ou `FALHOU` com o motivo. No fim diz quantos passaram e sai com erro se algum falhou. Pra rodar só alguns, passe parte do nome: `ferramentas/rodar_testes.sh placar mira`.
+
+Um teste só ([exemplo](testes/teste_placar.gd)):
 
 ```
-for t in testes/teste_*.gd; do godot --headless --script res://$t; done
+godot --headless --path . --script res://testes/teste_placar.gd
 ```
 
-Cada um deve terminar com uma linha começando com `OK:`.
+Cada teste termina com uma linha começando com `OK:` (ou `FALHOU:`).
 
-Todos os testes passam no Godot 4.7.2 (antes, 4.3), e a partida, os menus e a seleção de times rodam sem erros (testado em 09/11/2026). Com as regras oficiais, um robô jogou partidas inteiras dos dois lados (3 sets) sem erro.
+**No GitHub:** a cada push no branch principal e em todo PR, os mesmos testes rodam sozinhos (`.github/workflows/testes.yml`). Um X vermelho no PR quer dizer que algum teste falhou.
+
+**Partida repetível:** `teste_partida_com_semente.gd` faz o robô jogar 90 s com a semente 42 e confere se o resultado é sempre o mesmo. Se você mudou o jogo de propósito (um número de equilíbrio, uma regra), ele vai falhar: rode o comando que está no começo do arquivo e cole o resultado novo nele.
+
+Todos os testes passam no Godot 4.7.2 (testado em 12/11/2026), e um robô jogou partidas dos dois lados sem erro.
 
 ## Próximos passos
 

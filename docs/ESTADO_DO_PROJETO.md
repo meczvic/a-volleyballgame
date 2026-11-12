@@ -28,7 +28,14 @@ Material de apoio (privado, no Claude): [documento de design](https://claude.ai/
 
 ## 2. O que já foi feito
 
-Tudo abaixo está neste repositório. Em 09/11/2026, os **23 testes automáticos** (pasta `testes/`) passam no Godot 4.7.2, e um robô jogou partidas completas (3 sets) dos dois lados, passando pelos menus, pausa e fim de jogo, sem erro.
+Tudo abaixo está neste repositório. Em 12/11/2026, os **33 testes automáticos** (pasta `testes/`) passam no Godot 4.7.2 (`ferramentas/rodar_testes.sh` roda todos), e um robô jogou partidas dos dois lados sem erro.
+
+### Rede de segurança (Fases A e B do plano de melhorias, 12/11/2026)
+- **Todos os testes de uma vez:** `ferramentas/rodar_testes.sh` (veja a seção 6). Falha de verdade: confere a linha `OK:`, `FALHOU`, erro de script, código de saída e limite de tempo.
+- **Testes no GitHub:** `.github/workflows/testes.yml` roda o mesmo script com o Godot 4.7.2 a cada push no branch principal e em todo PR.
+- **Sorteio com semente:** tudo que muda o jogo (erro do saque e dos toques, quem saca primeiro, cartas) sai de `partida.sorteio`, com a semente de `Configuracao.semente` (-1 = cada partida diferente). O congelamento do impacto passou a contar quadros de física em vez do relógio do sistema. Com a mesma semente e `--fixed-fps 60`, a partida do robô se repete igual.
+- **Teste de regressão:** `teste_partida_com_semente.gd` (robô, semente 42, 90 s). Rode antes e depois de mexer na estrutura da partida.
+- Plano completo em [HANDOFF_MELHORIAS.md](HANDOFF_MELHORIAS.md).
 
 ### Menus e telas
 - Menu principal (Partida rápida, Modo Caos, Controles, Sair; Online aparece como "em breve").
@@ -206,7 +213,9 @@ Leia esta seção inteira antes de mexer no código.
 - Passo a passo completo em `animacoes/LEIA-ME.md`.
 
 ### Testes
-- São 31 arquivos em `testes/` (`teste_atleta_anime.gd` confere o atleta no estilo anime: normais pra fora, rosto desenhado, cabelo em mechas e os 42 montando; `teste_pose_de_espera.gd` confere a pose de espera com os pés no chão; `teste_cenario.gd` abre a partida nos 4 estádios e confere rede, árbitros, pessoas e as camadas de cada câmera; `teste_tela_de_selecao.gd` e `teste_tela_de_cartas.gd` abrem a tela e apertam os botões dos dois jogadores; `teste_elenco_em_quadra.gd` confere os 42 atletas: malha com pesos, esqueleto, trilhas das animações e pose que se mexe). Rode todos, dentro da pasta do projeto:
+- **Rodar todos:** `GODOT=/caminho/do/godot ferramentas/rodar_testes.sh` (no Windows, pelo Git Bash). Importa os arquivos, roda cada teste com limite de tempo (`LIMITE_POR_TESTE`, padrão 600 s) e sai com erro se algum falhar. Um teste passa quando termina sozinho, sai com código 0, imprime `OK:` e não imprime `FALHOU` nem `SCRIPT ERROR`. **Cuidado:** um erro de script trava o Godot sem fechar; por isso o limite de tempo. `ferramentas/rodar_testes.sh mira placar` roda só os que têm essas palavras no nome; `SEM_IMPORTAR=1` pula a importação.
+- **No GitHub:** `.github/workflows/testes.yml` roda o mesmo script em todo PR e a cada push no branch principal.
+- São 33 arquivos em `testes/` (`teste_partida_com_semente.gd` faz o robô jogar 90 s com a semente 42 e compara com o resultado gravado: se mudar o jogo de propósito, regrave com o comando do começo do arquivo; `teste_atleta_anime.gd` confere o atleta no estilo anime: normais pra fora, rosto desenhado, cabelo em mechas e os 42 montando; `teste_pose_de_espera.gd` confere a pose de espera com os pés no chão; `teste_cenario.gd` abre a partida nos 4 estádios e confere rede, árbitros, pessoas e as camadas de cada câmera; `teste_tela_de_selecao.gd` e `teste_tela_de_cartas.gd` abrem a tela e apertam os botões dos dois jogadores; `teste_elenco_em_quadra.gd` confere os 42 atletas: malha com pesos, esqueleto, trilhas das animações e pose que se mexe). Rode todos, dentro da pasta do projeto:
 
 ```
 for t in testes/teste_*.gd; do godot --headless --script res://$t; done
@@ -234,7 +243,7 @@ godot --headless --path . --script res://ferramentas/robo.gd -- times=karasuno,n
 VK_ICD_FILENAMES=... xvfb-run -a -s "-screen 0 1600x900x24" godot --rendering-driver vulkan --path . --write-movie partida.avi --fixed-fps 30 --script res://ferramentas/robo.gd -- times=brasil,brasil estadio=arena_brasileira segundos=60 prints=/tmp/prints
 ```
 
-  Opções: `estadio=`, `saque=0|1`, `erro=0..1`, `prints=<pasta>` (um PNG por segundo), `closeup=<pasta>` (recortes ampliados do atleta do J1 nos lances). No fim imprime placar, lances e o **tempo médio por quadro**. Detalhe que custou tempo: soltar e apertar a mesma ação no mesmo quadro não conta como `is_action_just_pressed`; o robô aperta num quadro e solta no seguinte. Pra menus e pausa (`ui_accept`, `pausa`) use `InputEventAction` com `Input.parse_input_event`.
+  Opções: `estadio=`, `saque=0|1`, `erro=0..1`, `semente=<número>` (com `--fixed-fps 60`, repete a mesma partida), `prints=<pasta>` (um PNG por segundo), `closeup=<pasta>` (recortes ampliados do atleta do J1 nos lances). No fim imprime placar, lances, onde a bola caiu em cada rally e o **tempo médio por quadro**. O tempo por quadro só vale com a janela visível: com `--position -30000,-30000` (janela fora da tela) o Windows deixa o jogo lento e o número sai muito alto (~200 ms em vez de ~12 ms); com `--fixed-fps` ou `--headless` ele também não serve. Detalhe que custou tempo: soltar e apertar a mesma ação no mesmo quadro não conta como `is_action_just_pressed`; o robô aperta num quadro e solta no seguinte. Pra menus e pausa (`ui_accept`, `pausa`) use `InputEventAction` com `Input.parse_input_event`.
 - A mensagem `ERR_CANT_OPEN ... audio_driver_alsa` só quer dizer que não há placa de som. Pode ignorar.
 - Na primeira abertura o Godot cria `.godot/`, que fica fora do Git. A importação dos `.fbx` e `.vrm` demora na primeira vez.
 
