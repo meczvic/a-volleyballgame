@@ -61,6 +61,9 @@ var _trocas: Array = [0, 0]
 var _sortear_troca: Callable
 var _botoes: Array = [null, null]
 var _textos_dos_botoes: Array = [null, null]
+## Sorteio da partida (com a semente dela), pra carta de quem não escolheu a
+## tempo. Sem ele, usa um sorteio próprio.
+var sorteio: RandomNumberGenerator = null
 
 
 ## "opcoes": para cada jogador, a lista de cartas (dicionários de dados/cartas.json).
@@ -163,7 +166,9 @@ func _process(delta: float) -> void:
 		# Acabou o tempo: quem não escolheu ganha uma carta sorteada.
 		for jogador in 2:
 			if not _pronto[jogador]:
-				_indice[jogador] = randi() % (_opcoes[jogador] as Array).size()
+				if sorteio == null:
+					sorteio = RandomNumberGenerator.new()
+				_indice[jogador] = sorteio.randi_range(0, (_opcoes[jogador] as Array).size() - 1)
 				_confirmar(jogador)
 	if _pronto[0] and _pronto[1] and _fechando < 0.0:
 		_fechando = PAUSA_DO_FIM

@@ -208,6 +208,10 @@ const CAMADA_DO_ANEL_DE_TEMPO := [11, 12]
 @export var visual_anime := true
 
 var placar = Placar.new()
+## Todo sorteio que muda o jogo (erro do saque e do toque, quem saca primeiro,
+## cartas) sai daqui, nunca do randf() solto. Com Configuracao.semente fixa, a
+## partida se repete igual. Sorteios só visuais (tremor, faíscas) ficam de fora.
+var sorteio := RandomNumberGenerator.new()
 var toques = Toques.new()
 var rodizios: Array = [Rodizio.new(), Rodizio.new()]
 var estado := Estado.SAQUE
@@ -744,7 +748,7 @@ func _sacar(time: int, flutuante: bool, forca := 0.4, alvo := Mira.ALVO_INICIAL)
 	toques.reiniciar()
 	toques.registrar(time, atletas[time].find(controlados[time]))
 	saque_em_jogo = true
-	var ponto := Mira.com_erro(alvo, _erro_do_saque(time, forca), Vector2(randf(), randf()))
+	var ponto := Mira.com_erro(alvo, _erro_do_saque(time, forca), Vector2(sorteio.randf(), sorteio.randf()))
 	var destino := Vector3(ponto.x, 0.0, ponto.y * _lado(1 - time))
 	# Provisório: o flutuante só sai mais baixo. O balanço vem depois.
 	bola.lancar(destino, Mira.altura_do_saque(forca, flutuante))
@@ -996,7 +1000,7 @@ func _largar(time: int, qualidade: Qualidade) -> void:
 ## da rede) com um erro aleatório de até "erro" metros, sem sair pela
 ## lateral e, se pedido, com a profundidade entre fundo_min e fundo_max.
 func _destino_na_quadra_do_outro(time: int, alvo: Vector2, erro: float, fundo_min := -1.0, fundo_max := -1.0) -> Vector3:
-	var ponto := Mira.com_erro(alvo, erro, Vector2(randf(), randf()))
+	var ponto := Mira.com_erro(alvo, erro, Vector2(sorteio.randf(), sorteio.randf()))
 	ponto.x = clampf(ponto.x, -LARGURA / 2.0 + 0.2, LARGURA / 2.0 - 0.2)
 	if fundo_min >= 0.0:
 		ponto.y = clampf(ponto.y, fundo_min, fundo_max)
@@ -1005,7 +1009,7 @@ func _destino_na_quadra_do_outro(time: int, alvo: Vector2, erro: float, fundo_mi
 
 ## Erro aleatório (no chão) de até "raio" metros, espalhado por igual num disco.
 func _erro_aleatorio(raio: float) -> Vector2:
-	return Vector2.from_angle(randf() * TAU) * raio * sqrt(randf())
+	return Vector2.from_angle(sorteio.randf() * TAU) * raio * sqrt(sorteio.randf())
 
 
 func _devolver_de_graca(time: int) -> void:
@@ -1356,7 +1360,7 @@ func _abrir_escolha_de_cartas(depois: Callable) -> void:
 	var opcoes: Array = []
 	var nomes_das_maos: Array = []
 	for time in 2:
-		var ids := Cartas.sortear(dados_das_cartas, cartas_dos_times[time], RandomNumberGenerator.new(),
+		var ids := Cartas.sortear(dados_das_cartas, cartas_dos_times[time], sorteio,
 			Cartas.cartas_por_escolha(dados_das_cartas), ultima_carta[1 - time])
 		var cartas: Array = []
 		for id in ids:
@@ -1372,6 +1376,7 @@ func _abrir_escolha_de_cartas(depois: Callable) -> void:
 	_limpar_mensagens()
 	escolha_de_cartas = EscolhaDeCartas.new()
 	escolha_de_cartas.name = "EscolhaDeCartas"
+	escolha_de_cartas.sorteio = sorteio
 	add_child(escolha_de_cartas)
 	escolha_de_cartas.configurar(
 		opcoes,
@@ -1396,7 +1401,7 @@ func _trocar_cartas(time: int, atuais: Array) -> Array:
 	var quantidade := Cartas.cartas_por_escolha(dados_das_cartas)
 	var ids: Array = []
 	for tentativa in 8:
-		ids = Cartas.sortear(dados_das_cartas, cartas_dos_times[time], RandomNumberGenerator.new(),
+		ids = Cartas.sortear(dados_das_cartas, cartas_dos_times[time], sorteio,
 			quantidade, ultima_carta[1 - time])
 		var repetidas := 0
 		for id in ids:
@@ -1582,8 +1587,8 @@ func _no_time(time: int, mundo: Vector3) -> Vector2:
 
 ## Ponto aleatório dentro da quadra do "time", entre z_min e z_max metros da rede.
 func _ponto_aleatorio_no_lado(time: int, z_min: float, z_max: float) -> Vector3:
-	var x := randf_range(-LARGURA / 2.0 + 0.8, LARGURA / 2.0 - 0.8)
-	var z := randf_range(z_min, z_max) * _lado(time)
+	var x := sorteio.randf_range(-LARGURA / 2.0 + 0.8, LARGURA / 2.0 - 0.8)
+	var z := sorteio.randf_range(z_min, z_max) * _lado(time)
 	return Vector3(x, 0.0, z)
 
 
@@ -1632,6 +1637,11 @@ func _carregar_escolhas() -> void:
 	if times_em_jogo[0]["id"] == times_em_jogo[1]["id"]:
 		times_em_jogo[1] = _com_uniforme_reserva(times_em_jogo[1])
 	estadio = Dados.por_id(Dados.estadios(), Configuracao.estadio)
+	if int(Configuracao.semente) >= 0:
+		sorteio.seed = int(Configuracao.semente)
+	else:
+		sorteio.randomize()
+	placar.sorteio = func() -> int: return sorteio.randi_range(0, 1)
 	modo_caos = Configuracao.modo == "caos"
 	if modo_caos:
 		trocas_restantes = [Cartas.trocas_por_partida(Dados.cartas()), Cartas.trocas_por_partida(Dados.cartas())]

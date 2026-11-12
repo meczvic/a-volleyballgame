@@ -9,8 +9,14 @@ extends SceneTree
 ##   godot --path . --write-movie saida.avi --fixed-fps 30 --script res://ferramentas/robo.gd -- times=brasil,brasil segundos=90
 ##
 ## Opções: times=<id1>,<id2>  estadio=<id>  segundos=<limite>  prints=<pasta>
-## (salva um PNG por segundo em <pasta>)  saque=<0|1> (quem saca primeiro).
+## (salva um PNG por segundo em <pasta>)  saque=<0|1> (quem saca primeiro)
+## semente=<número> (repete a mesma partida; veja abaixo).
 ## Termina sozinho no fim da partida ou do tempo, e imprime um resumo.
+##
+## Partida repetível: com semente= e --fixed-fps 60, o robô e a partida sorteiam
+## sempre os mesmos números e cada quadro tem o mesmo tempo, então a partida
+## sai igual toda vez (testes/teste_partida_com_semente.gd usa isso):
+##   godot --headless --fixed-fps 60 --path . --script res://ferramentas/robo.gd -- semente=42 segundos=40
 
 const Dados := preload("res://scripts/comum/dados.gd")
 
@@ -38,6 +44,11 @@ var _maior_rally := 0
 var _chance_de_erro := 0.12
 var _dormindo := [false, false]
 var _ultimo_sorteio := ["", ""]
+## Sorteios do robô (força do saque, mira, erros). Com semente=, repete.
+var _sorteio := RandomNumberGenerator.new()
+var _semente := -1
+## Onde a bola caiu em cada rally (x, z, em cm), pra comparar partidas.
+var _quedas: Array[String] = []
 
 
 func _initialize() -> void:
@@ -58,6 +69,12 @@ func _initialize() -> void:
 		DirAccess.make_dir_recursive_absolute(_closeup)
 	if _prints != "":
 		DirAccess.make_dir_recursive_absolute(_prints)
+	_semente = int(opcoes.get("semente", -1))
+	configuracao.semente = _semente
+	if _semente >= 0:
+		_sorteio.seed = _semente
+	else:
+		_sorteio.randomize()
 	process_frame.connect(_comecar, CONNECT_ONE_SHOT)
 	set_meta("saque", int(opcoes.get("saque", -1)))
 
@@ -69,10 +86,11 @@ func _comecar() -> void:
 	if saque >= 0:
 		partida.placar.quem_saca = saque
 		partida._preparar_saque()
-	partida.bola.tocou_chao.connect(func(_p): _fim_do_rally())
+	partida.bola.tocou_chao.connect(func(p: Vector3): _fim_do_rally(p))
 	physics_frame.connect(_jogar)
 	var configuracao := root.get_node("Configuracao")
-	print("Robô: %s x %s, estádio %s" % [configuracao.times[0], configuracao.times[1], configuracao.estadio])
+	print("Robô: %s x %s, estádio %s%s" % [configuracao.times[0], configuracao.times[1], configuracao.estadio,
+		", semente %d" % _semente if _semente >= 0 else ""])
 
 
 func _jogar() -> void:
@@ -112,7 +130,7 @@ func _jogar_time(time: int, delta: float) -> void:
 		if _carga[time] < 0.0:
 			if partida.tempo_no_saque > 0.6:
 				_carga[time] = 0.0
-				_duracao_da_carga = randf_range(0.25, 0.7)
+				_duracao_da_carga = _sorteio.randf_range(0.25, 0.7)
 				_segurar(p + "ataque")
 		elif _carga[time] < _duracao_da_carga:
 			_carga[time] += delta
@@ -138,7 +156,7 @@ func _jogar_time(time: int, delta: float) -> void:
 		# Bola indo pro outro lado: se sou da rede e ela está vindo alta, bloqueio.
 		if partida.ultimo_toque != time and partida._e_da_rede(time, atleta) \
 				and absf(bola.position.z) < 2.5 and bola.position.y > 2.3 and bola.velocidade_atual().z * lado > 0.0:
-			if randf() < 0.3:
+			if _sorteio.randf() < 0.3:
 				_apertar(p + "bloqueio")
 				_lances["bloqueios"] += 1
 		return
@@ -167,7 +185,7 @@ func _jogar_time(time: int, delta: float) -> void:
 			_toques_no_rally += 1
 			# No levantamento, escolhe pra onde (direção segurada).
 			if toques == 1:
-				var escolha := randi() % 3
+				var escolha := _sorteio.randi_range(0, 2)
 				if escolha == 0:
 					_segurar(p + "esquerda")
 				elif escolha == 1:
@@ -182,7 +200,7 @@ func _jogar_time(time: int, delta: float) -> void:
 			_lances["cortadas"] += 1
 			_toques_no_rally += 1
 			# Mira variada.
-			var escolha := randi() % 3
+			var escolha := _sorteio.randi_range(0, 2)
 			if escolha == 0:
 				_segurar(p + "esquerda")
 			elif escolha == 1:
@@ -199,13 +217,14 @@ func _errou(time: int) -> bool:
 	if _ultimo_sorteio[time] == chave:
 		return false
 	_ultimo_sorteio[time] = chave
-	if randf() < _chance_de_erro:
+	if _sorteio.randf() < _chance_de_erro:
 		_dormindo[time] = true
 		return true
 	return false
 
 
-func _fim_do_rally() -> void:
+func _fim_do_rally(queda: Vector3) -> void:
+	_quedas.append("%d,%d" % [roundi(queda.x * 100.0), roundi(queda.z * 100.0)])
 	if OS.has_environment("ROBO_DEBUG"):
 		print("fim do rally: bola em %s, dormindo=%s, toques=%d, último toque=%d" % [partida.bola.position, _dormindo, _toques_no_rally, partida.ultimo_toque])
 	_dormindo = [false, false]
@@ -270,6 +289,7 @@ func _terminar() -> void:
 	print("Robô: fim depois de %.0f s de jogo. Sets %d x %d, pontos %d x %d, estado %s." % [
 		_relogio, placar.sets[0], placar.sets[1], placar.pontos[0], placar.pontos[1], partida.Estado.keys()[partida.estado]])
 	print("Robô: %d rallies (maior com %d toques), lances: %s" % [_rallies, _maior_rally, _lances])
+	print("Robô: quedas (cm): %s" % " ".join(_quedas))
 	if _quadros > 0:
 		print("Robô: desempenho: %.1f ms por quadro em média (pior %.1f ms), %d quadros medidos, %s, placa: %s" % [
 			_tempo_de_quadro / _quadros, _pior_quadro, _quadros,
