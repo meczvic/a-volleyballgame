@@ -44,6 +44,7 @@ const Escalacao := preload("res://scripts/regras/escalacao.gd")
 const Formacao := preload("res://scripts/regras/formacao.gd")
 const EscolhaAtaque := preload("res://scripts/regras/escolha_ataque.gd")
 const EntradaLocal := preload("res://scripts/entrada/entrada_local.gd")
+const EntradaDoComputador := preload("res://scripts/entrada/entrada_do_computador.gd")
 const Bola := preload("res://scripts/partida/bola.gd")
 const MarcadorQueda := preload("res://scripts/partida/marcador_queda.gd")
 const VisualAnime := preload("res://scripts/visual/visual_anime.gd")
@@ -167,6 +168,16 @@ const REACAO_DO_BLOQUEIO := 0.4
 const DISTANCIA_MAXIMA_DO_BLOQUEIO := 1.2
 ## Quanto a direção desloca o bloqueio na hora do pulo (m).
 const DESLOCAMENTO_DO_BLOQUEIO := 0.7
+## Cobertura: quando o nosso atacante vai cortar, os outros chegam até esta
+## distância (m) dele pra pegar a bola que voltar do bloqueio.
+const COBERTURA_DA_REDE := 2.0
+const COBERTURA_DO_FUNDO := 3.5
+## Defesa: o quanto os do fundo andam pro lado do atacante do outro time
+## (fração do x dele) e o quanto recuam ou avançam (m) pela distância até ele.
+const DEFESA_PRO_LADO_DO_ATAQUE := 0.3
+const DEFESA_RECUO := 0.8
+## Ninguém do time fica mais perto que isso (m) de um colega (sem amontoar).
+const ESPACO_ENTRE_ATLETAS := 1.2
 
 ## Coordenadas "do time": x = lado (negativo = esquerda de quem olha pra rede),
 ## y = distância da rede. A formação de cada posição do rodízio está em
@@ -379,8 +390,14 @@ func _ready() -> void:
 	bola.tocou_rede.connect(func() -> void: sons.tocar("rede"))
 
 	for jogador in [1, 2]:
-		var entrada = EntradaLocal.new()
-		entrada.jogador = jogador
+		var entrada
+		if _jogador_e_o_computador(jogador):
+			entrada = EntradaDoComputador.new()
+			entrada.jogador = jogador
+			entrada.configurar(self, str(Configuracao.dificuldade), int(Configuracao.semente))
+		else:
+			entrada = EntradaLocal.new()
+			entrada.jogador = jogador
 		entrada.name = "EntradaJogador%d" % jogador
 		entrada.comando.connect(_ao_receber_comando)
 		entrada.soltou.connect(_ao_soltar_botao)
@@ -470,7 +487,9 @@ func _mover(atleta: Node3D, time: int, direcao: Vector2, delta: float) -> void:
 ## No saque: a formação na ordem do rodízio (regra). Depois do saque, cada
 ## um vai pro lado da sua função (ponteiro na esquerda, central no meio,
 ## oposto e levantador na direita) e o levantador do fundo infiltra pra
-## levantar quando a bola vem pro nosso lado.
+## levantar quando a bola vem pro nosso lado. Quando o nosso time ataca, os
+## outros cobrem o atacante; quando o outro time ataca, os do fundo se
+## posicionam pelo lado do atacante. E ninguém fica em cima de um colega.
 func _alvo_da_ia(time: int, indice: int) -> Vector3:
 	var posicao: int = rodizios[time].posicao_de(indice)
 	var da_rede := Rodizio.e_da_rede(posicao)
@@ -491,18 +510,85 @@ func _alvo_da_ia(time: int, indice: int) -> Vector3:
 
 	if da_rede and adversario_vai_atacar:
 		# Sobe pra rede e lê o levantamento: corre pra onde a bola vai.
+		# (Sem abrir espaço: o bloqueio duplo é um do lado do outro.)
 		lugar = Vector2(_x_do_bloqueio(time, indice, funcao, x_da_funcao), 0.7)
+		return _no_mundo(time, lugar)
+	if _vamos_atacar(time):
+		# Cobertura: chega perto do atacante, cada um do seu lado.
+		var padrao := Vector2(x_da_funcao, 1.5 if da_rede else Formacao.Y_FUNDO)
+		lugar = _lugar_na_cobertura(time, padrao, COBERTURA_DA_REDE if da_rede else COBERTURA_DO_FUNDO)
 	elif e_levantador and montando_o_ataque:
 		# Infiltração: o levantador vai pro lugar do levantamento.
-		lugar = PONTO_DO_LEVANTADOR
+		return _no_mundo(time, PONTO_DO_LEVANTADOR)
 	elif da_rede and montando_o_ataque:
 		# Recua pra ter espaço de correr pro ataque.
 		lugar = Vector2(x_da_funcao, LINHA_DE_ATAQUE)
 	elif da_rede:
 		lugar = Vector2(x_da_funcao, 1.5)
+	elif adversario_vai_atacar:
+		lugar = _lugar_na_defesa(time, x_da_funcao)
 	else:
 		lugar = Vector2(x_da_funcao, Formacao.Y_FUNDO)
-	return _no_mundo(time, lugar)
+	return _no_mundo(time, _abrir_espaco(time, indice, lugar))
+
+
+## O nosso time vai atacar: levantamento no ar vindo pra cá, ou atacante no pulo.
+func _vamos_atacar(time: int) -> bool:
+	if not cortadas[time].is_empty():
+		return true
+	return toques.time_com_a_bola == time and toques.toques == 2 and bola.em_voo and _lado_da_queda() == time
+
+
+## Onde vai ser a cortada do "time" (em coordenadas do time): o atacante no
+## pulo, ou onde a bola levantada vai estar na altura da cortada.
+func _ponto_do_ataque(time: int) -> Vector2:
+	if not cortadas[time].is_empty():
+		return _no_time(time, (cortadas[time]["atleta"] as Node3D).position)
+	var ate_a_batida := TempoDoToque.tempo_ate_altura(bola.position, bola.velocidade_atual(), TempoDoToque.ALTURA_IDEAL["cortada"])
+	return _no_time(time, bola.posicao_daqui_a(maxf(ate_a_batida, 0.0)))
+
+
+## Cobertura: do lugar de sempre ("padrao"), chega até "raio" metros do
+## ponto do ataque, mantendo o lado (assim cada um cobre um pedaço).
+func _lugar_na_cobertura(time: int, padrao: Vector2, raio: float) -> Vector2:
+	var ataque := _ponto_do_ataque(time)
+	var lugar := ataque + (padrao - ataque).limit_length(raio)
+	lugar.y = maxf(lugar.y, 1.0)
+	return lugar
+
+
+## Defesa do fundo contra o ataque do outro time: anda um pouco pro lado do
+## atacante; quem fica longe dele (a diagonal) recua, quem fica perto (a
+## paralela) avança.
+func _lugar_na_defesa(time: int, x_da_funcao: float) -> Vector2:
+	var outro := 1 - time
+	if not bola.em_voo or _lado_da_queda() == time and cortadas[outro].is_empty():
+		return Vector2(x_da_funcao, Formacao.Y_FUNDO)
+	var mundo := _no_mundo(outro, _ponto_do_ataque(outro))
+	var ataque_x := _no_time(time, mundo).x
+	var x := clampf(x_da_funcao + ataque_x * DEFESA_PRO_LADO_DO_ATAQUE, -LARGURA / 2.0 + 0.5, LARGURA / 2.0 - 0.5)
+	var longe := clampf((absf(x_da_funcao - ataque_x) - 3.0) / 3.0, -1.0, 1.0)
+	return Vector2(x, Formacao.Y_FUNDO + longe * DEFESA_RECUO)
+
+
+## Sem amontoar: se um colega já está perto do "lugar", afasta o lugar dele.
+func _abrir_espaco(time: int, indice: int, lugar: Vector2) -> Vector2:
+	var ajustado := lugar
+	for i in 6:
+		if i == indice:
+			continue
+		var colega := _no_time(time, atletas[time][i].position)
+		var afastar := ajustado - colega
+		var distancia := afastar.length()
+		if distancia >= ESPACO_ENTRE_ATLETAS:
+			continue
+		if distancia < 0.01:
+			# Em cima do colega: sai pro lado (cada um pra um lado, pelo número).
+			afastar = Vector2(1.0 if indice > i else -1.0, 0.0)
+		ajustado += afastar.normalized() * (ESPACO_ENTRE_ATLETAS - distancia)
+	ajustado.x = clampf(ajustado.x, -LARGURA / 2.0 - 1.5, LARGURA / 2.0 + 1.5)
+	ajustado.y = maxf(ajustado.y, 1.0)
+	return ajustado
 
 
 ## Depois do ponto: cada um vai pro lugar que vai ocupar no próximo saque
@@ -1756,9 +1842,19 @@ func _carregar_escolhas() -> void:
 		sorteio.randomize()
 	placar.sorteio = func() -> int: return sorteio.randi_range(0, 1)
 	modo_caos = Configuracao.modo == "caos"
+	# Contra o computador, a tela é toda do Jogador 1.
+	if Configuracao.contra_computador:
+		tela_dividida = false
 	if modo_caos:
 		trocas_restantes = [Cartas.trocas_por_partida(Dados.cartas()), Cartas.trocas_por_partida(Dados.cartas())]
 		dados_das_cartas = Dados.cartas()
+
+
+## O "jogador" (1 ou 2) é jogado pelo computador?
+func _jogador_e_o_computador(jogador: int) -> bool:
+	if Configuracao.computador_nos_dois:
+		return true
+	return Configuracao.contra_computador and jogador == 2
 
 
 ## Uniforme reserva: a regra fica em Dados (a seleção de times usa a mesma).
@@ -1954,6 +2050,9 @@ func _adicionar_camera(onde: Node, time: int) -> void:
 	if tela_dividida:
 		# Esconde o anel de tempo do outro jogador.
 		camera.set_cull_mask_value(CAMADA_DO_ANEL_DE_TEMPO[1 - time], false)
+	elif _jogador_e_o_computador(2) and not _jogador_e_o_computador(1):
+		# Contra o computador: o anel de tempo e a mira dele não aparecem.
+		camera.set_cull_mask_value(CAMADA_DO_ANEL_DE_TEMPO[1], false)
 	cameras.append(camera)
 
 

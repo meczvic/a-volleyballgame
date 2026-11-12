@@ -19,7 +19,7 @@ Um jogo de **vôlei de quadra 6 contra 6 em 3D**, para PC, feito para jogar com 
 | Estilo de jogo | Meio-termo entre arcade e simulação |
 | Regras | Regras oficiais do vôlei (FIVB): rodízio, posição no saque, ataque e bloqueio do fundo etc. **6 atletas por time, sem líbero** |
 | Placar | Melhor de 3 sets; set até **7**, com 2 de diferença e limite em **10** |
-| Modos | **Partida rápida** (normal) e **Modo Caos** com cartas (prata, ouro e prismática), inspirado no ARAM Mayhem |
+| Modos | **1 Jogador** contra o computador (Fácil, Normal, Difícil), **2 Jogadores** (partida rápida) e **Modo Caos** com cartas (prata, ouro e prismática), inspirado no ARAM Mayhem |
 | Público | Amigos. Sem progressão. Efeitos sonoros feitos pelo jogo (desde 12/11/2026); música depois |
 
 Material de apoio (privado, no Claude): [documento de design](https://claude.ai/artifact/8wLMvqE4SpXA52gxGTi6Qt), [apresentação do jogo](https://claude.ai/artifact/6CPMDNbUbxsLh42fkANrPc), [guia do VRoid](https://claude.ai/artifact/NitRJ4DP8oGWkKQJLS1k6A) e [plano semanal](https://claude.ai/artifact/8QXRa1ZrCFDYubEuys7BAr).
@@ -28,7 +28,14 @@ Material de apoio (privado, no Claude): [documento de design](https://claude.ai/
 
 ## 2. O que já foi feito
 
-Tudo abaixo está neste repositório. Em 12/11/2026, os **33 testes automáticos** (pasta `testes/`) passam no Godot 4.7.2 (`ferramentas/rodar_testes.sh` roda todos), e um robô jogou partidas dos dois lados sem erro.
+Tudo abaixo está neste repositório. Em 12/11/2026, os **35 testes automáticos** (pasta `testes/`) passam no Godot 4.7.2 (`ferramentas/rodar_testes.sh` roda todos), e um robô jogou partidas dos dois lados sem erro.
+
+### Plano de jogabilidade, Etapa 2: computador e companheiros (12/11/2026)
+Detalhes em [PLANO_JOGABILIDADE.md](PLANO_JOGABILIDADE.md). Testado no Godot 4.7.2 (todos os testes).
+- **Modo 1 jogador:** "1 JOGADOR" no menu abre Fácil, Normal e Difícil (`Configuracao.contra_computador` e `dificuldade`). Tela cheia, sem dividir.
+- **Computador** (`scripts/entrada/entrada_do_computador.gd`): mesma "cara" da `EntradaLocal` (sinais `comando`/`soltou` e `direcao`), então a partida não sabe quem joga. Números de cada nível em `dados/dificuldades.json`.
+- **Companheiros mais espertos** (`_alvo_da_ia`): cobrem o atacante, os do fundo se posicionam pelo lado do atacante do outro time e ninguém fica em cima de um colega. A partida com semente mudou (regravada).
+- **Robô:** `computador=<nível>` (o computador joga o time 2) e `dois=1` (computador nos dois times); mostra a média de bolas por rally. Teste novo: `teste_computador.gd`.
 
 ### Plano de jogabilidade, Etapa 1: sensação (12/11/2026)
 Plano completo e o que conferir jogando em [PLANO_JOGABILIDADE.md](PLANO_JOGABILIDADE.md). **Escrito sem o Godot no PC (não rodou ainda):** rode todos os testes antes de subir.
@@ -45,7 +52,7 @@ Plano completo e o que conferir jogando em [PLANO_JOGABILIDADE.md](PLANO_JOGABIL
 - Plano completo em [HANDOFF_MELHORIAS.md](HANDOFF_MELHORIAS.md).
 
 ### Menus e telas
-- Menu principal (Partida rápida, Modo Caos, Controles, Sair; Online aparece como "em breve").
+- Menu principal (1 Jogador, 2 Jogadores, Modo Caos, Controles, Sair; Online aparece como "em breve").
 - Seleção de times com cursor de cada jogador, emblema de cada time, atributos com ícone e o atleta destaque em 3D que comemora ao confirmar (Fase 01, 10/11/2026); escolha entre **4 estádios** (Ginásio Japonês, Arena Nacional, Arena Brasileira, Arena Neon).
 - Pausa (continuar, recomeçar, trocar times, menu) e tela de fim de jogo.
 - Uniforme reserva quando os dois escolhem o mesmo time.
@@ -223,7 +230,7 @@ Leia esta seção inteira antes de mexer no código.
 ### Testes
 - **Rodar todos:** `GODOT=/caminho/do/godot ferramentas/rodar_testes.sh` (no Windows, pelo Git Bash). Importa os arquivos, roda cada teste com limite de tempo (`LIMITE_POR_TESTE`, padrão 600 s) e sai com erro se algum falhar. Um teste passa quando termina sozinho, sai com código 0, imprime `OK:` e não imprime `FALHOU` nem `SCRIPT ERROR`. **Cuidado:** um erro de script trava o Godot sem fechar; por isso o limite de tempo. `ferramentas/rodar_testes.sh mira placar` roda só os que têm essas palavras no nome; `SEM_IMPORTAR=1` pula a importação.
 - **No GitHub:** `.github/workflows/testes.yml` roda o mesmo script em todo PR e a cada push no branch principal.
-- São 34 arquivos em `testes/` (`teste_sons_e_impacto.gd` confere os sons, a seta do controlado e o impacto da cortada; `teste_partida_com_semente.gd` faz o robô jogar 90 s com a semente 42 e compara com o resultado gravado: se mudar o jogo de propósito, regrave com o comando do começo do arquivo; `teste_atleta_anime.gd` confere o atleta no estilo anime: normais pra fora, rosto desenhado, cabelo em mechas e os 42 montando; `teste_pose_de_espera.gd` confere a pose de espera com os pés no chão; `teste_cenario.gd` abre a partida nos 4 estádios e confere rede, árbitros, pessoas e as camadas de cada câmera; `teste_tela_de_selecao.gd` e `teste_tela_de_cartas.gd` abrem a tela e apertam os botões dos dois jogadores; `teste_elenco_em_quadra.gd` confere os 42 atletas: malha com pesos, esqueleto, trilhas das animações e pose que se mexe). Rode todos, dentro da pasta do projeto:
+- São 35 arquivos em `testes/` (`teste_computador.gd` confere as dificuldades e faz o computador jogar contra ele mesmo nos três níveis; `teste_sons_e_impacto.gd` confere os sons, a seta do controlado e o impacto da cortada; `teste_partida_com_semente.gd` faz o robô jogar 90 s com a semente 42 e compara com o resultado gravado: se mudar o jogo de propósito, regrave com o comando do começo do arquivo; `teste_atleta_anime.gd` confere o atleta no estilo anime: normais pra fora, rosto desenhado, cabelo em mechas e os 42 montando; `teste_pose_de_espera.gd` confere a pose de espera com os pés no chão; `teste_cenario.gd` abre a partida nos 4 estádios e confere rede, árbitros, pessoas e as camadas de cada câmera; `teste_tela_de_selecao.gd` e `teste_tela_de_cartas.gd` abrem a tela e apertam os botões dos dois jogadores; `teste_elenco_em_quadra.gd` confere os 42 atletas: malha com pesos, esqueleto, trilhas das animações e pose que se mexe). Rode todos, dentro da pasta do projeto:
 
 ```
 for t in testes/teste_*.gd; do godot --headless --script res://$t; done

@@ -11,6 +11,9 @@ extends SceneTree
 ## Opções: times=<id1>,<id2>  estadio=<id>  segundos=<limite>  prints=<pasta>
 ## (salva um PNG por segundo em <pasta>)  saque=<0|1> (quem saca primeiro)
 ## semente=<número> (repete a mesma partida; veja abaixo).
+## computador=<facil|normal|dificil>: o time 2 é jogado pelo computador de
+## verdade (modo 1 jogador) e o robô joga só o time 1. Com dois=1, o
+## computador joga os dois times e o robô só assiste.
 ## Termina sozinho no fim da partida ou do tempo, e imprime um resumo.
 ##
 ## Partida repetível: com semente= e --fixed-fps 60, o robô e a partida sorteiam
@@ -49,6 +52,11 @@ var _sorteio := RandomNumberGenerator.new()
 var _semente := -1
 ## Onde a bola caiu em cada rally (x, z, em cm), pra comparar partidas.
 var _quedas: Array[String] = []
+## Times que o robô joga (com computador=, só o time 1, ou nenhum com dois=1).
+var _times_do_robo: Array[int] = [0, 1]
+## Bolas lançadas (saque, toques, rede) em todos os rallies e no começo do atual.
+var _lancamentos_nos_rallies := 0
+var _lancamentos_no_comeco := 0
 
 
 func _initialize() -> void:
@@ -71,6 +79,13 @@ func _initialize() -> void:
 		DirAccess.make_dir_recursive_absolute(_prints)
 	_semente = int(opcoes.get("semente", -1))
 	configuracao.semente = _semente
+	configuracao.contra_computador = opcoes.has("computador")
+	configuracao.computador_nos_dois = opcoes.has("computador") and str(opcoes.get("dois", "0")) == "1"
+	if opcoes.has("computador"):
+		configuracao.dificuldade = str(opcoes["computador"])
+		_times_do_robo = []
+		if not configuracao.computador_nos_dois:
+			_times_do_robo.append(0)
 	if _semente >= 0:
 		_sorteio.seed = _semente
 	else:
@@ -89,8 +104,9 @@ func _comecar() -> void:
 	partida.bola.tocou_chao.connect(func(p: Vector3): _fim_do_rally(p))
 	physics_frame.connect(_jogar)
 	var configuracao := root.get_node("Configuracao")
-	print("Robô: %s x %s, estádio %s%s" % [configuracao.times[0], configuracao.times[1], configuracao.estadio,
-		", semente %d" % _semente if _semente >= 0 else ""])
+	print("Robô: %s x %s, estádio %s%s%s" % [configuracao.times[0], configuracao.times[1], configuracao.estadio,
+		", semente %d" % _semente if _semente >= 0 else "",
+		", computador %s" % configuracao.dificuldade if configuracao.contra_computador else ""])
 
 
 func _jogar() -> void:
@@ -99,7 +115,7 @@ func _jogar() -> void:
 	if partida.estado == partida.Estado.FIM or _relogio > _limite:
 		_terminar()
 		return
-	for time in 2:
+	for time in _times_do_robo:
 		_jogar_time(time, delta)
 	_aplicar_teclas()
 	# Desempenho: tempo gasto por quadro (processo + física), em ms.
@@ -228,6 +244,8 @@ func _fim_do_rally(queda: Vector3) -> void:
 	if OS.has_environment("ROBO_DEBUG"):
 		print("fim do rally: bola em %s, dormindo=%s, toques=%d, último toque=%d" % [partida.bola.position, _dormindo, _toques_no_rally, partida.ultimo_toque])
 	_dormindo = [false, false]
+	_lancamentos_nos_rallies += partida.bola.lancamentos - _lancamentos_no_comeco
+	_lancamentos_no_comeco = partida.bola.lancamentos
 	_rallies += 1
 	_maior_rally = maxi(_maior_rally, _toques_no_rally)
 	_toques_no_rally = 0
@@ -290,6 +308,8 @@ func _terminar() -> void:
 		_relogio, placar.sets[0], placar.sets[1], placar.pontos[0], placar.pontos[1], partida.Estado.keys()[partida.estado]])
 	print("Robô: %d rallies (maior com %d toques), lances: %s" % [_rallies, _maior_rally, _lances])
 	print("Robô: quedas (cm): %s" % " ".join(_quedas))
+	if _rallies > 0:
+		print("Robô: media de bolas por rally (saque e toques): %.1f" % (float(_lancamentos_nos_rallies) / _rallies))
 	if _quadros > 0:
 		print("Robô: desempenho: %.1f ms por quadro em média (pior %.1f ms), %d quadros medidos, %s, placa: %s" % [
 			_tempo_de_quadro / _quadros, _pior_quadro, _quadros,

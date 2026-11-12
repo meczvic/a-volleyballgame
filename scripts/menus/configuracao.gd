@@ -14,6 +14,13 @@ var modo := "rapida"
 ## -1: cada partida sai diferente. 0 ou mais: com as mesmas teclas nos mesmos
 ## quadros, a partida se repete igual (o robô e os testes usam isso).
 var semente := -1
+## Modo 1 jogador: o time do Jogador 2 é jogado pelo computador
+## (scripts/entrada/entrada_do_computador.gd) e a tela não se divide.
+var contra_computador := false
+## Dificuldade do computador: id de dados/dificuldades.json ("facil", "normal", "dificil").
+var dificuldade := "normal"
+## Os dois times jogados pelo computador (o robô e os testes usam pra assistir).
+var computador_nos_dois := false
 
 
 func definir_partida(time_jogador_1: String, time_jogador_2: String, id_do_estadio: String) -> void:

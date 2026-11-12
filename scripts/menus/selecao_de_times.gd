@@ -5,6 +5,9 @@ extends Control
 ## Jogador 2: setas escolhem, 1 confirma, 0 volta no numérico (ou o 2º controle).
 ## Esc volta pro menu principal.
 ##
+## Contra o computador (1 jogador): o Jogador 1 escolhe o próprio time e depois
+## o do computador, com as mesmas teclas.
+##
 ## As regras (quem confirmou, em que fase está) ficam em selecao.gd.
 ## Este arquivo só desenha a tela e lê os botões.
 ##
@@ -18,6 +21,7 @@ const Estilo := preload("res://scripts/menus/estilo.gd")
 const Dados := preload("res://scripts/comum/dados.gd")
 const Selecao := preload("res://scripts/menus/selecao.gd")
 const RetratoDoAtleta := preload("res://scripts/menus/retrato_do_atleta.gd")
+const EntradaDoComputador := preload("res://scripts/entrada/entrada_do_computador.gd")
 
 const CENA_MENU := "res://cenas/menu_principal.tscn"
 const CENA_PARTIDA := "res://cenas/partida.tscn"
@@ -41,6 +45,9 @@ const TAMANHO_DO_CARTAO := Vector2(190.0, 132.0)
 const ESPACO_ENTRE_CARTOES := 14.0
 const ALTURA_DOS_CARTOES := 608.0
 const CENTRO_DO_VS := Vector2(800.0, 300.0)
+
+const DICA_DO_COMPUTADOR := "O Jogador 1 escolhe o time do computador
+depois de confirmar o dele"
 
 const DICAS := [
 	"Teclado: A/D escolhe  ·  J confirma  ·  Espaço desfaz\nControle 1: direcional  ·  A confirma  ·  B desfaz",
@@ -138,6 +145,9 @@ func _process(_delta: float) -> void:
 	if Input.is_action_just_pressed("voltar"):
 		_trocar_de_cena(CENA_MENU)
 		return
+	if Configuracao.contra_computador:
+		_ler_botoes_de_um_jogador()
+		return
 	for jogador in 2:
 		var numero := jogador + 1
 		if _apertou(numero, "esquerda"):
@@ -150,6 +160,23 @@ func _process(_delta: float) -> void:
 			_desfazer(jogador)
 		if _saindo:
 			return
+
+
+## Contra o computador: os botões do Jogador 1 escolhem o time dele e, depois
+## de confirmado, o do computador. Desfazer volta na ordem contrária.
+func _ler_botoes_de_um_jogador() -> void:
+	var lado := 0 if not selecao.confirmado[0] else 1
+	if _apertou(1, "esquerda"):
+		_mover(lado, -1)
+	elif _apertou(1, "direita"):
+		_mover(lado, 1)
+	if _apertou(1, "passe"):
+		_confirmar(lado)
+	elif _apertou(1, "mergulho"):
+		if selecao.fase == Selecao.Fase.TIMES and not selecao.confirmado[1] and selecao.confirmado[0]:
+			_desfazer(0)
+		else:
+			_desfazer(lado)
 
 
 func _apertou(numero: int, acao: String) -> bool:
@@ -353,8 +380,12 @@ func _atualizar_estadio() -> void:
 func _atualizar_instrucao() -> void:
 	if selecao.fase == Selecao.Fase.COMECANDO:
 		_instrucao.text = "BOA PARTIDA!"
+	elif selecao.fase == Selecao.Fase.ESTADIO and Configuracao.contra_computador:
+		_instrucao.text = "ESCOLHA O ESTÁDIO E CONFIRME PRA COMEÇAR"
 	elif selecao.fase == Selecao.Fase.ESTADIO:
 		_instrucao.text = "ESCOLHAM O ESTÁDIO E CONFIRMEM PRA COMEÇAR"
+	elif Configuracao.contra_computador:
+		_instrucao.text = "ESCOLHA O TIME DO COMPUTADOR" if selecao.confirmado[0] else "ESCOLHA O SEU TIME"
 	elif selecao.confirmado[0] != selecao.confirmado[1]:
 		var falta := 2 if selecao.confirmado[0] else 1
 		_instrucao.text = "ESPERANDO O JOGADOR %d CONFIRMAR" % falta
@@ -495,9 +526,24 @@ func _criar_cabecalho() -> void:
 	var pessoas := _icone("jogadores", 28.0, Estilo.TEXTO)
 	pessoas.position = Vector2(22.0, 9.0)
 	caixa.add_child(pessoas)
-	var texto := Estilo.rotulo("2 JOGADORES  ·  LOCAL", 22, Estilo.TEXTO, true)
+	var texto := Estilo.rotulo(_texto_do_modo(), 22, Estilo.TEXTO, true)
 	texto.position = Vector2(60.0, 8.0)
 	caixa.add_child(texto)
+
+
+## "2 JOGADORES · LOCAL" ou, contra o computador, "1 JOGADOR · NORMAL".
+func _texto_do_modo() -> String:
+	if not Configuracao.contra_computador:
+		return "2 JOGADORES  ·  LOCAL"
+	var nivel := EntradaDoComputador.ajustes_do_nivel(str(Configuracao.dificuldade))
+	return "1 JOGADOR  ·  %s" % str(nivel.get("nome", "")).to_upper()
+
+
+## Nome do lado: "JOGADOR 1", "JOGADOR 2" ou "COMPUTADOR".
+func _nome_do_lado(jogador: int) -> String:
+	if jogador == 1 and Configuracao.contra_computador:
+		return "COMPUTADOR"
+	return "JOGADOR %d" % (jogador + 1)
 
 
 func _criar_painel_do_jogador(jogador: int) -> PainelDoJogador:
@@ -537,7 +583,7 @@ func _criar_painel_do_jogador(jogador: int) -> PainelDoJogador:
 
 	# Etiqueta do jogador com o ícone do controle.
 	var cor_do_jogador: Color = Estilo.COR_DO_JOGADOR[jogador]
-	var ficha := Estilo.etiqueta("JOGADOR %d" % (jogador + 1), cor_do_jogador, 26)
+	var ficha := Estilo.etiqueta(_nome_do_lado(jogador), cor_do_jogador, 26)
 	ficha.position = Vector2(x + LARGURA_DO_PAINEL - 232.0 if direita else x, 98.0)
 	ficha.size = Vector2(232.0, 42.0)
 	ficha.add_theme_constant_override("line_spacing", 0)
@@ -629,7 +675,7 @@ func _criar_painel_do_jogador(jogador: int) -> PainelDoJogador:
 	var abaixo := TOPO_DOS_ATRIBUTOS + ATRIBUTOS.size() * ALTURA_DA_LINHA + 8.0
 	painel.jogada = _rotulo_do_painel(20, Estilo.TEXTO_SUAVE, false, Vector2(x, abaixo), LARGURA_DO_PAINEL, 28.0, alinhamento)
 	var dica := _rotulo_do_painel(15, Estilo.TEXTO_APAGADO, false, Vector2(x, abaixo + 28.0), LARGURA_DO_PAINEL, 40.0, alinhamento)
-	dica.text = DICAS[jogador]
+	dica.text = DICA_DO_COMPUTADOR if jogador == 1 and Configuracao.contra_computador else DICAS[jogador]
 	return painel
 
 
@@ -716,7 +762,8 @@ func _criar_cartoes() -> void:
 		cartao.add_child(nome)
 
 		for jogador in 2:
-			var ficha := Estilo.etiqueta("J%d" % (jogador + 1), Estilo.COR_DO_JOGADOR[jogador], 18)
+			var texto_da_ficha := "CPU" if jogador == 1 and Configuracao.contra_computador else "J%d" % (jogador + 1)
+			var ficha := Estilo.etiqueta(texto_da_ficha, Estilo.COR_DO_JOGADOR[jogador], 18)
 			var deslocamento := 6.0 if jogador == 0 else TAMANHO_DO_CARTAO.x - 6.0 - 48.0
 			ficha.position = cartao.position + Vector2(deslocamento, -30.0)
 			ficha.size = Vector2(48.0, 26.0)
