@@ -11,6 +11,8 @@ const ARQUIVO_APARENCIA := "res://dados/aparencia.json"
 const ARQUIVO_CARTAS := "res://dados/cartas.json"
 const PASTA_PERSONAGENS := "res://personagens"
 const GeradorDeAtleta := preload("res://scripts/visual/gerador_de_atleta.gd")
+const UniformeVrm := preload("res://scripts/visual/uniforme_vrm.gd")
+const VisualVrm := preload("res://scripts/visual/visual_vrm.gd")
 
 
 static func times() -> Array:
@@ -69,11 +71,18 @@ static func carregar_personagem(time: Dictionary, atleta: Dictionary) -> Node3D:
 			if not cena is PackedScene:
 				push_warning("O arquivo %s não virou uma cena (o plugin VRM está ativo?)." % caminho_do_personagem(id_time, atleta))
 				return null
-			return cena.instantiate() as Node3D
+			var personagem := cena.instantiate() as Node3D
+			VisualVrm.aplicar(personagem)
+			UniformeVrm.aplicar(personagem, _uniforme(time, atleta))
+			return personagem
 		"gerado":
-			var uniforme := {"cores": time.get("cores", []), "numero": int(atleta.get("numero", 0))}
-			return GeradorDeAtleta.criar(aparencia(id_time, atleta), uniforme)
+			return GeradorDeAtleta.criar(aparencia(id_time, atleta), _uniforme(time, atleta))
 	return null
+
+
+## Uniforme do atleta: cores do time (já com o reserva, se for o caso) e número.
+static func _uniforme(time: Dictionary, atleta: Dictionary) -> Dictionary:
+	return {"cores": time.get("cores", []), "numero": int(atleta.get("numero", 0))}
 
 
 ## Procura um item pelo "id". Se não achar, devolve o primeiro da lista

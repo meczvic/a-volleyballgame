@@ -85,6 +85,7 @@ Feito depois de um robô jogar partidas inteiras e listar o que parecia estranho
 
 ### Personagens e animações
 - O jogo carrega um personagem do VRoid (`.vrm`) quando o arquivo existe em `personagens/<time>/<número>_<nome>.vrm`. Sem o arquivo, usa o **personagem gerado por código** (`scripts/visual/gerador_de_atleta.gd`, 10/11/2026): malha, esqueleto humanoide e pesos feitos no próprio Godot a partir de `dados/aparencia.json` (altura, porte, pele, cabelo, uniforme com número). Só vira cápsula se não houver nem `.vrm` nem entrada em `aparencia.json`. Os 42 atletas do elenco têm entrada e passam no `teste_elenco_em_quadra.gd`.
+- **Primeiro atleta do VRoid (11/11/2026): Hinata** (`personagens/karasuno/10_hinata.vrm`, 1,63 m, VRM 1.0). Feito no VRoid a partir da base masculina, com uniforme todo branco e sem número. O jogo pinta o uniforme com as cores do time e põe o número (`scripts/visual/uniforme_vrm.gd`) e troca o MToon pelo sombreamento anime do jogo (`scripts/visual/visual_vrm.gd` + `shaders/atleta_vrm_*.gdshader`), porque o MToon estourava a pele pro branco com a luz do ginásio. Teste: `teste_uniforme_vrm.gd`. Projeto editável: `10_hinata.vroid` (fora do Git, em Documentos\VRoid no PC de casa).
 - Ferramentas: `ferramentas/capturas.gd` (folhas de contato e vistas de cada atleta, renderizadas pelo jogo) e `ferramentas/robo.gd` (robô que joga a partida sozinho, grava vídeo, prints e mede o tempo por quadro).
 - Plugin VRM para Godot já incluído em `addons/`.
 - **Animações** no esqueleto comum dos personagens (`animacoes/`): parado, correr, deslocamento lateral, defesa lateral, manchete, bloqueio, saque, mergulho e 3 comemorações, vindas do **Mixamo**; levantamento e cortada montados à mão; e a **cortada gravada pelo Victor no DeepMotion**, que é a cortada usada no jogo.
@@ -103,7 +104,8 @@ Feito depois de um robô jogar partidas inteiras e listar o que parecia estranho
 
 ### Personagens (Victor e amigo)
 - Desde 10/11/2026 os 42 atletas aparecem como **personagens gerados por código** (humanoides estilizados, cel-shaded, diferenciados por altura, porte, pele, cabelo e uniforme). Não são retratos: a aparência vem de `dados/aparencia.json`, que o Victor pode editar.
-- Quem quiser um modelo mais detalhado exporta o `.vrm` do VRoid para `personagens/<time>/` com o nome certo: o jogo passa a usar o VRM no lugar do gerado, sem mexer em código.
+- Quem quiser um modelo mais detalhado exporta o `.vrm` do VRoid para `personagens/<time>/` com o nome certo: o jogo passa a usar o VRM no lugar do gerado, sem mexer em código. **Feito: Hinata (11/11/2026).** Faltam os outros 41, no mesmo padrão (veja "Personagens" na seção 6).
+- O Hinata do VRoid ainda não tem joelheiras (o VRoid não tem joelheira pronta).
 - Falta o Victor **avaliar a aparência** dos gerados em partida e dizer o que ajustar (cores, cabelos, porte) em `dados/aparencia.json`.
 
 ### Jogabilidade e interface
@@ -180,6 +182,10 @@ Leia esta seção inteira antes de mexer no código.
 ### Personagens (`.vrm` ou gerados)
 - Ordem que a partida usa (`Dados.carregar_personagem`): `.vrm` se existir → gerado por código se tiver entrada em `dados/aparencia.json` → cápsula.
 - Caminho do VRM: `personagens/<id do time>/<número com 2 dígitos>_<nome>.vrm`, tudo minúsculo, sem acento nem espaço (ex.: `personagens/brasil/01_nome.vrm`).
+- **Como fazer o VRM no VRoid** (padrão do Hinata): base masculina ou feminina; roupa com a camiseta padrão ("Tops"), o short feito por Custom → Create New → molde "Shorts" (os moldes são brancos), meia branca e tênis branco; **nada de cor de time nem número**. Exportar em VRM 1.0 sem reduzir materiais (o jogo acha a camisa e o short pelo nome do material). Altura: na base masculina, Masc Height -0,306 dá 1,63 m (0 = 1,79 m).
+- **Uniforme do VRM** (`uniforme_vrm.gd`, chamado por `Dados.carregar_personagem`): camisa e short na cor principal do time (mantendo as dobras da textura do VRoid), faixa lateral da camisa e barra do short na cor de detalhe, número nas costas e no peito na cor que mais contrasta (a mesma regra do gerado). Reserva vem de `Dados.com_uniforme_reserva`. O lugar de cada coisa na textura foi medido na camiseta e no short padrão do VRoid; peça diferente fica branca.
+- **Sombreamento do VRM** (`visual_vrm.gd`): todas as peças passam pro shader do jogo (pele com sombra rosada, cabelo lilás, rosto liso sem sombra projetada); o contorno continua o do MToon. Também grava a meta `altura` (topo da cabeça), que a seleção, as cartas e as capturas usam pra enquadrar.
+- Medir um personagem (altura, pra onde olha, mão na cortada): `godot --headless --path . --script res://ferramentas/medir_personagem.gd -- atleta=karasuno/10_hinata`.
 - **Gerador** (`scripts/visual/gerador_de_atleta.gd`): monta no Godot a malha (tubos, esfera da cabeça, cabelo por estilo, uniforme, joelheiras, tênis e número na camisa), o esqueleto `GeneralSkeleton` com as rotações do `SkeletonProfileHumanoid` (as mesmas que o Mixamo e o DeepMotion usam) e os pesos. Cada atleta leva ~20 ms pra gerar e tem ~2,7 mil vértices. Os ajustes por atleta ficam em `dados/aparencia.json` (campo `_sobre` explica cada chave); os números são texturas em `personagens/numeros/` (saem de `ferramentas/uniformes.py`).
 - Capturas renderizadas pelo jogo: `godot --path . --script res://ferramentas/capturas.gd -- folha=karasuno` (ou `atleta=karasuno/10_hinata`, ou `todos`); precisa de tela (ou xvfb, veja abaixo). Saída em `producao/capturas/<time>/`.
 - Plugin VRM **2.6.1** (AzPepoze) em `addons/vrm` e `addons/mtoon`. Ele **não funciona no Godot 4.3**; por isso o projeto usa o 4.7.2.

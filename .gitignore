@@ -9,3 +9,6 @@ export/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Projeto editável do VRoid (fica no Drive, não no Git)
+*.vroid

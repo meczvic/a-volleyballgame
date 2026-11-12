@@ -71,8 +71,13 @@ func _initialize() -> void:
 				_conferir(false, "atleta %s/%s monta" % [time["id"], dados_atleta["arquivo"]])
 				continue
 			var esq := p.get_node_or_null("GeneralSkeleton")
-			var tem_rosto := esq != null and esq.get_node_or_null("rosto") != null
-			var tem_cabelo := esq != null and (esq.get_node_or_null("cabelo") != null or esq.get_node_or_null("cabelo2") != null)
+			# Quem já tem .vrm do VRoid usa as malhas do VRoid (Face, Hair).
+			var nomes := ["Face", "Hair", "Hair"] if Dados.fonte_do_personagem(str(time["id"]), dados_atleta) == "vrm" else ["rosto", "cabelo", "cabelo2"]
+			var tem_rosto := esq != null and esq.get_node_or_null(nomes[0]) != null
+			var tem_cabelo := esq != null and (esq.get_node_or_null(nomes[1]) != null or esq.get_node_or_null(nomes[2]) != null)
+			# Cabeça raspada no VRoid não gera malha de cabelo: o cabelo vai pintado no couro.
+			if not tem_cabelo and nomes[0] == "Face" and _cabelo_raspado(str(time["id"]), dados_atleta):
+				tem_cabelo = true
 			_conferir(tem_rosto and tem_cabelo, "atleta %s/%s tem rosto e cabelo" % [time["id"], dados_atleta["arquivo"]])
 			total += 1
 			p.free()
@@ -89,3 +94,17 @@ func _conferir(condicao: bool, descricao: String) -> void:
 	if not condicao:
 		_falhas += 1
 		print("FALHOU: ", descricao)
+
+
+func _cabelo_raspado(time_id: String, atleta: Dictionary) -> bool:
+	var f := FileAccess.open("res://dados/aparencia.json", FileAccess.READ)
+	if f == null:
+		return false
+	var dados: Variant = JSON.parse_string(f.get_as_text())
+	if not (dados is Dictionary):
+		return false
+	var chave := "%02d_%s" % [int(atleta["numero"]), str(atleta["arquivo"])]
+	var ap: Variant = dados.get("times", {}).get(time_id, {}).get(chave, {})
+	if not (ap is Dictionary):
+		return false
+	return str(ap.get("cabelo", {}).get("estilo", "")) in ["raspado", "moicano"]
