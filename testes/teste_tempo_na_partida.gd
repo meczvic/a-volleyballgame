@@ -108,7 +108,7 @@ func _teste_levantamento_rapido() -> void:
 	_bola_no_atleta(partida, levantador, TempoDoToque.ALTURA_IDEAL["levantamento"], -4.0)
 	partida._tentar_tocar(0, false)
 	# A mensagem do levantamento aparece na metade da tela do time que levantou.
-	_verificar(partida.rotulos_do_time[0].text.begins_with("Levantamento rápido"),
+	_verificar(partida.rotulos_do_time[0].text.begins_with("Rápido"),
 		"passe e levantamento perfeitos dão o rápido (%s)" % partida.rotulos_do_time[0].text)
 	_fechar(partida)
 

@@ -4,8 +4,8 @@ extends PanelContainer
 
 const Estilo := preload("res://scripts/menus/estilo.gd")
 
-const LARGURA := 220.0
-const ALTURA := 12.0
+const LARGURA := 180.0
+const ALTURA := 8.0
 const COR := Color("#4FC3F7")
 const COR_CHEIA := Color("#FFD23F")
 
@@ -24,7 +24,8 @@ func _ready() -> void:
 	coluna.add_theme_constant_override("separation", 3)
 	add_child(coluna)
 	_rotulo = Label.new()
-	_rotulo.text = "ENERGIA"
+	_rotulo.text = "SUPER PRONTA!"
+	_rotulo.visible = false
 	_rotulo.add_theme_font_override("font", Estilo.FONTE_TITULO)
 	_rotulo.add_theme_font_size_override("font_size", 14)
 	_rotulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -52,7 +53,9 @@ func mostrar(valor: float, cheia: bool) -> void:
 	_cheia = cheia
 	_cheio.size.x = LARGURA * clampf(valor, 0.0, 1.0)
 	_cheio.color = COR_CHEIA if cheia else COR
-	_rotulo.text = "SUPER PRONTA!" if cheia else "ENERGIA"
+	_rotulo.text = "SUPER PRONTA!"
+	# Sem texto enquanto enche: a barra azul já diz tudo.
+	_rotulo.visible = cheia
 	_rotulo.add_theme_color_override("font_color", COR_CHEIA if cheia else Estilo.TEXTO)
 	if not cheia:
 		_rotulo.modulate.a = 1.0

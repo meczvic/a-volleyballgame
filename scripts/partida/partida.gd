@@ -319,6 +319,14 @@ var energias: Array = [Energia.new(), Energia.new()]
 var barras_de_energia: Array = [null, null]
 ## Lembrete "Esc ou Start: pausa"; some no fim de jogo.
 var caixa_da_pausa: PanelContainer
+## Quanto tempo os avisos rápidos ficam na tela (s).
+const DURACAO_DA_MENSAGEM := 1.8
+## Conta de mensagens por lugar (meio, time 0, time 1), pra saber se a de um
+## aviso rápido ainda é a que está na tela.
+var _validade_da_mensagem := [0, 0, 0]
+## Textos de comandos (um por jogador): somem depois do primeiro saque.
+var ajudas_de_comandos: Array[Label] = []
+var _ajuda_escondida := false
 ## Espera depois de cada ponto. É um nó (e não um "await") pra parar junto
 ## quando o jogo pausa e sumir junto quando a cena fecha.
 var temporizador_do_ponto: Timer
@@ -944,6 +952,7 @@ func _sacar(time: int, flutuante: bool, forca := 0.4, alvo := Mira.ALVO_INICIAL)
 	if falta_de_posicao >= 0:
 		_encerrar_rally(1 - falta_de_posicao, "posição errada no saque")
 		return
+	_esconder_ajuda()
 	_bloqueio_do_ataque = 1.0
 	_forca_da_cortada = -1
 	_ultimo_levantamento = [{}, {}]
@@ -961,6 +970,21 @@ func _sacar(time: int, flutuante: bool, forca := 0.4, alvo := Mira.ALVO_INICIAL)
 	_ao_lancar_bola()
 
 
+## Some com os textos de comandos e o lembrete da pausa (só valem no começo).
+func _esconder_ajuda() -> void:
+	if _ajuda_escondida:
+		return
+	_ajuda_escondida = true
+	var alvos: Array = ajudas_de_comandos.duplicate()
+	alvos.append(caixa_da_pausa)
+	for alvo in alvos:
+		if not is_instance_valid(alvo):
+			continue
+		var tween := create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+		tween.tween_property(alvo, "modulate:a", 0.0, 0.8)
+		tween.tween_callback(alvo.hide)
+
+
 ## Soma energia ao time. Quando enche, avisa que a super cortada está pronta.
 func _ganhar_energia(time: int, quanto: float) -> void:
 	if quanto <= 0.0:
@@ -969,7 +993,7 @@ func _ganhar_energia(time: int, quanto: float) -> void:
 	_atualizar_barra_de_energia(time)
 	if encheu:
 		sons.tocar("perfeito")
-		_mostrar_mensagem("Super pronta!", time)
+		_mostrar_mensagem("Super pronta!", time, false)
 
 
 func _atualizar_barra_de_energia(time: int) -> void:
@@ -1027,7 +1051,7 @@ func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> bool:
 		var antes := qualidade
 		qualidade = JeitosDeDefender.qualidade_da_recepcao(qualidade, cortada_recebida)
 		if qualidade != antes:
-			_mostrar_mensagem("Cortada forte! Acerte o tempo", time)
+			_mostrar_mensagem("Cortada forte!", time, false)
 	if atacando or numero <= 2:
 		_avisar_qualidade(controlados[time], qualidade)
 	# Energia do toque (a cortada soma depois de sair, pra não gastar o que acabou de ganhar).
@@ -1096,12 +1120,9 @@ func _levantar(time: int, qualidade: Qualidade) -> void:
 	var nome: String = ATAQUES[escolhido]["nome"]
 	var rapido: bool = altura == TempoDoToque.ALTURA_DO_LEVANTAMENTO_RAPIDO
 	_ultimo_levantamento[time] = { "nome": nome, "rapido": rapido }
+	# Só o levantamento rápido merece texto: o resto o jogador já vê pela bola.
 	if rapido:
-		_mostrar_mensagem("Levantamento rápido: %s" % nome, time)
-	elif altura == TempoDoToque.ALTURA_DO_LEVANTAMENTO_ALTO:
-		_mostrar_mensagem("Levantamento alto: %s" % nome, time)
-	else:
-		_mostrar_mensagem("Levantamento: %s" % nome, time)
+		_mostrar_mensagem("Rápido: %s" % nome, time, false)
 
 
 ## Pra onde o levantador manda: a direção apertada, só entre os ataques que
@@ -1256,7 +1277,7 @@ func _cortar(time: int, qualidade: Qualidade = Qualidade.BOM) -> void:
 		if super_cortada:
 			_bloqueio_do_ataque = minf(_bloqueio_do_ataque, Energia.ajuste("bloqueio_da_super", Energia.BLOQUEIO_DA_SUPER))
 		if efeito["nome"] != "":
-			_mostrar_mensagem(efeito["nome"], time)
+			_mostrar_mensagem(efeito["nome"], time, false)
 	var ponto_da_batida: Vector3 = bola.position
 	_forca_da_cortada = int(Qualidade.PERFEITO) if super_cortada else int(qualidade)
 	bola.lancar(destino, bola.position.y + subida)
@@ -1269,7 +1290,7 @@ func _cortar(time: int, qualidade: Qualidade = Qualidade.BOM) -> void:
 		impacto.cortada(true)
 		Estouro.mostrar(self, ponto_da_batida, COR_DA_SUPER_CORTADA, 1.6)
 		rastro.destacar(COR_DA_SUPER_CORTADA)
-		_mostrar_mensagem("SUPER CORTADA!", time)
+		_mostrar_mensagem("SUPER CORTADA!", time, false)
 	elif qualidade != Qualidade.RUIM:
 		var perfeita := qualidade == Qualidade.PERFEITO
 		impacto.cortada(perfeita)
@@ -1288,7 +1309,7 @@ func _largar(time: int, qualidade: Qualidade, mensagem := "Largada!") -> void:
 	bola.lancar(destino, bola.position.y + SUBIDA_DA_LARGADA)
 	_ao_lancar_bola()
 	sons.tocar("levantamento", 0.6)
-	_mostrar_mensagem(mensagem, time)
+	_mostrar_mensagem(mensagem, time, false)
 
 
 ## Ponto do mundo na quadra do outro time: "alvo" (x = lado, y = distância
@@ -1409,6 +1430,9 @@ func _atualizar_anel_de_tempo(time: int) -> void:
 
 
 func _avisar_qualidade(atleta: Node3D, qualidade: Qualidade) -> void:
+	# "Bom" é o toque comum: sem texto. Só o Perfeito e o Ruim aparecem.
+	if qualidade == Qualidade.BOM:
+		return
 	var cor := Color("#FF6B5B")
 	if qualidade == Qualidade.PERFEITO:
 		cor = AnelDeTempo.COR_PERFEITO
@@ -1583,7 +1607,7 @@ func _contar_tempo_do_saque(delta: float) -> void:
 		return
 	if restam <= 3 and restam != _segundos_mostrados:
 		_segundos_mostrados = restam
-		_mostrar_mensagem("Saque: segure e solte Ataque (%d)" % restam, placar.quem_saca)
+		_mostrar_mensagem("Saque: segure e solte (%d)" % restam, placar.quem_saca)
 
 
 func _e_da_rede(time: int, atleta: Node3D) -> bool:
@@ -1846,8 +1870,8 @@ func _preparar_saque() -> void:
 	controlados[outro] = atletas[outro][passador]
 
 	_mostrar_mensagem("")
-	_mostrar_mensagem("Saque: segure e solte Ataque", time)
-	_mostrar_mensagem("Recepção: corra até o anel e aperte Passe", outro)
+	_mostrar_mensagem("Saque: segure e solte", time)
+	_mostrar_mensagem("Recepção: vá ao anel e aperte Passe", outro)
 
 
 func _ao_encerrar_partida(vencedor: int) -> void:
@@ -2320,15 +2344,19 @@ func _criar_interface() -> void:
 	cortina = Cortina.nova(camada_da_cortina)
 
 	# Comandos de cada jogador embaixo da metade dele (ou só do J1, sem tela dividida).
-	var ajudas := [
-		"J1 teclado: WASD move · J passe · K saque/cortada · I flutuante · L bloqueio (frente triplo, trás só 1) · Espaço mergulho · I segurado ao levantar = rápido · K no 2º toque = bola de segunda",
-		"J2 teclado: setas movem · 1 passe · 2 saque/cortada · 5 flutuante · 3 bloqueio (frente triplo, trás só 1) · 0 mergulho (numérico)",
+	# Curtos: somem no primeiro saque (o resto fica por conta do jogo ensinar).
+	var ajudas_teclado := [
+		"Teclado: WASD move · J passe · K saque/cortada · I flutuante · L bloqueio · Espaço mergulho",
+		"Teclado: setas movem · 1 passe · 2 saque/cortada · 5 flutuante · 3 bloqueio · 0 mergulho",
 	]
+	var ajuda_do_controle := "Controle: A passe · X saque/cortada · RB flutuante · Y bloqueio · B mergulho"
+	var controles_ligados := Input.get_connected_joypads().size()
 	for jogador in (2 if tela_dividida else 1):
 		var ajuda := _rotulo_da_interface(16, false)
-		ajuda.text = ajudas[jogador] + "\nControle: A passe · X saque/cortada · RB flutuante · Y bloqueio (frente triplo, trás só 1) · B mergulho · Passe no pulo = largada · RB segurado ao levantar = rápido · X no 2º toque = bola de segunda"
-		ajuda.position = Vector2(20.0 + jogador * 800.0, 848.0)
+		ajuda.text = ajuda_do_controle if controles_ligados > jogador else ajudas_teclado[jogador]
+		ajuda.position = Vector2(20.0 + jogador * 800.0, 860.0)
 		camada.add_child(ajuda)
+		ajudas_de_comandos.append(ajuda)
 
 	# Lembrete da pausa no canto direito, crescendo pra esquerda.
 	caixa_da_pausa = _caixa_da_interface()
@@ -2346,13 +2374,23 @@ func _criar_interface() -> void:
 
 ## Mostra uma mensagem no meio da tela (time = -1) ou na metade de um time.
 ## Texto vazio esconde a caixa.
-func _mostrar_mensagem(texto: String, time := -1) -> void:
+## "fixa" = false: a mensagem some sozinha depois de DURACAO_DA_MENSAGEM
+## (avisos rápidos). Fixa: fica até outra mensagem ou o próximo lance.
+func _mostrar_mensagem(texto: String, time := -1, fixa := true) -> void:
+	_validade_da_mensagem[time + 1] += 1
+	var numero: int = _validade_da_mensagem[time + 1]
 	if time < 0:
 		rotulo_mensagem.text = texto
 		caixa_da_mensagem.visible = texto != ""
+	else:
+		rotulos_do_time[time].text = texto
+		caixas_do_time[time].visible = texto != ""
+	if fixa or texto == "" or not is_inside_tree():
 		return
-	rotulos_do_time[time].text = texto
-	caixas_do_time[time].visible = texto != ""
+	await get_tree().create_timer(DURACAO_DA_MENSAGEM, true, false, true).timeout
+	# Se outra mensagem entrou nesse meio tempo, deixa ela em paz.
+	if is_inside_tree() and _validade_da_mensagem[time + 1] == numero:
+		_mostrar_mensagem("", time)
 
 
 ## Esconde a mensagem do meio e as dos dois times.
