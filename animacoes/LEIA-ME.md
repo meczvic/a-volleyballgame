@@ -18,6 +18,18 @@ serve pros 42 atletas.
 | `comemoracao_torcida.fbx` | Rallying | Comemoração, em loop |
 | `comemoracao_palmas.fbx` | Clapping | Palmas, em loop |
 | `comemoracao_vitoria.fbx` | Victory | Fim de jogo (mexe pouco) |
+| `bloqueio_tapa.fbx` | Defender (Jumping And Swatting At A Ball) | Pula e bate na bola com o braço; candidata a bloqueio |
+| `bloqueio_erro.fbx` | Goalkeeper Miss | Pula e a bola passa |
+| `mergulho_direita.fbx` | Goalkeeper Diving Save (Right) | Mergulho pro outro lado (o `mergulho.fbx` é o Left) |
+| `levantar_do_chao.fbx` | Getting Up (From Stomach) | Levantar depois do mergulho |
+| `espera_defesa.fbx` | Goalkeeper Idle (Without Ball) | Agachado esperando a bola, em loop |
+| `pulo_parado.fbx` | Unarmed Jump | Pulo no lugar |
+| `pulo_correndo.fbx` | Jump (Forward Running Jump) | Pulo depois de correr; candidata à corrida de ataque |
+| `aterrissagem.fbx` | Landing | Queda depois do pulo |
+| `comemoracao_punho.fbx` | Fist Pump | Ponto ganho |
+| `comemoracao_pulo.fbx` | Joyful Jump | Ponto ganho, mais animado |
+| `ponto_perdido_frustrado.fbx` | Defeated | Ponto perdido |
+| `ponto_perdido_desanimado.fbx` | Disappointed | Ponto perdido |
 
 | `cortada.tres` | (montada) | Pulo do bloqueio + braço do saque batendo no alto do pulo |
 | `levantamento.tres` | (montada) | Pernas paradas + tronco e braços do bloqueio subindo acima da cabeça |
@@ -46,7 +58,10 @@ essas são adaptadas de outros esportes.
   o jogo já faz o pulo.
 
 Pra ajustar um lance (ex.: a cortada começa cedo demais), mude os números em `TRECHOS`.
-`defesa_lateral` e `comemoracao_vitoria` ainda não estão em uso.
+`defesa_lateral` e `comemoracao_vitoria` ainda não estão em uso, nem as 12 baixadas em
+12/11/2026 (de `bloqueio_tapa` a `ponto_perdido_desanimado` na tabela). Elas já importam
+no esqueleto comum, falta ligar no `animador.gd`. Vieram sem In Place (o animador trava o
+quadril).
 
 ## Animações do DeepMotion
 
