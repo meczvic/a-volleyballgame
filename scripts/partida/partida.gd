@@ -97,6 +97,9 @@ const ALTURA_MAXIMA_CORTADA := 3.5
 const PAUSA_DEPOIS_DO_PONTO := 1.8
 ## Depois do ponto, todo mundo anda mais rápido pra formação (multiplicador).
 const PRESSA_DEPOIS_DO_PONTO := 1.6
+## Segundos que os atletas ficam parados comemorando (ou reagindo) depois do
+## ponto, antes de andar pro lugar do próximo saque.
+const COMEMORACAO_ANTES_DE_VOLTAR := 0.8
 ## Botão apertado um pouco cedo (bola ainda fora do alcance) vale por esse
 ## tempo (s): o toque sai assim que der. Depois disso o anel do atleta pisca.
 const TEMPO_DO_PEDIDO := 0.15
@@ -218,6 +221,8 @@ var estado := Estado.SAQUE
 var ultimo_toque := -1
 ## Quantos pontos já tiveram comemoração (só pra variar a animação).
 var _pontos_animados := 0
+## _relogio na hora do último ponto (os atletas comemoram antes de voltar).
+var _relogio_do_ponto := -100.0
 ## Função de cada atleta: funcoes[time][índice] = "levantador", "ponteiro",
 ## "central" ou "oposto" (veja escalacao.gd).
 var funcoes: Array = [{}, {}]
@@ -407,8 +412,10 @@ func _physics_process(delta: float) -> void:
 				var atleta: Node3D = atletas[time][i]
 				if atleta != controlado:
 					_mover_ia(atleta, _alvo_da_ia(time, i), delta, _atributo(time, "velocidade"))
-		elif estado == Estado.PONTO:
-			# Todo mundo anda até o lugar do próximo saque enquanto o ponto é mostrado.
+		elif estado == Estado.PONTO and _tempo_desde_o_ponto() >= COMEMORACAO_ANTES_DE_VOLTAR:
+			# Depois de comemorar (ou reagir) um pouco, todo mundo anda até o
+			# lugar do próximo saque enquanto o ponto é mostrado. Só visual: no
+			# saque, _colocar_na_formacao põe cada um no lugar de qualquer jeito.
 			for i in 6:
 				_mover_ia(atletas[time][i], _alvo_depois_do_ponto(time, i), delta, PRESSA_DEPOIS_DO_PONTO)
 
@@ -1347,11 +1354,17 @@ func _encerrar_rally(vencedor: int, motivo: String) -> void:
 	temporizador_do_ponto.start()
 
 
+## Segundos desde que o último ponto foi marcado (no relógio da partida).
+func _tempo_desde_o_ponto() -> float:
+	return _relogio - _relogio_do_ponto
+
+
 ## Quem fez o ponto comemora e quem perdeu reage. Cada atleta faz uma
 ## animação, e ela muda de um ponto pro outro (sem usar o sorteio, pra não
 ## mudar as partidas com semente).
 func _animar_fim_do_ponto(vencedor: int) -> void:
 	_pontos_animados += 1
+	_relogio_do_ponto = _relogio
 	for i in 6:
 		var comemoracoes: Array = Animador.COMEMORACOES
 		var reacoes: Array = Animador.REACOES_AO_PONTO_PERDIDO

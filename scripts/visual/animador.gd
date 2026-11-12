@@ -30,9 +30,11 @@ const ARQUIVOS := {
 }
 const EM_LOOP := ["parado", "espera", "espera_defesa", "correr", "lateral_esquerda", "lateral_direita",
 	"comemoracao_palmas", "comemoracao_torcida", "comemoracao_punho", "comemoracao_pulo"]
-## Lances que param assim que o atleta anda (ele não escorrega fazendo a
-## reação). As de EM_LOOP também param.
-const SAEM_AO_ANDAR := ["ponto_perdido_frustrado", "ponto_perdido_desanimado"]
+## Lances que param assim que o atleta anda (ele não escorrega deitado nem
+## fazendo a reação). As de EM_LOOP também param. Nos primeiros CARENCIA
+## segundos não param (o mergulho já começa com um deslocamento curto).
+const SAEM_AO_ANDAR := ["mergulho", "mergulho_direita", "ponto_perdido_frustrado", "ponto_perdido_desanimado"]
+const CARENCIA := 0.25
 ## Comemorações do ponto e reações de quem perdeu: cada atleta faz uma.
 const COMEMORACOES := ["comemoracao_palmas", "comemoracao_punho", "comemoracao_pulo"]
 const REACOES_AO_PONTO_PERDIDO := ["ponto_perdido_desanimado", "ponto_perdido_desanimado", "ponto_perdido_frustrado"]
@@ -65,8 +67,10 @@ const TRECHOS := {
 	"cortada": [1.25, 2.0, 1.23],
 	"bloqueio": [0.55, 1.6],
 	"saque": [1.0, 2.0],
-	"mergulho": [0.3, 2.8],
-	"mergulho_direita": [0.3, 2.75],
+	# Mergulho a 2,2x: deita em ~0,45 s e começa a levantar em ~0,8 s, quando o
+	# atleta pode andar de novo (TEMPO_NO_CHAO da partida).
+	"mergulho": [0.5, 2.8, 2.2],
+	"mergulho_direita": [0.5, 2.75, 2.2],
 	# Nas reações, o começo e o fim são quase parados.
 	"ponto_perdido_frustrado": [0.6, 3.0],
 	"ponto_perdido_desanimado": [0.1, 2.4],
@@ -100,6 +104,7 @@ var _player: AnimationPlayer
 var _ultima_posicao := Vector3.ZERO
 var _tempo_do_lance := 0.0
 var _sai_ao_andar := false
+var _carencia := 0.0
 var _em_loop := ""
 var _altura_da_mao := -1.0
 
@@ -134,8 +139,10 @@ func tocar(lance: String) -> void:
 		_player.speed_scale = 1.0
 		_tempo_do_lance = 9999.0
 		_sai_ao_andar = true
+		_carencia = 0.0
 		return
 	_sai_ao_andar = lance in SAEM_AO_ANDAR
+	_carencia = CARENCIA
 	var trecho: Array = TRECHOS.get(lance, [0.0, _player.get_animation(nome).length])
 	_player.play(nome, MISTURA)
 	_player.seek(trecho[0], true)
@@ -217,7 +224,8 @@ func _process(delta: float) -> void:
 
 	if _tempo_do_lance > 0.0:
 		_tempo_do_lance -= delta
-		if not _sai_ao_andar or andou.length() < PARADO_ABAIXO_DE:
+		_carencia -= delta
+		if not _sai_ao_andar or _carencia > 0.0 or andou.length() < PARADO_ABAIXO_DE:
 			return
 		_tempo_do_lance = 0.0
 

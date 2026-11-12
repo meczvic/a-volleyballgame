@@ -50,10 +50,13 @@ essas são adaptadas de outros esportes.
 - **Lances:** saque, manchete (1º toque e bola devolvida de graça), levantamento,
   cortada, bloqueio (os da rede) e mergulho (botão Mergulho). O mergulho vai pro
   lado da bola: `mergulho` pra esquerda do atleta, `mergulho_direita` pra direita.
+  Toca a 2,2x, pra ele começar a levantar quando acaba o tempo no chão (0,8 s); se
+  ele anda antes do fim, a animação para (não escorrega deitado).
 - **Ponto:** quem fez o ponto comemora (palmas, punho ou pulo, cada atleta uma) e
-  quem perdeu reage (desanimado ou frustrado). A comemoração e a reação param assim
-  que o atleta anda pro lugar do próximo saque. No fim da partida, quem venceu
-  comemora com a torcida e quem perdeu fica frustrado.
+  quem perdeu reage (desanimado ou frustrado). Todos ficam parados 0,8 s
+  (`COMEMORACAO_ANTES_DE_VOLTAR` na partida) e depois andam pro lugar do próximo
+  saque; aí a comemoração e a reação param. No fim da partida, quem venceu comemora
+  com a torcida e quem perdeu fica frustrado.
 - **Defesa:** parado em quadra, o time que espera o saque ou o ataque do outro fica
   agachado (`espera_defesa`); o time com a bola fica na pose de espera normal.
 - Cada lance toca só o trecho que importa (tabela `TRECHOS` no começo do arquivo).
