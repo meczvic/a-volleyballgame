@@ -36,6 +36,8 @@ const PADRAO := {
 	"chance_de_largada": 0.12,
 	"chance_de_rapido": 0.2,
 	"chance_de_segunda": 0.05,
+	"chance_de_tripla": 0.5,
+	"chance_de_so_um": 0.1,
 }
 
 ## Lugares (em coordenadas da quadra do alvo: x = lado, y = distância da rede)
@@ -368,15 +370,24 @@ func _talvez_bloquear(time: int) -> void:
 	if not _plano.has("bloquear"):
 		_plano["bloquear"] = sorteio.randf() < float(ajustes["chance_de_bloquear"])
 		_plano["bloquear_em"] = _relogio + sorteio.randf_range(0.0, float(ajustes["atraso_do_bloqueio"]))
+		# Quantos bloqueiam: pra frente = triplo, neutro = dupla, pra trás = só um.
+		var sorte := sorteio.randf()
+		var chance_de_tripla := float(ajustes["chance_de_tripla"])
+		_plano["jeito_do_bloqueio"] = 1.0 if sorte < chance_de_tripla \
+			else (-1.0 if sorte > 1.0 - float(ajustes["chance_de_so_um"]) else 0.0)
 	if not _plano["bloquear"] or _relogio < float(_plano["bloquear_em"]):
 		return
 	_plano["bloquear"] = false
 	var atacante: Node3D = partida.cortadas[outro]["atleta"]
 	var bloqueador := _da_rede_mais_perto(time, atacante.position)
+	var lado_x := 0.0
 	if bloqueador:
 		var diferenca: float = atacante.position.x - bloqueador.position.x
 		if absf(diferenca) > 0.3:
-			_apertar_no_mundo(time, Vector2(signf(diferenca), 0.0))
+			lado_x = signf(diferenca)
+	# A direção "pra frente" do bloqueio é rumo à rede (y do mundo = lado do outro time).
+	var jeito := float(_plano.get("jeito_do_bloqueio", 0.0))
+	_apertar_no_mundo(time, Vector2(lado_x, jeito * partida._lado(outro)))
 	comando.emit(jogador, "bloqueio")
 
 
