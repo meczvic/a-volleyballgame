@@ -20,6 +20,21 @@ var _pontos: Array[Vector3] = []
 var _tempo := 0.0
 var _anterior := Vector3.ZERO
 var _velocidade := 0.0
+## Destaque (cortada perfeita): cor e tamanho maiores por um tempo (s).
+var _cor_do_destaque := COR
+var _destaque_resta := 0.0
+const AUMENTO_NO_DESTAQUE := 1.6
+
+
+## Deixa o rastro na "cor" e maior por "segundos" (ex.: cortada perfeita dourada).
+func destacar(cor: Color, segundos := 0.6) -> void:
+	_cor_do_destaque = cor
+	_destaque_resta = segundos
+
+
+## Pra testes: se o rastro está destacado agora.
+func destacado() -> bool:
+	return _destaque_resta > 0.0
 
 
 func _ready() -> void:
@@ -50,6 +65,7 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if alvo == null or not is_instance_valid(alvo) or delta <= 0.0:
 		return
+	_destaque_resta = maxf(_destaque_resta - delta, 0.0)
 	var agora := alvo.global_position
 	_velocidade = agora.distance_to(_anterior) / delta
 	_anterior = agora
@@ -69,12 +85,14 @@ func _physics_process(delta: float) -> void:
 
 
 func _desenhar() -> void:
+	var cor := _cor_do_destaque if destacado() else COR
+	var aumento := AUMENTO_NO_DESTAQUE if destacado() else 1.0
 	for i in QUANTIDADE:
 		if i < _pontos.size():
 			var fracao := 1.0 - float(i) / QUANTIDADE
-			var tamanho := raio * (0.35 + 0.65 * fracao)
+			var tamanho := raio * aumento * (0.35 + 0.65 * fracao)
 			_multimesh.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3.ONE * tamanho), _pontos[i]))
-			_multimesh.set_instance_color(i, Color(COR, 0.8 * fracao))
+			_multimesh.set_instance_color(i, Color(cor, 0.8 * fracao))
 		else:
 			_multimesh.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3.ZERO), Vector3.ZERO))
 

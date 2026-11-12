@@ -20,7 +20,7 @@ Um jogo de **vôlei de quadra 6 contra 6 em 3D**, para PC, feito para jogar com 
 | Regras | Regras oficiais do vôlei (FIVB): rodízio, posição no saque, ataque e bloqueio do fundo etc. **6 atletas por time, sem líbero** |
 | Placar | Melhor de 3 sets; set até **7**, com 2 de diferença e limite em **10** |
 | Modos | **Partida rápida** (normal) e **Modo Caos** com cartas (prata, ouro e prismática), inspirado no ARAM Mayhem |
-| Público | Amigos. Sem progressão, sem som/música por enquanto |
+| Público | Amigos. Sem progressão. Efeitos sonoros feitos pelo jogo (desde 12/11/2026); música depois |
 
 Material de apoio (privado, no Claude): [documento de design](https://claude.ai/artifact/8wLMvqE4SpXA52gxGTi6Qt), [apresentação do jogo](https://claude.ai/artifact/6CPMDNbUbxsLh42fkANrPc), [guia do VRoid](https://claude.ai/artifact/NitRJ4DP8oGWkKQJLS1k6A) e [plano semanal](https://claude.ai/artifact/8QXRa1ZrCFDYubEuys7BAr).
 
@@ -29,6 +29,13 @@ Material de apoio (privado, no Claude): [documento de design](https://claude.ai/
 ## 2. O que já foi feito
 
 Tudo abaixo está neste repositório. Em 12/11/2026, os **33 testes automáticos** (pasta `testes/`) passam no Godot 4.7.2 (`ferramentas/rodar_testes.sh` roda todos), e um robô jogou partidas dos dois lados sem erro.
+
+### Plano de jogabilidade, Etapa 1: sensação (12/11/2026)
+Plano completo e o que conferir jogando em [PLANO_JOGABILIDADE.md](PLANO_JOGABILIDADE.md). **Escrito sem o Godot no PC (não rodou ainda):** rode todos os testes antes de subir.
+- **Sons** feitos pelo jogo (`scripts/audio/sons.gd`, sem arquivo de áudio): batidas na bola pela qualidade do toque, bloqueio, rede, chão, mergulho, apito, torcida, sininho do Perfeito, erro e "tic" de botão que não deu.
+- **Seta do atleta controlado** (`scripts/partida/seta_do_controlado.gd`) que pula quando o controle troca.
+- **Impacto da cortada:** soco de zoom (`impacto.zoom`), faíscas (`scripts/visual/estouro.gd`), rastro dourado (`rastro.destacar`). Perfeito! maior.
+- Só som e visual: a partida com semente não muda. Teste: `teste_sons_e_impacto.gd`.
 
 ### Rede de segurança (Fases A e B do plano de melhorias, 12/11/2026)
 - **Todos os testes de uma vez:** `ferramentas/rodar_testes.sh` (veja a seção 6). Falha de verdade: confere a linha `OK:`, `FALHOU`, erro de script, código de saída e limite de tempo.
@@ -181,7 +188,8 @@ Leia esta seção inteira antes de mexer no código.
 - **Bloqueio:** `_tipo_do_bloqueio` devolve `Bloqueio.NENHUM`, `DEVOLVE` ou `TOQUE`; a bola (`bola.gd`) usa isso pra voltar ou raspar e seguir. Botões apertados cedo ficam em `pedidos[time]` por `TEMPO_DO_PEDIDO`.
 - **Polyfork** (Fase 05): 3 GLBs gratuitos em `assets/polyfork/cenario/` (CC BY 4.0, créditos em `assets/polyfork/LEIA-ME.md`), carregados por `scripts/cenario/polyfork.gd` (cor dos vértices, troca de cores, apoio no chão; sem o arquivo, volta a peça desenhada). Antes de acrescentar outro, registre em `assets/polyfork/manifesto.json`.
 - **`scripts/cenario/`** (Fase 04): `cenario.gd` monta quadra, rede, árbitros, bancos e mesa e chama o estilo do estádio (`ginasio_japones.gd` ou `arena.gd`); `pecas.gd` tem as peças. A partida só chama `_criar_cenario()`. As câmeras ficam do lado de fora do ginásio, atrás de cada time: o que está no fundo atrás de um time vai pra camada 13 (atrás do time 0, z positivo) ou 14 (atrás do time 1), e a câmera daquele time não desenha essa camada (`Cenario.CAMADA_ATRAS_DO_TIME`). Use as camadas 11–14 só pra isso. O cenário não tem física: medidas da quadra e da rede continuam em `partida.gd` e `bola.gd`.
-- **`scripts/visual/`:** `visual_anime.gd` (materiais anime), `animador.gd` (animações dos personagens), `impacto.gd` (congelar e tremer a tela), `rastro.gd` (rastro da bola).
+- **`scripts/visual/`:** `visual_anime.gd` (materiais anime), `animador.gd` (animações dos personagens), `impacto.gd` (congelar, tremer e dar zoom na tela), `rastro.gd` (rastro da bola), `estouro.gd` (faíscas).
+- **`scripts/audio/sons.gd`:** efeitos sonoros, montados pelo jogo na primeira vez e guardados. A partida chama `sons.tocar("nome", intensidade)`. Use só o sorteio próprio dele (nunca `partida.sorteio`), pra não mudar a partida com semente.
 - **`scripts/menus/`:** `estilo.gd` guarda cores, fontes e peças de interface de todos os menus (inclusive `rotulo_com_contorno`, usado na partida); `selecao.gd` tem a lógica da seleção e `selecao_de_times.gd` desenha a tela (emblemas em `arte/emblemas/`, ícones em `arte/icones/`, atleta 3D em `retrato_do_atleta.gd`, que guarda os atletas já montados e libera ao sair); `cortina.gd` é a cortina preta das trocas de cena.
 - **`dados/*.json`:** tudo que é ajustável sem código (times, elenco, estádios, cartas), lido por `scripts/comum/dados.gd`. A escalação depende do campo `posicao` em `dados/elenco.json` (levantador, ponteiro, central, oposto): mantenha 1 levantador, 2 ponteiros, 2 centrais e 1 oposto por time.
 - **Câmera e visual:** ajustáveis no Inspetor do nó `Partida` em `cenas/partida.tscn` (tela dividida, altura, distância, foco, visual anime). Valores atuais (Fase 04): altura 10,5, distância 24, foco 0, abertura 37° (antes: 14,5, 29,5, 1,5 e 27°; a câmera nova mostra o ginásio e deixa os atletas maiores, com os quatro cantos da quadra na tela). O quanto a câmera acompanha a bola fica nas constantes de `scripts/partida/camera_da_partida.gd`.
@@ -215,7 +223,7 @@ Leia esta seção inteira antes de mexer no código.
 ### Testes
 - **Rodar todos:** `GODOT=/caminho/do/godot ferramentas/rodar_testes.sh` (no Windows, pelo Git Bash). Importa os arquivos, roda cada teste com limite de tempo (`LIMITE_POR_TESTE`, padrão 600 s) e sai com erro se algum falhar. Um teste passa quando termina sozinho, sai com código 0, imprime `OK:` e não imprime `FALHOU` nem `SCRIPT ERROR`. **Cuidado:** um erro de script trava o Godot sem fechar; por isso o limite de tempo. `ferramentas/rodar_testes.sh mira placar` roda só os que têm essas palavras no nome; `SEM_IMPORTAR=1` pula a importação.
 - **No GitHub:** `.github/workflows/testes.yml` roda o mesmo script em todo PR e a cada push no branch principal.
-- São 33 arquivos em `testes/` (`teste_partida_com_semente.gd` faz o robô jogar 90 s com a semente 42 e compara com o resultado gravado: se mudar o jogo de propósito, regrave com o comando do começo do arquivo; `teste_atleta_anime.gd` confere o atleta no estilo anime: normais pra fora, rosto desenhado, cabelo em mechas e os 42 montando; `teste_pose_de_espera.gd` confere a pose de espera com os pés no chão; `teste_cenario.gd` abre a partida nos 4 estádios e confere rede, árbitros, pessoas e as camadas de cada câmera; `teste_tela_de_selecao.gd` e `teste_tela_de_cartas.gd` abrem a tela e apertam os botões dos dois jogadores; `teste_elenco_em_quadra.gd` confere os 42 atletas: malha com pesos, esqueleto, trilhas das animações e pose que se mexe). Rode todos, dentro da pasta do projeto:
+- São 34 arquivos em `testes/` (`teste_sons_e_impacto.gd` confere os sons, a seta do controlado e o impacto da cortada; `teste_partida_com_semente.gd` faz o robô jogar 90 s com a semente 42 e compara com o resultado gravado: se mudar o jogo de propósito, regrave com o comando do começo do arquivo; `teste_atleta_anime.gd` confere o atleta no estilo anime: normais pra fora, rosto desenhado, cabelo em mechas e os 42 montando; `teste_pose_de_espera.gd` confere a pose de espera com os pés no chão; `teste_cenario.gd` abre a partida nos 4 estádios e confere rede, árbitros, pessoas e as camadas de cada câmera; `teste_tela_de_selecao.gd` e `teste_tela_de_cartas.gd` abrem a tela e apertam os botões dos dois jogadores; `teste_elenco_em_quadra.gd` confere os 42 atletas: malha com pesos, esqueleto, trilhas das animações e pose que se mexe). Rode todos, dentro da pasta do projeto:
 
 ```
 for t in testes/teste_*.gd; do godot --headless --script res://$t; done
