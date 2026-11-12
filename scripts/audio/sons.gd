@@ -32,6 +32,7 @@ const AJUSTES := {
 	"apito": { "volume": -9.0, "tom": 1.0 },
 	"torcida": { "volume": -8.0, "tom": 1.0 },
 	"perfeito": { "volume": -8.0, "tom": 1.0 },
+	"super": { "volume": -5.0, "tom": 1.0 },
 	"ruim": { "volume": -12.0, "tom": 1.0 },
 	"falhou": { "volume": -10.0, "tom": 1.0 },
 }
@@ -137,6 +138,8 @@ static func _montar(nome: String) -> PackedFloat32Array:
 			return _torcida()
 		"perfeito":
 			return _sininho([880.0, 1318.5], 0.07, 0.5)
+		"super":
+			return _sininho([523.25, 659.25, 784.0, 1046.5, 1568.0], 0.06, 0.7)
 		"ruim":
 			return _batida(0.22, 210.0, 150.0, 12.0, 0.0, 0.0, true)
 		"falhou":

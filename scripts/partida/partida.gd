@@ -71,6 +71,8 @@ const AnelDoControlado := preload("res://scripts/partida/anel_do_controlado.gd")
 const CameraDaPartida := preload("res://scripts/partida/camera_da_partida.gd")
 const Cortina := preload("res://scripts/menus/cortina.gd")
 const BarraDeForca := preload("res://scripts/partida/barra_de_forca.gd")
+const BarraDeEnergia := preload("res://scripts/partida/barra_de_energia.gd")
+const Energia := preload("res://scripts/regras/energia.gd")
 const Cartas := preload("res://scripts/regras/cartas.gd")
 const EscolhaDeCartas := preload("res://scripts/partida/escolha_de_cartas.gd")
 const Sons := preload("res://scripts/audio/sons.gd")
@@ -211,6 +213,7 @@ const DISTANCIA_DO_ANEL_DE_TEMPO := 3.5
 const CAMADA_DO_ANEL_DE_TEMPO := [11, 12]
 ## Cor das faíscas e do rastro da cortada perfeita.
 const COR_DA_CORTADA_PERFEITA := Color("#FFD23F")
+const COR_DA_SUPER_CORTADA := Color("#FF5722")
 ## Texto do aviso "Perfeito!" (maior que o "Bom" e o "Ruim", pra comemorar).
 const TAMANHO_DO_AVISO_PERFEITO := 44
 
@@ -311,6 +314,9 @@ var rotulos_do_time: Array[Label] = []
 var caixas_do_time: Array[PanelContainer] = []
 ## Barra de força do saque de cada time.
 var barras_de_forca: Array = [null, null]
+## Medidor de energia de cada time e a barra dele na tela (Etapa 4).
+var energias: Array = [Energia.new(), Energia.new()]
+var barras_de_energia: Array = [null, null]
 ## Lembrete "Esc ou Start: pausa"; some no fim de jogo.
 var caixa_da_pausa: PanelContainer
 ## Espera depois de cada ponto. É um nó (e não um "await") pra parar junto
@@ -771,7 +777,7 @@ func _tipo_do_bloqueio(ponto_na_rede: Vector3, lado_destino: float) -> Bloqueio:
 			# Bloqueio perfeito devolve mais forte e pro lado apertado.
 			var qualidade_do_bloqueio: Qualidade = _qualidade_do_bloqueio[time]
 			bola.forca_do_bloqueio = JeitosDeDefender.forca_do_rebote(qualidade_do_bloqueio)
-			bola.empurrao_do_bloqueio = float(_rumo_do_bloqueio[time]) * JeitosDeDefender.EMPURRAO_LATERAL_PERFEITO \
+			bola.empurrao_do_bloqueio = float(_rumo_do_bloqueio[time]) * JeitosDeDefender.valor("empurrao_lateral_perfeito", JeitosDeDefender.EMPURRAO_LATERAL_PERFEITO) \
 				if qualidade_do_bloqueio == Qualidade.PERFEITO else 0.0
 			return Bloqueio.DEVOLVE
 		resultado = Bloqueio.TOQUE
@@ -798,6 +804,7 @@ func _ao_bola_ser_bloqueada() -> void:
 	_bloqueio_do_ataque = 1.0
 	_forca_da_cortada = -1
 	_ponto_de_bloqueio = time_que_bloqueou
+	_ganhar_energia(time_que_bloqueou, Energia.ajuste("ganho_do_bloqueio_que_devolve", Energia.GANHO_DO_BLOQUEIO_QUE_DEVOLVE))
 	impacto.bloqueio()
 	sons.tocar("bloqueio")
 	Estouro.mostrar(self, bola.position, _cor_do_time(time_que_bloqueou), 0.8)
@@ -820,6 +827,7 @@ func _ao_bola_tocar_bloqueio() -> void:
 	_bloqueio_do_ataque = 1.0
 	_forca_da_cortada = -1
 	_ponto_de_bloqueio = -1
+	_ganhar_energia(time_que_bloqueou, Energia.ajuste("ganho_do_toque_no_bloqueio", Energia.GANHO_DO_TOQUE_NO_BLOQUEIO))
 	impacto.ponto()
 	sons.tocar("bloqueio", 0.45)
 	AvisoDeToque.mostrar(self, bola.position + Vector3(0.0, 0.8, 0.0), "Toque no bloqueio", Color(0.95, 0.95, 0.95))
@@ -953,6 +961,23 @@ func _sacar(time: int, flutuante: bool, forca := 0.4, alvo := Mira.ALVO_INICIAL)
 	_ao_lancar_bola()
 
 
+## Soma energia ao time. Quando enche, avisa que a super cortada está pronta.
+func _ganhar_energia(time: int, quanto: float) -> void:
+	if quanto <= 0.0:
+		return
+	var encheu: bool = energias[time].encher(quanto)
+	_atualizar_barra_de_energia(time)
+	if encheu:
+		sons.tocar("perfeito")
+		_mostrar_mensagem("Super pronta!", time)
+
+
+func _atualizar_barra_de_energia(time: int) -> void:
+	var barra = barras_de_energia[time]
+	if barra != null:
+		barra.mostrar(energias[time].valor, energias[time].cheia())
+
+
 ## Passe (atacando = false) ou ataque (atacando = true) do atleta controlado.
 ## Devolve false se a bola estava fora do alcance (o botão não valeu).
 func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> bool:
@@ -1005,6 +1030,16 @@ func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> bool:
 			_mostrar_mensagem("Cortada forte! Acerte o tempo", time)
 	if atacando or numero <= 2:
 		_avisar_qualidade(controlados[time], qualidade)
+	# Energia do toque (a cortada soma depois de sair, pra não gastar o que acabou de ganhar).
+	var ganho := 0.0
+	if mergulho:
+		ganho = Energia.ajuste("ganho_do_mergulho", Energia.GANHO_DO_MERGULHO) if qualidade != Qualidade.RUIM else 0.0
+	elif atacando:
+		ganho = Energia.ganho_do_toque("cortada", qualidade) if numero != 2 and not atleta_que_tocou.get_meta("largada", false) else 0.0
+	elif numero == 1:
+		ganho = Energia.ganho_do_toque("passe", qualidade)
+	elif numero == 2:
+		ganho = Energia.ganho_do_toque("levantamento", qualidade)
 	if atacando:
 		_cortar(time, qualidade)
 	elif numero == 1:
@@ -1013,6 +1048,7 @@ func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> bool:
 		_levantar(time, qualidade)
 	else:
 		_devolver_de_graca(time)
+	_ganhar_energia(time, ganho)
 	return true
 
 
@@ -1052,7 +1088,7 @@ func _levantar(time: int, qualidade: Qualidade) -> void:
 			and passe != Qualidade.RUIM and qualidade != Qualidade.RUIM:
 		altura = TempoDoToque.ALTURA_DO_LEVANTAMENTO_RAPIDO
 		if passe != Qualidade.PERFEITO or qualidade != Qualidade.PERFEITO:
-			raio *= JeitosDeAtacar.ERRO_DO_RAPIDO_FORCADO
+			raio *= JeitosDeAtacar.valor("erro_do_rapido_forcado", JeitosDeAtacar.ERRO_DO_RAPIDO_FORCADO)
 	var erro := _erro_aleatorio(raio)
 	var alvo: Vector3 = alvos_de_ataque[time][escolhido] + Vector3(erro.x, 0.0, erro.y)
 	bola.lancar(alvo, altura)
@@ -1204,21 +1240,37 @@ func _cortar(time: int, qualidade: Qualidade = Qualidade.BOM) -> void:
 	var efeito := JeitosDeAtacar.efeito(
 		levantamento.get("nome", ""), levantamento.get("rapido", false),
 		JeitosDeAtacar.jeito_da_mira(controlados[time].position.x, alvo.x))
+	# Energia cheia e cortada que não saiu ruim: SUPER CORTADA.
+	var super_cortada: bool = energias[time].cheia() and qualidade != Qualidade.RUIM
 	var erro_da_mira := maxf(float(jeito["erro_da_mira"]) + float(efeito["erro_a_mais"]), 0.1)
+	if super_cortada:
+		erro_da_mira = minf(erro_da_mira, Energia.ajuste("erro_da_super", Energia.ERRO_DA_SUPER))
 	var destino := _destino_na_quadra_do_outro(time, alvo, erro_da_mira)
 	miras[time].esconder()
 	var subida := maxf(float(jeito["subida"]) - Atributos.cortada_mais_forte(times_em_jogo[time]) - float(efeito["subida_a_menos"]), 0.05)
+	if super_cortada:
+		subida = minf(subida, Energia.ajuste("subida_da_super", Energia.SUBIDA_DA_SUPER))
 	if qualidade != Qualidade.RUIM:
 		# Cortada ruim não aproveita o jeito: o bloqueio pega normal.
 		_bloqueio_do_ataque = float(efeito["bloqueio"])
+		if super_cortada:
+			_bloqueio_do_ataque = minf(_bloqueio_do_ataque, Energia.ajuste("bloqueio_da_super", Energia.BLOQUEIO_DA_SUPER))
 		if efeito["nome"] != "":
 			_mostrar_mensagem(efeito["nome"], time)
 	var ponto_da_batida: Vector3 = bola.position
-	_forca_da_cortada = int(qualidade)
+	_forca_da_cortada = int(Qualidade.PERFEITO) if super_cortada else int(qualidade)
 	bola.lancar(destino, bola.position.y + subida)
 	_ao_lancar_bola()
 	sons.tocar("cortada", _intensidade_do_som(qualidade))
-	if qualidade != Qualidade.RUIM:
+	if super_cortada:
+		energias[time].gastar()
+		_atualizar_barra_de_energia(time)
+		sons.tocar("super")
+		impacto.cortada(true)
+		Estouro.mostrar(self, ponto_da_batida, COR_DA_SUPER_CORTADA, 1.6)
+		rastro.destacar(COR_DA_SUPER_CORTADA)
+		_mostrar_mensagem("SUPER CORTADA!", time)
+	elif qualidade != Qualidade.RUIM:
 		var perfeita := qualidade == Qualidade.PERFEITO
 		impacto.cortada(perfeita)
 		Estouro.mostrar(self, ponto_da_batida, COR_DA_CORTADA_PERFEITA if perfeita else Color(1.0, 1.0, 1.0), 1.0 if perfeita else 0.45)
@@ -1597,6 +1649,8 @@ func _encerrar_rally(vencedor: int, motivo: String) -> void:
 	else:
 		faixa.mostrar("PONTO!", "%s  ·  %s" % [nome, explicacao], _cor_do_time(vencedor), vencedor)
 	sons.tocar("torcida", torcida)
+	_ganhar_energia(vencedor, Energia.ajuste("ganho_do_ponto", Energia.GANHO_DO_PONTO))
+	_ganhar_energia(1 - vencedor, Energia.ajuste("ganho_do_ponto_perdido", Energia.GANHO_DO_PONTO_PERDIDO))
 	# A faixa já diz quem pontuou e o motivo: a caixa do meio fica escondida
 	# (o texto continua lá, pros testes e pro robô).
 	caixa_da_mensagem.visible = false
@@ -2233,6 +2287,17 @@ func _criar_interface() -> void:
 		barra.name = "BarraDeForca%d" % time
 		centro_da_barra.add_child(barra)
 		barras_de_forca[time] = barra
+
+		# Medidor de energia (super cortada), acima da barra de força.
+		var centro_da_energia := CenterContainer.new()
+		centro_da_energia.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		centro_da_energia.position = Vector2(800.0 * time, 690.0)
+		centro_da_energia.size = Vector2(800.0, 60.0)
+		camada.add_child(centro_da_energia)
+		var barra_de_energia := BarraDeEnergia.new()
+		barra_de_energia.name = "BarraDeEnergia%d" % time
+		centro_da_energia.add_child(barra_de_energia)
+		barras_de_energia[time] = barra_de_energia
 
 		# Modo Caos: as cartas do time, no canto da metade dele.
 		if modo_caos:

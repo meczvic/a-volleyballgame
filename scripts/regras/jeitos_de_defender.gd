@@ -3,6 +3,7 @@ extends RefCounted
 ## bloqueio pelo tempo do botão, a cortada forte na recepção e o risco do
 ## mergulho. Só regras e números (sem tela), pra testar sozinho.
 
+const Ajustes := preload("res://scripts/comum/ajustes.gd")
 const TempoDoToque := preload("res://scripts/regras/tempo_do_toque.gd")
 const Qualidade := TempoDoToque.Qualidade
 
@@ -23,10 +24,10 @@ static func quem_bloqueia(xs: Array, direcao_x: float, pra_frente: float) -> Arr
 	var todos: Array[int] = []
 	for i in xs.size():
 		todos.append(i)
-	if pra_frente > LIMITE_DA_DIRECAO or xs.size() <= 1:
+	if pra_frente > valor("limite_da_direcao", LIMITE_DA_DIRECAO) or xs.size() <= 1:
 		return todos
-	var quantos := 1 if pra_frente < -LIMITE_DA_DIRECAO else mini(2, xs.size())
-	var referencia := direcao_x * DESLOCAMENTO_DA_DUPLA if quantos == 2 else 0.0
+	var quantos := 1 if pra_frente < -valor("limite_da_direcao", LIMITE_DA_DIRECAO) else mini(2, xs.size())
+	var referencia := direcao_x * valor("deslocamento_da_dupla", DESLOCAMENTO_DA_DUPLA) if quantos == 2 else 0.0
 	todos.sort_custom(func(a, b): return absf(float(xs[a]) - referencia) < absf(float(xs[b]) - referencia))
 	return todos.slice(0, quantos)
 
@@ -47,16 +48,16 @@ const EMPURRAO_LATERAL_PERFEITO := 3.0
 ## falta pro atacante bater na bola; o pico do pulo (meio da duração) deve
 ## coincidir com a bola passando pela rede.
 static func erro_do_bloqueio(ate_a_batida: float, duracao_do_pulo: float) -> float:
-	return ate_a_batida + TRAVESSIA_DA_CORTADA - duracao_do_pulo / 2.0
+	return ate_a_batida + valor("travessia_da_cortada", TRAVESSIA_DA_CORTADA) - duracao_do_pulo / 2.0
 
 
 static func qualidade_do_bloqueio(erro: float, escala_do_time: float = 1.0) -> Qualidade:
-	return TempoDoToque.qualidade(erro, ESCALA_DA_JANELA_DO_BLOQUEIO * escala_do_time)
+	return TempoDoToque.qualidade(erro, valor("escala_da_janela_do_bloqueio", ESCALA_DA_JANELA_DO_BLOQUEIO) * escala_do_time)
 
 
 ## Força do rebote do bloqueio que devolve a bola (1.0 = normal).
 static func forca_do_rebote(qualidade: Qualidade) -> float:
-	return FORCA_DO_BLOQUEIO_PERFEITO if qualidade == Qualidade.PERFEITO else 1.0
+	return valor("forca_do_bloqueio_perfeito", FORCA_DO_BLOQUEIO_PERFEITO) if qualidade == Qualidade.PERFEITO else 1.0
 
 
 ## Só bloqueio perfeito ou bom devolve a bola; ruim só raspa (toque).
@@ -85,11 +86,11 @@ const ALCANCE_A_MAIS_NO_TEMPO := 0.5
 static func tempo_no_chao_do_mergulho(base: float, qualidade: Qualidade, alcancou: bool) -> float:
 	if alcancou and qualidade != Qualidade.RUIM:
 		return base
-	return base * RISCO_DO_MERGULHO
+	return base * valor("risco_do_mergulho", RISCO_DO_MERGULHO)
 
 
 static func alcance_a_mais(qualidade: Qualidade) -> float:
-	return ALCANCE_A_MAIS_NO_TEMPO if qualidade == Qualidade.PERFEITO else 0.0
+	return valor("alcance_a_mais_no_tempo", ALCANCE_A_MAIS_NO_TEMPO) if qualidade == Qualidade.PERFEITO else 0.0
 
 
 ## Qualidade do passe no mergulho. De longe é ruim, a não ser com o tempo
@@ -98,3 +99,9 @@ static func qualidade_do_mergulho(qualidade: Qualidade, longe: bool) -> Qualidad
 	if longe:
 		return Qualidade.BOM if qualidade == Qualidade.PERFEITO else Qualidade.RUIM
 	return TempoDoToque.pior(qualidade, Qualidade.BOM)
+
+
+## Número de equilíbrio: vem de dados/ajustes.json (grupo "defesa") ou, se faltar lá,
+## do valor padrão que está no código.
+static func valor(chave: String, padrao: float) -> float:
+	return Ajustes.pegar("defesa", chave, padrao)

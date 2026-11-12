@@ -1,0 +1,38 @@
+{
+	"_comentario": "Números de equilíbrio das Etapas 3 e 4 (ataques, defesa e energia). O jogo lê este arquivo; se faltar uma chave, usa o valor que está no código (scripts/regras/jeitos_de_atacar.gd, jeitos_de_defender.gd e energia.gd, com a explicação de cada número). Os nomes aqui são os mesmos do código, em minúsculas. Os ganhos de energia por toque (passe, levantamento e cortada, perfeito e bom) ficam na tabela do código.",
+	"ataques": {
+		"bloqueio_do_rapido_do_meio": 0.6,
+		"bloqueio_do_rapido": 0.8,
+		"bloqueio_do_pipe": 0.7,
+		"bloqueio_da_paralela": 0.85,
+		"subida_a_menos_no_pipe": 0.08,
+		"erro_a_mais_na_paralela": 0.4,
+		"erro_a_menos_na_diagonal": -0.2,
+		"erro_do_rapido_forcado": 1.8,
+		"zona_do_meio": 1.5,
+		"cruzamento_da_diagonal": 3.0,
+		"lado_minimo_da_diagonal": 1.0,
+		"lado_minimo_da_paralela": 2.5,
+		"desvio_da_paralela": 1.5
+	},
+	"defesa": {
+		"limite_da_direcao": 0.5,
+		"deslocamento_da_dupla": 2.0,
+		"escala_da_janela_do_bloqueio": 1.5,
+		"travessia_da_cortada": 0.1,
+		"forca_do_bloqueio_perfeito": 1.4,
+		"empurrao_lateral_perfeito": 3.0,
+		"risco_do_mergulho": 1.6,
+		"alcance_a_mais_no_tempo": 0.5
+	},
+	"energia": {
+		"ganho_do_bloqueio_que_devolve": 0.15,
+		"ganho_do_toque_no_bloqueio": 0.05,
+		"ganho_do_mergulho": 0.08,
+		"ganho_do_ponto": 0.05,
+		"ganho_do_ponto_perdido": 0.02,
+		"erro_da_super": 0.2,
+		"subida_da_super": 0.05,
+		"bloqueio_da_super": 0.45
+	}
+}
