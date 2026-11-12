@@ -18,8 +18,8 @@ Escrito em **12/11/2026**, a partir das respostas do Victor. Objetivo: deixar a 
 | --- | --- | --- |
 | **1. Sensação e controle** | Sons, seta no atleta controlado, impacto da cortada (zoom, faíscas, rastro), destaque do Perfeito, som quando o botão não dá | **Feita no código em 12/11/2026**, falta testar no Godot |
 | **2. IA e modo contra o computador** | Dificuldades, menu de 1 jogador, IA dos companheiros, robô medindo o rally | **Feita em 12/11/2026**, testada no Godot; falta você jogar |
-| 3. Estratégia no rally | Mais ataques (de meio, bola de segunda, finta), defesa com leitura, jogadas do levantador, bloqueio duplo/triplo | Não começada |
-| 4. Super golpe | Medidor que enche com toques bons e libera uma jogada especial | Não começada |
+| **3. Estratégia no rally** | Ataques novos (3A) e defesa nova (3B) | **Feita em 12/11/2026** (3A e 3B), falta você jogar |
+| **4. Super golpe** | Medidor de energia e super cortada | **Feita em 12/11/2026**, falta você jogar |
 | 5. Ajuste e arrumação | Números de equilíbrio em `dados/ajustes.json`, quebrar o `partida.gd` onde as etapas mexerem | Não começada |
 
 ## Etapa 1: o que mudou
@@ -127,3 +127,12 @@ Muita coisa muda a partida com semente, então cada parte regrava o teste uma ve
 - **Código:** regras em `scripts/regras/jeitos_de_defender.gd`; teste novo `testes/teste_defesa.gd`. O teste com semente continuou igual (o robô não aperta direção no bloqueio).
 - **Rally médio (computador contra computador, 3 sementes, 120 s):** Fácil 4,0 → 3,7; Normal 8,4 → 8,6; Difícil 16,4 → 20,5. Variação grande entre sementes; vale o Victor jogar pra sentir.
 - **Ficou de fora:** o tempo do bloqueio não usa atributos do time ainda.
+
+
+### Etapa 4: feita (12/11/2026, ainda não jogada pelo Victor)
+Você deixou as decisões comigo ("seguir todas as etapas"), então escolhi o jeito mais simples e fácil de mudar.
+- **Medidor de energia** por time (`scripts/regras/energia.gd`, barra azul em `scripts/partida/barra_de_energia.gd`, acima da barra de força). Enche com: passe perfeito (+10%) ou bom (+4%), levantamento perfeito (+8%) ou bom (+3%), cortada perfeita (+12%) ou boa (+5%), bloqueio que devolve (+15%), toque no bloqueio (+5%), mergulho que pega a bola (+8%), ponto feito (+5%) e ponto sofrido (+2%). Toque ruim não enche. Não zera entre rallies.
+- **Super cortada:** com a barra cheia ("SUPER PRONTA!" pisca), a próxima cortada que não sair ruim vira super, sozinha, sem botão extra. Sai com o erro da mira em 0,2 m, bola muito mais rápida, largura do bloqueio em 45% e conta como cortada perfeita na recepção (passe só bom sai ruim). Tem som próprio, zoom, faíscas laranja e rastro laranja.
+- O computador também enche e usa a super.
+- Teste novo: `testes/teste_energia.gd`. Teste com semente regravado (3 rallies, maior com 47 toques).
+- **O que conferir jogando:** enche rápido ou devagar demais? A super é forte demais ou fraca? Faz falta um botão pra escolher quando usar?

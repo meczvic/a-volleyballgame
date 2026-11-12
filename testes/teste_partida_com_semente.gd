@@ -22,12 +22,12 @@ const ARGUMENTOS_DO_ROBO := ["times=brasil,karasuno", "estadio=ginasio_japones",
 ## A do desempenho fica de fora: depende da máquina.
 const LINHAS_DO_RESUMO := ["fim depois de", "rallies (maior", "quedas (cm)"]
 ## Resultado gravado, por sistema (OS.get_name()), sem o "Robô: " do começo.
-## Regravado em 12/11/2026 (Etapa 2: companheiros com cobertura, defesa e espaço).
+## Regravado em 12/11/2026 (Etapa 4: medidor de energia e super cortada).
 const ESPERADO := {
 	"Windows": [
-		"fim depois de 90 s de jogo. Sets 0 x 0, pontos 1 x 3, estado RALLY.",
-		"4 rallies (maior com 48 toques), lances: { \"saques\": 5, \"passes\": 46, \"levantamentos\": 44, \"cortadas\": 44, \"bloqueios\": 296 }",
-		"quedas (cm): 31,583 1,564 -72,-402 28,652",
+		"fim depois de 90 s de jogo. Sets 0 x 0, pontos 1 x 2, estado RALLY.",
+		"3 rallies (maior com 47 toques), lances: { \"saques\": 4, \"passes\": 47, \"levantamentos\": 48, \"cortadas\": 48, \"bloqueios\": 336 }",
+		"quedas (cm): 31,583 -7,398 -72,-402",
 	],
 }
 
