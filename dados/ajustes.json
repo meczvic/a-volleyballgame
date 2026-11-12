@@ -1,4 +1,5 @@
 {
+	"musica": { "ligada": true, "volume_db": -14.0 },
 	"_comentario": "Números de equilíbrio das Etapas 3 e 4 (ataques, defesa e energia). O jogo lê este arquivo; se faltar uma chave, usa o valor que está no código (scripts/regras/jeitos_de_atacar.gd, jeitos_de_defender.gd e energia.gd, com a explicação de cada número). Os nomes aqui são os mesmos do código, em minúsculas. Os ganhos de energia por toque (passe, levantamento e cortada, perfeito e bom) ficam na tabela do código.",
 	"velocidade": {
 		"saque_fraco": 1.1,

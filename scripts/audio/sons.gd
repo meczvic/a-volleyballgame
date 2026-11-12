@@ -66,7 +66,12 @@ func _ready() -> void:
 
 ## Toca o som "nome". "intensidade" (0 a 1, pode passar um pouco de 1) deixa
 ## mais alto e um pouco mais grave quando é forte.
+## Cada som pedido (o online repassa pro convidado).
+signal tocou(nome: String, intensidade: float)
+
+
 func tocar(nome: String, intensidade := 1.0) -> void:
+	tocou.emit(nome, intensidade)
 	historico.append(nome)
 	if historico.size() > 32:
 		historico.remove_at(0)

@@ -101,6 +101,10 @@ func _fechar_controles() -> void:
 	_botao_controles.grab_focus()
 
 
+func _online() -> void:
+	_trocar_de_cena("res://cenas/tela_online.tscn")
+
+
 func _sair() -> void:
 	get_tree().quit()
 
@@ -177,7 +181,7 @@ func _criar_botoes() -> void:
 		["1 JOGADOR", _um_jogador],
 		["2 JOGADORES", _dois_jogadores],
 		["MODO CAOS", _modo_caos],
-		["ONLINE  ·  EM BREVE", Callable()],
+		["ONLINE", _online],
 		["CONTROLES", _mostrar_controles],
 		["SAIR", _sair],
 	]

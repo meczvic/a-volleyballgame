@@ -415,6 +415,7 @@ func _mergulhar(time: int) -> void:
 
 ## Mergulho pro lado do "rumo" (esquerda ou direita de quem mergulha).
 func _animar_mergulho(atleta: Node3D, rumo: Vector2) -> void:
+	p.online.ao_mergulhar(atleta, rumo)
 	var animador = p._animador_de(atleta)
 	if animador:
 		animador.mergulhar(rumo)

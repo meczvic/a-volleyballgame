@@ -21,6 +21,9 @@ var contra_computador := false
 var dificuldade := "normal"
 ## Os dois times jogados pelo computador (o robô e os testes usam pra assistir).
 var computador_nos_dois := false
+## Arquivo com os comandos gravados de uma partida (veja
+## scripts/entrada/entrada_gravada.gd). Vazio = jogo normal. O robô usa com repetir=.
+var repeticao := ""
 
 
 func definir_partida(time_jogador_1: String, time_jogador_2: String, id_do_estadio: String) -> void:

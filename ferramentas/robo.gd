@@ -11,6 +11,9 @@ extends SceneTree
 ## Opções: times=<id1>,<id2>  estadio=<id>  segundos=<limite>  prints=<pasta>
 ## (salva um PNG por segundo em <pasta>)  saque=<0|1> (quem saca primeiro)
 ## semente=<número> (repete a mesma partida; veja abaixo).
+## gravar=<arquivo.json>: salva os comandos com o número do quadro no fim.
+## repetir=<arquivo.json>: joga só com a gravação (use a mesma semente e o mesmo
+## computador=; o robô não aperta nada). Sai igual à partida gravada.
 ## computador=<facil|normal|dificil>: o time 2 é jogado pelo computador de
 ## verdade (modo 1 jogador) e o robô joga só o time 1. Com dois=1, o
 ## computador joga os dois times e o robô só assiste.
@@ -30,6 +33,7 @@ var _prints := ""
 var _closeup := ""
 var _closeups := 0
 var _ultimo_print := -1
+var _gravar := ""
 var _carga := [-1.0, -1.0]
 var _duracao_da_carga := 0.4
 var _apertados := {}
@@ -86,6 +90,12 @@ func _initialize() -> void:
 		_times_do_robo = []
 		if not configuracao.computador_nos_dois:
 			_times_do_robo.append(0)
+	_gravar = str(opcoes.get("gravar", ""))
+	configuracao.repeticao = str(opcoes.get("repetir", ""))
+	if configuracao.repeticao != "":
+		# Quem joga é a gravação: o robô e o computador só assistem.
+		configuracao.computador_nos_dois = false
+		_times_do_robo = []
 	if _semente >= 0:
 		_sorteio.seed = _semente
 	else:
@@ -303,6 +313,8 @@ func _capturar_closeup() -> void:
 
 func _terminar() -> void:
 	physics_frame.disconnect(_jogar)
+	if _gravar != "":
+		partida.salvar_registro(_gravar)
 	var placar = partida.placar
 	print("Robô: fim depois de %.0f s de jogo. Sets %d x %d, pontos %d x %d, estado %s." % [
 		_relogio, placar.sets[0], placar.sets[1], placar.pontos[0], placar.pontos[1], partida.Estado.keys()[partida.estado]])

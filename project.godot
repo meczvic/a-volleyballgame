@@ -19,6 +19,8 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 
 Teclas="*res://scripts/entrada/teclas.gd"
 Configuracao="*res://scripts/menus/configuracao.gd"
+Rede="*res://scripts/rede/rede.gd"
+Musica="*res://scripts/audio/musica.gd"
 
 [display]
 

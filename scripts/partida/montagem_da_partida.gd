@@ -159,7 +159,7 @@ func _criar_marcas_de_ataque(time: int) -> void:
 
 func _criar_camera() -> void:
 	if not p.tela_dividida:
-		_adicionar_camera(p, 0)
+		_adicionar_camera(p, p.time_da_camera)
 		return
 
 	# Duas metades da tela, cada uma com a própria câmera olhando o mesmo mundo.

@@ -27,6 +27,7 @@ Na primeira vez o Godot cria a pasta `.godot/`. Ela é interna e não vai pro Gi
 | Mergulho | Espaço | 0 (numérico) | B |
 | Largada | J no pulo da cortada | 1 (numérico) no pulo | A no pulo |
 | Pausa | Esc | Esc | Start |
+| Música liga/desliga | M | M | — |
 
 O 1º controle conectado é do Jogador 1, o 2º do Jogador 2. O direcional do controle também move.
 
@@ -34,9 +35,10 @@ Nos menus: setas, WASD ou direcional navegam; **Enter, J ou A** escolhem; **Esc 
 
 ### Menus
 
-1. **Menu principal:** 1 Jogador, 2 Jogadores, Modo Caos, Controles e Sair. Online aparece como "em breve".
+1. **Menu principal:** 1 Jogador, 2 Jogadores, Modo Caos, Online, Controles e Sair.
+   - **Online (primeira versão, por IP):** os dois PCs na mesma rede. Um aperta **HOSPEDAR** (a tela mostra o IP dele); o outro digita esse IP e aperta **CONECTAR**. Quem hospeda joga com o time 1 e simula a partida; quem conecta joga com o time 2, com os comandos do Jogador 1. Usa os times e o estádio da última partida de quem hospeda. Porta 7777 (o firewall do Windows pode perguntar se libera: libere na rede privada).
    - **1 Jogador:** escolha a dificuldade (**Fácil**, **Normal** ou **Difícil**) e jogue contra o computador em tela cheia. Na seleção de times, você escolhe o seu time e depois o do computador. O jeito de jogar de cada nível fica em `dados/dificuldades.json`.
-   - **Modo Caos:** igual à partida rápida, mas antes do 1º saque e a cada 3 pontos cada jogador escolhe 1 de 3 cartas na metade dele (esquerda/direita escolhe, Passe confirma; 60 s, depois sorteia). Cada carta mostra a raridade (**prata**, **ouro** ou **prismática**, cada uma com moldura e fundo próprios), o atleta destaque do seu time fazendo a jogada da carta, o ícone do conjunto, o nome e o efeito. **Bloqueio** (L, 3 numérico ou Y) troca as 3 cartas por outras 3, uma vez por partida (`trocas_por_partida` em `dados/cartas.json`). Só 8 cartas já têm efeito (veja `docs/ESTADO_DO_PROJETO.md`).
+   - **Modo Caos:** igual à partida rápida, mas antes do 1º saque e a cada 3 pontos cada jogador escolhe 1 de 3 cartas na metade dele (esquerda/direita escolhe, Passe confirma; 60 s, depois sorteia). Cada carta mostra a raridade (**prata**, **ouro** ou **prismática**, cada uma com moldura e fundo próprios), o atleta destaque do seu time fazendo a jogada da carta, o ícone do conjunto, o nome e o efeito. **Bloqueio** (L, 3 numérico ou Y) troca as 3 cartas por outras 3, uma vez por partida (`trocas_por_partida` em `dados/cartas.json`). As 21 cartas têm efeito (lista em `docs/ESTADO_DO_PROJETO.md`).
 2. **Seleção de times:** cada jogador move o próprio cursor (Jogador 1: A/D, Jogador 2: setas, ou o direcional do seu controle) e confirma com **Passe** (J, 1 numérico ou A). Na metade de cada um aparecem o emblema e o nome do time, os atributos com ícone e barra, e o atleta destaque em 3D (o mesmo personagem da partida), que comemora quando você confirma. **Mergulho** (Espaço, 0 numérico ou B) desfaz.
 3. Com os dois confirmados, qualquer um escolhe o **estádio** (esquerda/direita) e confirma pra começar.
 4. Na partida, **Esc ou Start** pausa: continuar, recomeçar, trocar times ou voltar ao menu. No fim, aparece quem venceu, com as mesmas opções.
@@ -115,7 +117,7 @@ O jogo segue as regras oficiais (FIVB). Só o placar é do jogo: sets até 7, co
 
 ## Rodar os testes
 
-São 35 arquivos em `testes/`. Pra rodar todos de uma vez, no Git Bash (Windows) ou no terminal, dentro da pasta do projeto:
+São 45 arquivos em `testes/`. Pra rodar todos de uma vez, no Git Bash (Windows) ou no terminal, dentro da pasta do projeto:
 
 ```
 GODOT="/caminho/do/Godot_v4.7.2-stable_win64_console.exe" ferramentas/rodar_testes.sh
@@ -139,12 +141,10 @@ Todos os testes passam no Godot 4.7.2 (testado em 12/11/2026), e um robô jogou 
 
 ## Próximos passos
 
-Seguindo as fases do documento de design:
+O que já está feito e o que falta, em ordem, fica em [docs/ESTADO_DO_PROJETO.md](docs/ESTADO_DO_PROJETO.md) (seções 3 e 5). Em resumo:
 
-1. Aprender Godot (trilha de tutoriais no documento).
-2. ~~Bola e quadra: física da bola, marcador de queda.~~ Feito.
-3. ~~Um time controlado: troca automática de atleta, passe, levantamento, cortada.~~ Feito.
-4. ~~IA de posicionamento dos 5 atletas sem controle.~~ Feito (com bloqueio e rodízio).
-5. Partida completa local (MVP): ~~menus, seleção de times e estádios~~ feito. Personagens gerados por código já em quadra; modelos VRoid são opcionais (passo a passo no [guia](https://claude.ai/artifact/NitRJ4DP8oGWkKQJLS1k6A)).
+1. Jogar com os amigos e ajustar os números (`dados/ajustes.json`, `dados/dificuldades.json`, `dados/cartas.json`).
+2. Testar o online entre dois PCs de verdade e deixar ele aguentar o atraso da internet.
+3. Fase F do plano de melhorias (menus em `.tscn`, branch `main`) e os ajustes de arte e som.
 
 Os nomes e times inspirados em Haikyuu são só pra jogar entre amigos. Se um dia o jogo for publicado, eles precisam virar times próprios, por isso ficam todos em `dados/times.json`.

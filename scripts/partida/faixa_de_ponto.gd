@@ -66,7 +66,12 @@ func configurar(ids: Array) -> void:
 
 
 ## "time" (0 ou 1) escolhe o emblema; -1 = sem emblema.
+## Cada faixa mostrada (o online repassa pro convidado).
+signal mostrou(titulo: String, subtitulo: String, cor: Color, time: int)
+
+
 func mostrar(titulo: String, subtitulo: String, cor: Color, time := -1) -> void:
+	mostrou.emit(titulo, subtitulo, cor, time)
 	_titulo.text = titulo
 	_subtitulo.text = subtitulo
 	_subtitulo.add_theme_color_override("font_color", cor.lightened(0.45))

@@ -47,6 +47,9 @@ const JeitosDeAtacar := preload("res://scripts/regras/jeitos_de_atacar.gd")
 const JeitosDeDefender := preload("res://scripts/regras/jeitos_de_defender.gd")
 const EntradaLocal := preload("res://scripts/entrada/entrada_local.gd")
 const EntradaDoComputador := preload("res://scripts/entrada/entrada_do_computador.gd")
+const EntradaPelaRede := preload("res://scripts/entrada/entrada_pela_rede.gd")
+const EntradaGravada := preload("res://scripts/entrada/entrada_gravada.gd")
+const OnlineNaPartida := preload("res://scripts/partida/online_na_partida.gd")
 const Bola := preload("res://scripts/partida/bola.gd")
 const MarcadorQueda := preload("res://scripts/partida/marcador_queda.gd")
 const VisualAnime := preload("res://scripts/visual/visual_anime.gd")
@@ -292,6 +295,19 @@ var marcador
 var menu
 ## Tudo que aparece por cima da partida (interface_da_partida.gd).
 var interface: Node
+## O que muda no online, quando é dono ou convidado (online_na_partida.gd).
+var online = OnlineNaPartida.new(self)
+## Quadros de física desde que a partida abriu (o 1º é 1).
+var quadro := 0
+## Comandos de cada jogador com o número do quadro: [quadro, jogador, tipo, valor].
+## Botão: valor true (apertou) ou false (soltou). Direção: tipo "dir", valor [x, y].
+## Com a mesma semente, repetir isso (EntradaGravada) repete a partida igual.
+var registro: Array = []
+var _ultima_direcao: Array = [Vector2.ZERO, Vector2.ZERO]
+## Sem tela dividida: de que lado fica a câmera (0 = time 1; o convidado do online usa 1).
+var time_da_camera := 0
+## Cada time vê pela própria câmera mesmo sem dividir a tela (online).
+var lados_proprios := false
 ## Lances com a bola: passe, levantamento, cortada (do pulo à batida), largada e mergulho. (lances_da_partida.gd).
 var lances = LancesDaPartida.new(self)
 ## Pulo e bloqueio: quem pula, que tipo de bloqueio sai (devolve, toca ou nada) e o que acontece quando a bola bate no bloqueio. (bloqueio_na_partida.gd).
@@ -417,7 +433,16 @@ func _ready() -> void:
 
 	for jogador in [1, 2]:
 		var entrada
-		if _jogador_e_o_computador(jogador):
+		var rede := get_node_or_null("/root/Rede")
+		if str(Configuracao.repeticao) != "":
+			entrada = EntradaGravada.new()
+			entrada.jogador = jogador
+			entrada.partida = self
+			entrada.carregar(EntradaGravada.ler(str(Configuracao.repeticao)))
+		elif jogador == 2 and rede != null and rede.e_dono():
+			entrada = EntradaPelaRede.new()
+			entrada.jogador = jogador
+		elif _jogador_e_o_computador(jogador):
 			entrada = EntradaDoComputador.new()
 			entrada.jogador = jogador
 			entrada.configurar(self, str(Configuracao.dificuldade), int(Configuracao.semente))
@@ -448,9 +473,12 @@ func _ready() -> void:
 	# Modo Caos: os dois escolhem a primeira carta antes do 1º saque.
 	if modo_caos:
 		caos._abrir_escolha_de_cartas(Callable())
+	online.preparar()
 
 
 func _physics_process(delta: float) -> void:
+	quadro += 1
+	_anotar_direcoes()
 	_relogio += delta
 	_gastar_relampago(delta)
 	for time in 2:
@@ -487,6 +515,7 @@ func _physics_process(delta: float) -> void:
 	_atualizar_poses_de_espera()
 
 	# Antes do saque, a bola fica na mão de quem saca.
+	online.depois_do_quadro()
 	if estado == Estado.SAQUE:
 		var sacador := controlados[placar.quem_saca]
 		var frente := -_lado(placar.quem_saca) * 0.5
@@ -501,6 +530,7 @@ func _physics_process(delta: float) -> void:
 
 ## Toca um lance no personagem do atleta (a cápsula não tem animação).
 func _animar(atleta: Node3D, lance: String) -> void:
+	online.ao_animar(atleta, lance)
 	var animador = _animador_de(atleta)
 	if animador:
 		animador.tocar(lance)
@@ -532,6 +562,7 @@ func _animador_de(atleta: Node3D):
 # --- Comandos ---
 
 func _ao_receber_comando(jogador: int, tipo: String) -> void:
+	registro.append([quadro, jogador, tipo, true])
 	if caos._escolhendo_cartas():
 		return
 	var time := jogador - 1
@@ -585,6 +616,7 @@ func _atender_pedido(time: int) -> void:
 
 
 func _ao_soltar_botao(jogador: int, tipo: String) -> void:
+	registro.append([quadro, jogador, tipo, false])
 	var time := jogador - 1
 	_segurando_botao[time].erase(tipo)
 	if caos._escolhendo_cartas():
@@ -740,6 +772,23 @@ func _quem_vai_na_bola(time: int, queda: Vector3) -> Node3D:
 
 
 # --- Toque no tempo certo ---
+
+## Anota a direção de cada jogador quando ela muda (ver "registro").
+func _anotar_direcoes() -> void:
+	for time in mini(entradas.size(), 2):
+		var direcao: Vector2 = entradas[time].direcao
+		if direcao != _ultima_direcao[time]:
+			_ultima_direcao[time] = direcao
+			registro.append([quadro, time + 1, "dir", [direcao.x, direcao.y]])
+
+
+## Salva o "registro" num arquivo JSON (o robô usa com gravar=).
+func salvar_registro(caminho: String) -> void:
+	var arquivo := FileAccess.open(caminho, FileAccess.WRITE)
+	if arquivo:
+		arquivo.store_string(JSON.stringify(registro, "", false, true))
+		arquivo.close()
+
 
 ## Relâmpago (Modo Caos): o tempo de cada time vai acabando.
 func _gastar_relampago(delta: float) -> void:
@@ -1201,7 +1250,7 @@ func _lado(time: int) -> float:
 ## De que lado está a câmera que esse jogador olha: 1 = atrás do time 0,
 ## -1 = atrás do time 1 (só com tela dividida).
 func _lado_da_camera(time: int) -> float:
-	return _lado(time) if tela_dividida else 1.0
+	return _lado(time) if tela_dividida or lados_proprios else 1.0
 
 
 ## Direção apertada pelo jogador, convertida pro mundo (x, z).
@@ -1285,6 +1334,12 @@ func _carregar_escolhas() -> void:
 	# Contra o computador, a tela é toda do Jogador 1.
 	if Configuracao.contra_computador:
 		tela_dividida = false
+	# Online: cada um vê a partida inteira pelo lado do próprio time.
+	var rede := get_node_or_null("/root/Rede")
+	if rede != null and rede.online():
+		tela_dividida = false
+		lados_proprios = true
+		time_da_camera = 1 if rede.e_convidado() else 0
 	if modo_caos:
 		trocas_restantes = [Cartas.trocas_por_partida(Dados.cartas()), Cartas.trocas_por_partida(Dados.cartas())]
 		dados_das_cartas = Dados.cartas()

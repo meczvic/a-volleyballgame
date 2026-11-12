@@ -14,6 +14,9 @@ const Cortina := preload("res://scripts/menus/cortina.gd")
 const BarraDeForca := preload("res://scripts/partida/barra_de_forca.gd")
 const BarraDeEnergia := preload("res://scripts/partida/barra_de_energia.gd")
 
+## Cada mensagem mostrada (o online repassa pro convidado).
+signal mensagem_mostrada(texto: String, time: int, fixa: bool)
+
 ## Quanto tempo os avisos rápidos ficam na tela (s).
 const DURACAO_DA_MENSAGEM := 1.8
 
@@ -178,6 +181,7 @@ func montar(tela_dividida: bool, nomes: Array, cores: Array, ids: Array, modo_ca
 ## "fixa" = false: a mensagem some sozinha depois de DURACAO_DA_MENSAGEM
 ## (avisos rápidos). Fixa: fica até outra mensagem ou o próximo lance.
 func mostrar_mensagem(texto: String, time := -1, fixa := true) -> void:
+	mensagem_mostrada.emit(texto, time, fixa)
 	_validade_da_mensagem[time + 1] += 1
 	var numero: int = _validade_da_mensagem[time + 1]
 	if time < 0:
