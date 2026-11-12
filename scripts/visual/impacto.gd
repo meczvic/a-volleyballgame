@@ -6,10 +6,10 @@ extends Node
 
 ## Congelada da cortada perfeita e da normal (segundos de verdade).
 const CONGELAR_FORTE := 0.09
-const CONGELAR_NORMAL := 0.04
+const CONGELAR_NORMAL := 0.05
 ## Tremor das câmeras (m) e quanto dura (s).
 const TREMOR_FORTE := 0.35
-const TREMOR_NORMAL := 0.15
+const TREMOR_NORMAL := 0.2
 const DURACAO_DO_TREMOR := 0.3
 const CONGELAR_BLOQUEIO := 0.06
 const TREMOR_BLOQUEIO := 0.25
@@ -19,7 +19,7 @@ const ESCALA_CONGELADA := 0.03
 ## "Soco" de zoom: a lente fecha uns graus de uma vez e abre de volta devagar.
 ## Só visual (não mexe no tempo do jogo). Graus a menos na abertura e duração (s).
 const ZOOM_FORTE := 5.0
-const ZOOM_NORMAL := 1.5
+const ZOOM_NORMAL := 2.2
 const ZOOM_BLOQUEIO := 3.0
 const DURACAO_DO_ZOOM := 0.4
 
@@ -44,6 +44,18 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	# Nunca deixa o jogo lento ao sair da partida.
 	Engine.time_scale = 1.0
+
+
+## Impacto de qualquer toque, de 0 (nada) a 1 (saque cheio, passe perfeito).
+## Proporcional: toque fraco só sacode um tiquinho, o forte congela e treme.
+func toque(forca: float) -> void:
+	forca = clampf(forca, 0.0, 1.0)
+	if forca < 0.1:
+		return
+	if forca >= 0.6:
+		congelar(lerpf(0.0, 0.05, forca))
+	tremer(lerpf(0.03, 0.14, forca))
+	zoom(lerpf(0.3, 1.4, forca))
 
 
 ## Impacto da cortada. "forte": cortada perfeita.

@@ -54,6 +54,7 @@ var _origem := Vector3.ZERO
 var _velocidade_inicial := Vector3.ZERO
 var _tempo := 0.0
 var _sombra: MeshInstance3D
+var _visual: MeshInstance3D
 
 
 func _ready() -> void:
@@ -70,6 +71,7 @@ func _ready() -> void:
 		material.albedo_color = cor
 		visual.material_override = material
 	add_child(visual)
+	_visual = visual
 
 	# Sombra redonda sempre no chão, embaixo da bola.
 	var disco := CylinderMesh.new()
@@ -89,6 +91,19 @@ func _ready() -> void:
 
 ## Lança a bola da posição atual até "destino" (no chão), subindo até
 ## "altura_maxima". Se precisar, sobe mais pra passar a rede.
+## Achata a bola na batida e deixa ela voltar à forma (squash). "forca" de 0 a 1.
+## Só visual.
+func amassar(forca: float) -> void:
+	if _visual == null or forca <= 0.0:
+		return
+	var f := clampf(forca, 0.0, 1.0)
+	var achatada := Vector3(1.0 + 0.3 * f, 1.0 - 0.38 * f, 1.0 + 0.3 * f)
+	_visual.scale = achatada
+	var tween := create_tween()
+	tween.tween_property(_visual, "scale", Vector3(1.0 - 0.1 * f, 1.0 + 0.16 * f, 1.0 - 0.1 * f), 0.07)
+	tween.tween_property(_visual, "scale", Vector3.ONE, 0.1)
+
+
 func lancar(destino: Vector3, altura_maxima: float) -> void:
 	var alvo := Vector3(destino.x, RAIO, destino.z)
 	var velocidade := Trajetoria.velocidade_passando_rede(

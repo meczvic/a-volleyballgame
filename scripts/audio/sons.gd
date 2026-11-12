@@ -21,8 +21,8 @@ const VARIACAO_DO_TOM := 0.05
 
 ## Volume (dB) e tom base de cada som. Ajuste aqui se algum ficar alto ou baixo.
 const AJUSTES := {
-	"passe": { "volume": -4.0, "tom": 1.0 },
-	"levantamento": { "volume": -7.0, "tom": 1.0 },
+	"passe": { "volume": -2.0, "tom": 1.0 },
+	"levantamento": { "volume": -4.0, "tom": 1.0 },
 	"saque": { "volume": -3.0, "tom": 1.15 },
 	"cortada": { "volume": 0.0, "tom": 1.0 },
 	"bloqueio": { "volume": -1.0, "tom": 1.0 },
@@ -118,12 +118,16 @@ static func nomes() -> Array:
 
 static func _montar(nome: String) -> PackedFloat32Array:
 	match nome:
+		# Golpes em camadas: grave (corpo da bola), estalo (couro), tapa (mão) e,
+		# nos fortes, o sopro de ar da bola saindo.
 		"passe":
-			return _batida(0.22, 150.0, 85.0, 26.0, 0.35, 0.015)
+			return _golpe(0.28, 140.0, 60.0, 20.0, 0.9, 0.5, 120.0, 0.9, 45.0, 0.0, 1.8, 41)
 		"levantamento":
-			return _batida(0.12, 340.0, 300.0, 45.0, 0.25, 0.008)
-		"saque", "cortada":
-			return _estalo()
+			return _golpe(0.16, 300.0, 200.0, 40.0, 0.35, 0.8, 90.0, 0.5, 60.0, 0.0, 1.4, 43)
+		"saque":
+			return _golpe(0.5, 200.0, 50.0, 14.0, 1.0, 1.0, 70.0, 1.0, 30.0, 0.7, 2.2, 47)
+		"cortada":
+			return _golpe(0.5, 220.0, 45.0, 12.0, 1.0, 1.1, 60.0, 1.1, 26.0, 0.5, 2.6, 53)
 		"bloqueio":
 			return _bloqueio()
 		"rede":
@@ -169,6 +173,38 @@ static func _batida(duracao: float, de: float, ate: float, decaimento: float, ru
 			baixa += 0.35 * (rng.randf_range(-1.0, 1.0) - baixa)
 			valor += baixa * ruido * exp(-t / estalo)
 		amostras[i] = valor
+	return _normalizar(amostras)
+
+
+## Golpe em camadas, pra bater com peso:
+## - grave: tom que cai de "de" pra "ate" Hz (o corpo da bola);
+## - estalo: ruído agudo e curtíssimo (o couro);
+## - tapa: ruído médio (a mão ou o antebraço);
+## - cauda: sopro de ar que dura mais (bola saindo rápido);
+## - saturacao: aperta os picos, deixando a batida mais "cheia".
+static func _golpe(duracao: float, de: float, ate: float, decaimento: float, grave: float, estalo: float, estalo_decai: float, tapa: float, tapa_decai: float, cauda: float, saturacao: float, semente: int) -> PackedFloat32Array:
+	var rng := _rng(semente)
+	var n := int(duracao * TAXA)
+	var amostras := PackedFloat32Array()
+	amostras.resize(n)
+	var fase := 0.0
+	var l1 := 0.0
+	var l2 := 0.0
+	var l3 := 0.0
+	var l4 := 0.0
+	for i in n:
+		var t := float(i) / TAXA
+		var ruido := rng.randf_range(-1.0, 1.0)
+		l1 += 0.3 * (ruido - l1)
+		l2 += 0.18 * (ruido - l2)
+		l3 += 0.03 * (ruido - l3)
+		l4 += 0.08 * (ruido - l4)
+		fase += TAU * lerpf(de, ate, minf(t / 0.12, 1.0)) / TAXA
+		var valor := sin(fase) * exp(-decaimento * t) * grave
+		valor += (ruido - l1) * exp(-estalo_decai * t) * estalo
+		valor += (l2 - l3) * 3.0 * exp(-tapa_decai * t) * tapa
+		valor += l4 * 3.0 * (1.0 - exp(-t * 60.0)) * exp(-10.0 * t) * cauda
+		amostras[i] = tanh(valor * saturacao) * minf(t * 3000.0, 1.0)
 	return _normalizar(amostras)
 
 

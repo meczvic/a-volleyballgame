@@ -962,6 +962,7 @@ func _sacar(time: int, flutuante: bool, forca := 0.4, alvo := Mira.ALVO_INICIAL)
 	saque_em_jogo = true
 	var ponto := Mira.com_erro(alvo, _erro_do_saque(time, forca), Vector2(sorteio.randf(), sorteio.randf()))
 	var destino := Vector3(ponto.x, 0.0, ponto.y * _lado(1 - time))
+	_peso_do_toque(time, bola.position, forca if not flutuante else forca * 0.5)
 	# Provisório: o flutuante só sai mais baixo. O balanço vem depois.
 	bola.lancar(destino, Mira.altura_do_saque(forca, flutuante))
 	ultimo_toque = time
@@ -1000,6 +1001,24 @@ func _atualizar_barra_de_energia(time: int) -> void:
 	var barra = barras_de_energia[time]
 	if barra != null:
 		barra.mostrar(energias[time].valor, energias[time].cheia())
+
+
+## Peso do toque: bola amassa, câmera sente e (nos bons) saem faíscas.
+## "forca" de 0 a 1. Só visual e sensação.
+func _peso_do_toque(time: int, ponto: Vector3, forca: float, faiscas := true) -> void:
+	bola.amassar(forca)
+	impacto.toque(forca)
+	if faiscas and forca >= 0.5:
+		Estouro.mostrar(self, ponto, _cor_do_time(time), 0.2 + 0.4 * forca)
+
+
+## Força do toque pela qualidade (perfeito cheio, bom médio, ruim nada).
+func _forca_da_qualidade(qualidade: Qualidade, perfeito := 1.0, bom := 0.4) -> float:
+	if qualidade == Qualidade.PERFEITO:
+		return perfeito
+	if qualidade == Qualidade.BOM:
+		return bom
+	return 0.0
 
 
 ## Passe (atacando = false) ou ataque (atacando = true) do atleta controlado.
@@ -1081,6 +1100,7 @@ func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> bool:
 func _passar_pro_levantador(time: int, qualidade: Qualidade) -> void:
 	_animar(controlados[time], "manchete")
 	sons.tocar("passe", _intensidade_do_som(qualidade))
+	_peso_do_toque(time, bola.position, _forca_da_qualidade(qualidade, 0.7, 0.3))
 	qualidade_do_passe[time] = qualidade
 	_ultimo_levantamento[time] = {}
 	var erro := _erro_aleatorio(TempoDoToque.ERRO_DO_PASSE[qualidade])
@@ -1098,6 +1118,7 @@ func _passar_pro_levantador(time: int, qualidade: Qualidade) -> void:
 func _levantar(time: int, qualidade: Qualidade) -> void:
 	_animar(controlados[time], "levantamento")
 	sons.tocar("levantamento", _intensidade_do_som(qualidade))
+	_peso_do_toque(time, bola.position, _forca_da_qualidade(qualidade, 0.5, 0.2))
 	var passe: Qualidade = qualidade_do_passe[time]
 	var escolhido := _ataque_escolhido(time, passe)
 	var altura := TempoDoToque.altura_do_levantamento(passe, qualidade)
@@ -1283,6 +1304,7 @@ func _cortar(time: int, qualidade: Qualidade = Qualidade.BOM) -> void:
 	bola.lancar(destino, bola.position.y + subida)
 	_ao_lancar_bola()
 	sons.tocar("cortada", _intensidade_do_som(qualidade))
+	bola.amassar(1.0 if super_cortada else _forca_da_qualidade(qualidade, 1.0, 0.7))
 	if super_cortada:
 		energias[time].gastar()
 		_atualizar_barra_de_energia(time)
