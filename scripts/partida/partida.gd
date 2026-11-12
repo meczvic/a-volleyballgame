@@ -44,6 +44,7 @@ const Escalacao := preload("res://scripts/regras/escalacao.gd")
 const Formacao := preload("res://scripts/regras/formacao.gd")
 const EscolhaAtaque := preload("res://scripts/regras/escolha_ataque.gd")
 const JeitosDeAtacar := preload("res://scripts/regras/jeitos_de_atacar.gd")
+const JeitosDeDefender := preload("res://scripts/regras/jeitos_de_defender.gd")
 const EntradaLocal := preload("res://scripts/entrada/entrada_local.gd")
 const EntradaDoComputador := preload("res://scripts/entrada/entrada_do_computador.gd")
 const Bola := preload("res://scripts/partida/bola.gd")
@@ -169,6 +170,8 @@ const REACAO_DO_BLOQUEIO := 0.4
 const DISTANCIA_MAXIMA_DO_BLOQUEIO := 1.2
 ## Quanto a direção desloca o bloqueio na hora do pulo (m).
 const DESLOCAMENTO_DO_BLOQUEIO := 0.7
+## Quem fica fora do bloqueio (duplo ou simples) ajuda na defesa por esse tempo (s).
+const TEMPO_FORA_DO_BLOQUEIO := 1.2
 ## Cobertura: quando o nosso atacante vai cortar, os outros chegam até esta
 ## distância (m) dele pra pegar a bola que voltar do bloqueio.
 const COBERTURA_DA_REDE := 2.0
@@ -294,6 +297,12 @@ var _segurando_botao: Array = [{}, {}]
 var _ultimo_levantamento: Array = [{}, {}]
 ## Quanto o último ataque encolhe a largura do bloqueio (1.0 = normal).
 var _bloqueio_do_ataque := 1.0
+## Qualidade (tempo do botão) do último bloqueio de cada time e o lado
+## apertado nele (x no mundo, -1 a 1).
+var _qualidade_do_bloqueio: Array = [Qualidade.BOM, Qualidade.BOM]
+var _rumo_do_bloqueio: Array = [0.0, 0.0]
+## Qualidade (int de Qualidade) da última cortada, pra recepção. -1 = nenhuma.
+var _forca_da_cortada := -1
 var rotulo_mensagem: Label
 ## Caixa escura atrás da mensagem; some quando não tem mensagem.
 var caixa_da_mensagem: PanelContainer
@@ -516,6 +525,10 @@ func _alvo_da_ia(time: int, indice: int) -> Vector3:
 		or (bola_vem_pra_ca and not adversario_vai_atacar)
 	var lugar: Vector2
 
+	if da_rede and adversario_vai_atacar \
+			and float(atletas[time][indice].get_meta("fora_do_bloqueio_ate", -1.0)) > _relogio:
+		# Ficou fora do bloqueio (duplo ou simples): ajuda na defesa.
+		return _no_mundo(time, _abrir_espaco(time, indice, _lugar_na_defesa(time, x_da_funcao)))
 	if da_rede and adversario_vai_atacar:
 		# Sobe pra rede e lê o levantamento: corre pra onde a bola vai.
 		# (Sem abrir espaço: o bloqueio duplo é um do lado do outro.)
@@ -688,18 +701,44 @@ func _atualizar_pulo(atleta: Node3D, delta: float) -> void:
 
 
 func _bloquear(time: int) -> void:
-	var deslocamento := _direcao_no_mundo(time).x * DESLOCAMENTO_DO_BLOQUEIO
+	var direcao := _direcao_no_mundo(time)
+	var deslocamento := direcao.x * DESLOCAMENTO_DO_BLOQUEIO
+	# Quantos bloqueiam: direção pra frente = triplo, neutro = dupla, pra trás = só um.
+	var indices: Array[int] = []
+	var xs: Array = []
 	for i in 6:
-		if not Rodizio.e_da_rede(rodizios[time].posicao_de(i)):
-			continue
-		var atleta: Node3D = atletas[time][i]
-		if _esta_pulando(atleta):
+		if Rodizio.e_da_rede(rodizios[time].posicao_de(i)) and not _esta_pulando(atletas[time][i]):
+			indices.append(i)
+			xs.append(atletas[time][i].position.x)
+	var pra_frente := direcao.y * _lado(1 - time)
+	var escolhidos := JeitosDeDefender.quem_bloqueia(xs, direcao.x, pra_frente)
+	_qualidade_do_bloqueio[time] = _qualidade_do_botao_do_bloqueio(time)
+	_rumo_do_bloqueio[time] = direcao.x
+	for k in indices.size():
+		var atleta: Node3D = atletas[time][indices[k]]
+		if not escolhidos.has(k):
+			# Fica fora do bloqueio e ajuda na defesa.
+			atleta.set_meta("fora_do_bloqueio_ate", _relogio + TEMPO_FORA_DO_BLOQUEIO)
 			continue
 		atleta.position.x += deslocamento
 		_pular(atleta)
 		if estado == Estado.RALLY and absf(atleta.position.z) < DISTANCIA_MINIMA_DA_REDE:
 			_encerrar_rally(1 - time, "toque na rede")
 		_animar(atleta, "bloqueio")
+
+
+## Tempo do botão do bloqueio: o pico do pulo tem que cair quando a bola passa
+## pela rede. Sem ataque vindo, o bloqueio sai ruim.
+func _qualidade_do_botao_do_bloqueio(time: int) -> Qualidade:
+	var outro := 1 - time
+	var ate_a_batida := -1.0
+	if not cortadas[outro].is_empty():
+		ate_a_batida = maxf(TEMPO_ATE_A_BATIDA - float(cortadas[outro]["tempo"]), 0.0)
+	elif bola.em_voo and toques.time_com_a_bola == outro and toques.toques >= 2 and _lado_da_queda() == outro:
+		ate_a_batida = maxf(TempoDoToque.tempo_ate_altura(bola.position, bola.velocidade_atual(), TempoDoToque.ALTURA_IDEAL["cortada"]), 0.0)
+	if ate_a_batida < 0.0:
+		return Qualidade.RUIM
+	return JeitosDeDefender.qualidade_do_bloqueio(JeitosDeDefender.erro_do_bloqueio(ate_a_batida, DURACAO_DO_PULO))
 
 
 ## Chamado pela bola quando ela cruza a rede por cima da fita. Diz o que o
@@ -727,7 +766,13 @@ func _tipo_do_bloqueio(ponto_na_rede: Vector3, lado_destino: float) -> Bloqueio:
 		if ponto_na_rede.y > ALTURA_DAS_MAOS + atleta.position.y + Bola.RAIO:
 			continue
 		var no_alto: bool = atleta.position.y >= ALTURA_DO_PULO * ALTURA_MINIMA_DO_BLOQUEIO
-		if distancia <= largura and no_alto:
+		if distancia <= largura and no_alto \
+				and JeitosDeDefender.pode_devolver(_qualidade_do_bloqueio[time]):
+			# Bloqueio perfeito devolve mais forte e pro lado apertado.
+			var qualidade_do_bloqueio: Qualidade = _qualidade_do_bloqueio[time]
+			bola.forca_do_bloqueio = JeitosDeDefender.forca_do_rebote(qualidade_do_bloqueio)
+			bola.empurrao_do_bloqueio = float(_rumo_do_bloqueio[time]) * JeitosDeDefender.EMPURRAO_LATERAL_PERFEITO \
+				if qualidade_do_bloqueio == Qualidade.PERFEITO else 0.0
 			return Bloqueio.DEVOLVE
 		resultado = Bloqueio.TOQUE
 	return resultado
@@ -751,6 +796,7 @@ func _ao_bola_ser_bloqueada() -> void:
 	toques.registrar_bloqueio(time_que_bloqueou)
 	ultimo_toque = time_que_bloqueou
 	_bloqueio_do_ataque = 1.0
+	_forca_da_cortada = -1
 	_ponto_de_bloqueio = time_que_bloqueou
 	impacto.bloqueio()
 	sons.tocar("bloqueio")
@@ -772,6 +818,7 @@ func _ao_bola_tocar_bloqueio() -> void:
 	toques.registrar_bloqueio(time_que_bloqueou)
 	ultimo_toque = time_que_bloqueou
 	_bloqueio_do_ataque = 1.0
+	_forca_da_cortada = -1
 	_ponto_de_bloqueio = -1
 	impacto.ponto()
 	sons.tocar("bloqueio", 0.45)
@@ -890,6 +937,7 @@ func _sacar(time: int, flutuante: bool, forca := 0.4, alvo := Mira.ALVO_INICIAL)
 		_encerrar_rally(1 - falta_de_posicao, "posição errada no saque")
 		return
 	_bloqueio_do_ataque = 1.0
+	_forca_da_cortada = -1
 	_ultimo_levantamento = [{}, {}]
 	toques.reiniciar()
 	toques.registrar(time, atletas[time].find(controlados[time]))
@@ -934,6 +982,8 @@ func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> bool:
 	ultimo_toque = time
 	_ponto_de_bloqueio = -1
 	_bloqueio_do_ataque = 1.0
+	var cortada_recebida := _forca_da_cortada
+	_forca_da_cortada = -1
 	_mostrar_marcas_de_ataque(-1)
 
 	var numero: int = toques.toques
@@ -946,7 +996,13 @@ func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> bool:
 	if mergulho:
 		# Mergulho: no máximo "bom"; de longe (fora do alcance normal), ruim.
 		var longe := _distancia_no_chao(atleta_que_tocou, bola.position) > ALCANCE
-		qualidade = Qualidade.RUIM if longe else TempoDoToque.pior(qualidade, Qualidade.BOM)
+		qualidade = JeitosDeDefender.qualidade_do_mergulho(qualidade, longe)
+	if numero == 1 and not atacando:
+		# Cortada perfeita do outro time: passe só bom foge e sai ruim.
+		var antes := qualidade
+		qualidade = JeitosDeDefender.qualidade_da_recepcao(qualidade, cortada_recebida)
+		if qualidade != antes:
+			_mostrar_mensagem("Cortada forte! Acerte o tempo", time)
 	if atacando or numero <= 2:
 		_avisar_qualidade(controlados[time], qualidade)
 	if atacando:
@@ -1158,6 +1214,7 @@ func _cortar(time: int, qualidade: Qualidade = Qualidade.BOM) -> void:
 		if efeito["nome"] != "":
 			_mostrar_mensagem(efeito["nome"], time)
 	var ponto_da_batida: Vector3 = bola.position
+	_forca_da_cortada = int(qualidade)
 	bola.lancar(destino, bola.position.y + subida)
 	_ao_lancar_bola()
 	sons.tocar("cortada", _intensidade_do_som(qualidade))
@@ -1350,11 +1407,18 @@ func _mergulhar(time: int) -> void:
 	var atleta := controlados[time]
 	if atleta == null or _esta_no_chao(atleta) or _esta_pulando(atleta):
 		return
-	atleta.set_meta("no_chao_ate", _relogio + TEMPO_NO_CHAO * Atributos.escala_do_tempo_no_chao(times_em_jogo[time]))
-	var alcance := ALCANCE_DO_MERGULHO + Atributos.alcance_extra_do_mergulho(times_em_jogo[time])
+	# Mergulho no tempo alcança mais longe; fora do tempo (ou no vazio) deixa
+	# mais tempo no chão.
+	var tempo_do_botao := Qualidade.RUIM
+	if bola.em_voo:
+		tempo_do_botao = _qualidade_do_toque("passe", time)
+	var alcance := ALCANCE_DO_MERGULHO + Atributos.alcance_extra_do_mergulho(times_em_jogo[time]) \
+		+ JeitosDeDefender.alcance_a_mais(tempo_do_botao)
 	var ate_a_bola := Vector2(bola.position.x - atleta.position.x, bola.position.z - atleta.position.z)
 	var alcanca: bool = bola.em_voo and bola.position.y <= ALTURA_MAXIMA_DO_MERGULHO \
 		and ate_a_bola.length() <= alcance
+	var tempo_no_chao := TEMPO_NO_CHAO * Atributos.escala_do_tempo_no_chao(times_em_jogo[time])
+	atleta.set_meta("no_chao_ate", _relogio + JeitosDeDefender.tempo_no_chao_do_mergulho(tempo_no_chao, tempo_do_botao, alcanca))
 	sons.tocar("mergulho")
 	if alcanca:
 		_tentar_tocar(time, false, true)
@@ -2192,12 +2256,12 @@ func _criar_interface() -> void:
 
 	# Comandos de cada jogador embaixo da metade dele (ou só do J1, sem tela dividida).
 	var ajudas := [
-		"J1 teclado: WASD move · J passe · K saque/cortada · I flutuante · L bloqueio · Espaço mergulho · I segurado ao levantar = rápido · K no 2º toque = bola de segunda",
-		"J2 teclado: setas movem · 1 passe · 2 saque/cortada · 5 flutuante · 3 bloqueio · 0 mergulho (numérico)",
+		"J1 teclado: WASD move · J passe · K saque/cortada · I flutuante · L bloqueio (frente triplo, trás só 1) · Espaço mergulho · I segurado ao levantar = rápido · K no 2º toque = bola de segunda",
+		"J2 teclado: setas movem · 1 passe · 2 saque/cortada · 5 flutuante · 3 bloqueio (frente triplo, trás só 1) · 0 mergulho (numérico)",
 	]
 	for jogador in (2 if tela_dividida else 1):
 		var ajuda := _rotulo_da_interface(16, false)
-		ajuda.text = ajudas[jogador] + "\nControle: A passe · X saque/cortada · RB flutuante · Y bloqueio · B mergulho · Passe no pulo = largada · RB segurado ao levantar = rápido · X no 2º toque = bola de segunda"
+		ajuda.text = ajudas[jogador] + "\nControle: A passe · X saque/cortada · RB flutuante · Y bloqueio (frente triplo, trás só 1) · B mergulho · Passe no pulo = largada · RB segurado ao levantar = rápido · X no 2º toque = bola de segunda"
 		ajuda.position = Vector2(20.0 + jogador * 800.0, 848.0)
 		camada.add_child(ajuda)
 

@@ -117,3 +117,13 @@ Muita coisa muda a partida com semente, então cada parte regrava o teste uma ve
 - **Computador:** `chance_de_rapido` e `chance_de_segunda` em `dados/dificuldades.json`. Diagonal e paralela ele já mirava.
 - **Teste novo:** `testes/teste_ataques.gd`. Teste com semente regravado (4 rallies, maior com 48 toques).
 - **Ficou de fora:** `dados/ajustes.json` (os números estão no arquivo de regras, vão pro JSON na Etapa 5) e o levantamento "alto" escolhido pelo jogador (continua automático pelo passe).
+
+### Parte 3B: feita (12/11/2026, ainda não jogada pelo Victor)
+- **Quantos bloqueiam:** direção + Bloqueio. Pra frente = triplo, neutro = dupla (o central e o mais perto do lado apertado), pra trás = só um. Quem fica fora ajuda na defesa por 1,2 s.
+- **Bloqueio controlável:** o tempo do botão conta (o pico do pulo tem que cair quando a bola passa pela rede; janela 1,5x a do toque comum). Bloqueio ruim só raspa (toque). Perfeito devolve 1,4x mais forte e empurra a bola pro lado apertado.
+- **Recepção com tempo:** contra cortada perfeita, passe só "bom" sai ruim ("Cortada forte! Acerte o tempo"). Só passe perfeito segura.
+- **Mergulho arriscado:** fora do tempo, ou no vazio, fica 1,6x mais no chão. No tempo perfeito alcança 0,5 m a mais e de longe sai "bom" em vez de ruim.
+- **Computador:** `chance_de_tripla` e `chance_de_so_um` em `dados/dificuldades.json`.
+- **Código:** regras em `scripts/regras/jeitos_de_defender.gd`; teste novo `testes/teste_defesa.gd`. O teste com semente continuou igual (o robô não aperta direção no bloqueio).
+- **Rally médio (computador contra computador, 3 sementes, 120 s):** Fácil 4,0 → 3,7; Normal 8,4 → 8,6; Difícil 16,4 → 20,5. Variação grande entre sementes; vale o Victor jogar pra sentir.
+- **Ficou de fora:** o tempo do bloqueio não usa atributos do time ainda.

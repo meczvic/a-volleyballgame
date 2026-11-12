@@ -43,6 +43,10 @@ var ponto_previsto := Vector3.ZERO
 ## Devolve 0 (ninguém encosta), 1 (bloqueio devolve a bola) ou 2 (a bola
 ## raspa no bloqueio e segue). Veja Bloqueio em partida.gd.
 var verificar_bloqueio := Callable()
+## Ajustes do rebote do bloqueio que devolve a bola (a partida define na hora de
+## decidir o bloqueio): multiplicador da força e empurrão pro lado (m/s no x).
+var forca_do_bloqueio := 1.0
+var empurrao_do_bloqueio := 0.0
 ## Visual anime (contorno escuro). Defina antes de colocar a bola na cena.
 var usar_visual_anime := true
 
@@ -171,7 +175,9 @@ func _voar(delta: float) -> void:
 		if bloqueio == 1:
 			# Bloqueio em cheio: volta pra quem atacou.
 			var v := velocidade_atual()
-			var rebote := Vector3(v.x * 0.3, -absf(v.y) * 0.3 - 1.5, -v.z * 0.35)
+			var rebote := Vector3(v.x * 0.3 + empurrao_do_bloqueio, -absf(v.y) * 0.3 - 1.5, -v.z * 0.35 * forca_do_bloqueio)
+			forca_do_bloqueio = 1.0
+			empurrao_do_bloqueio = 0.0
 			_desviar(Vector3(cruzamento.x, cruzamento.y, lado_de_onde_veio * (RAIO + 0.3)), rebote)
 			bloqueada.emit()
 			return
