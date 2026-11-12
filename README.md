@@ -114,7 +114,7 @@ O jogo segue as regras oficiais (FIVB). Só o placar é do jogo: sets até 7, co
 
 ## Rodar os testes
 
-São 33 arquivos em `testes/`. Pra rodar todos de uma vez, no Git Bash (Windows) ou no terminal, dentro da pasta do projeto:
+São 34 arquivos em `testes/`. Pra rodar todos de uma vez, no Git Bash (Windows) ou no terminal, dentro da pasta do projeto:
 
 ```
 GODOT="/caminho/do/Godot_v4.7.2-stable_win64_console.exe" ferramentas/rodar_testes.sh

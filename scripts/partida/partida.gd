@@ -70,6 +70,9 @@ const Cortina := preload("res://scripts/menus/cortina.gd")
 const BarraDeForca := preload("res://scripts/partida/barra_de_forca.gd")
 const Cartas := preload("res://scripts/regras/cartas.gd")
 const EscolhaDeCartas := preload("res://scripts/partida/escolha_de_cartas.gd")
+const Sons := preload("res://scripts/audio/sons.gd")
+const Estouro := preload("res://scripts/visual/estouro.gd")
+const SetaDoControlado := preload("res://scripts/partida/seta_do_controlado.gd")
 const Qualidade := TempoDoToque.Qualidade
 
 enum Estado { SAQUE, RALLY, PONTO, FIM }
@@ -191,6 +194,10 @@ const DISTANCIA_DO_ANEL_DE_TEMPO := 3.5
 ## Camada de desenho do anel de tempo de cada time: na tela dividida, cada
 ## jogador só vê o próprio anel.
 const CAMADA_DO_ANEL_DE_TEMPO := [11, 12]
+## Cor das faíscas e do rastro da cortada perfeita.
+const COR_DA_CORTADA_PERFEITA := Color("#FFD23F")
+## Texto do aviso "Perfeito!" (maior que o "Bom" e o "Ruim", pra comemorar).
+const TAMANHO_DO_AVISO_PERFEITO := 44
 
 ## Câmera atrás do próprio time, como numa transmissão de TV (referência:
 ## Spike Volleyball). Desde a Fase 04 ela fica mais baixa e mais perto, com a
@@ -244,6 +251,10 @@ var atletas: Array = [[], []]
 var controlados: Array[Node3D] = [null, null]
 ## Anel no chão de quem está sendo controlado, por time.
 var aneis_do_controlado: Array = [null, null]
+## Seta em cima da cabeça de quem está sendo controlado, por time (pula na troca).
+var setas_do_controlado: Array = [null, null]
+## Efeitos sonoros (scripts/audio/sons.gd). Só som: não muda o jogo.
+var sons
 ## Botão apertado cedo demais, esperando a bola chegar ao alcance, por time:
 ## { "tipo": "passe" ou "ataque", "ate": relógio }. Vazio = nenhum.
 var pedidos: Array = [{}, {}]
@@ -314,6 +325,9 @@ var rotulos_de_cartas: Array[Label] = []
 
 func _ready() -> void:
 	_carregar_escolhas()
+	sons = Sons.new()
+	sons.name = "Sons"
+	add_child(sons)
 
 	_criar_cenario()
 	for time in 2:
@@ -362,6 +376,7 @@ func _ready() -> void:
 	# controle passa pra quem vai nela agora (se ela voltar pro lado de quem
 	# tocou, não é ele de novo: seriam dois toques).
 	bola.tocou_rede.connect(_ao_lancar_bola)
+	bola.tocou_rede.connect(func() -> void: sons.tocar("rede"))
 
 	for jogador in [1, 2]:
 		var entrada = EntradaLocal.new()
@@ -422,6 +437,7 @@ func _physics_process(delta: float) -> void:
 		for atleta in atletas[time]:
 			_atualizar_pulo(atleta, delta)
 		aneis_do_controlado[time].seguir(controlado)
+		setas_do_controlado[time].seguir(controlado, delta)
 		_atualizar_anel_de_tempo(time)
 		_atualizar_mira(time, delta)
 	_atualizar_poses_de_espera()
@@ -642,6 +658,8 @@ func _ao_bola_ser_bloqueada() -> void:
 	ultimo_toque = time_que_bloqueou
 	_ponto_de_bloqueio = time_que_bloqueou
 	impacto.bloqueio()
+	sons.tocar("bloqueio")
+	Estouro.mostrar(self, bola.position, _cor_do_time(time_que_bloqueou), 0.8)
 	AvisoDeToque.mostrar(self, bola.position + Vector3(0.0, 0.8, 0.0), "Bloqueio!", _cor_do_time(time_que_bloqueou))
 	_ao_lancar_bola()
 
@@ -660,6 +678,7 @@ func _ao_bola_tocar_bloqueio() -> void:
 	ultimo_toque = time_que_bloqueou
 	_ponto_de_bloqueio = -1
 	impacto.ponto()
+	sons.tocar("bloqueio", 0.45)
 	AvisoDeToque.mostrar(self, bola.position + Vector3(0.0, 0.8, 0.0), "Toque no bloqueio", Color(0.95, 0.95, 0.95))
 	_ao_lancar_bola()
 
@@ -745,6 +764,7 @@ func _atender_pedido(time: int) -> void:
 	elif _relogio > float(pedidos[time]["ate"]):
 		pedidos[time] = {}
 		aneis_do_controlado[time].piscar()
+		sons.tocar("falhou")
 
 
 func _ao_soltar_botao(jogador: int, tipo: String) -> void:
@@ -773,6 +793,7 @@ func _sacar(time: int, flutuante: bool, forca := 0.4, alvo := Mira.ALVO_INICIAL)
 		return
 	toques.reiniciar()
 	toques.registrar(time, atletas[time].find(controlados[time]))
+	sons.tocar("saque", lerpf(0.5, 1.1, forca))
 	saque_em_jogo = true
 	var ponto := Mira.com_erro(alvo, _erro_do_saque(time, forca), Vector2(sorteio.randf(), sorteio.randf()))
 	var destino := Vector3(ponto.x, 0.0, ponto.y * _lado(1 - time))
@@ -842,6 +863,7 @@ func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> bool:
 ## ele vai poder levantar.
 func _passar_pro_levantador(time: int, qualidade: Qualidade) -> void:
 	_animar(controlados[time], "manchete")
+	sons.tocar("passe", _intensidade_do_som(qualidade))
 	qualidade_do_passe[time] = qualidade
 	var erro := _erro_aleatorio(TempoDoToque.ERRO_DO_PASSE[qualidade])
 	# O passe nunca passa da rede nem sai pela lateral.
@@ -857,6 +879,7 @@ func _passar_pro_levantador(time: int, qualidade: Qualidade) -> void:
 ## levantamento perfeitos dão o levantamento rápido, que chega antes do bloqueio.
 func _levantar(time: int, qualidade: Qualidade) -> void:
 	_animar(controlados[time], "levantamento")
+	sons.tocar("levantamento", _intensidade_do_som(qualidade))
 	var passe: Qualidade = qualidade_do_passe[time]
 	var escolhido := _ataque_escolhido(time, passe)
 	var erro := _erro_aleatorio(TempoDoToque.ERRO_DO_LEVANTAMENTO[qualidade])
@@ -1004,10 +1027,16 @@ func _cortar(time: int, qualidade: Qualidade = Qualidade.BOM) -> void:
 	var destino := _destino_na_quadra_do_outro(time, alvo, jeito["erro_da_mira"])
 	miras[time].esconder()
 	var subida := maxf(float(jeito["subida"]) - Atributos.cortada_mais_forte(times_em_jogo[time]), 0.05)
+	var ponto_da_batida: Vector3 = bola.position
 	bola.lancar(destino, bola.position.y + subida)
 	_ao_lancar_bola()
+	sons.tocar("cortada", _intensidade_do_som(qualidade))
 	if qualidade != Qualidade.RUIM:
-		impacto.cortada(qualidade == Qualidade.PERFEITO)
+		var perfeita := qualidade == Qualidade.PERFEITO
+		impacto.cortada(perfeita)
+		Estouro.mostrar(self, ponto_da_batida, COR_DA_CORTADA_PERFEITA if perfeita else Color(1.0, 1.0, 1.0), 1.0 if perfeita else 0.45)
+		if perfeita:
+			rastro.destacar(COR_DA_CORTADA_PERFEITA)
 
 
 ## Largada: bola curta, devagar e por cima do bloqueio. A direção mira o lado
@@ -1019,6 +1048,7 @@ func _largar(time: int, qualidade: Qualidade) -> void:
 	miras[time].esconder()
 	bola.lancar(destino, bola.position.y + SUBIDA_DA_LARGADA)
 	_ao_lancar_bola()
+	sons.tocar("levantamento", 0.6)
 	_mostrar_mensagem("Largada!", time)
 
 
@@ -1040,6 +1070,7 @@ func _erro_aleatorio(raio: float) -> Vector2:
 
 func _devolver_de_graca(time: int) -> void:
 	_animar(controlados[time], "manchete")
+	sons.tocar("passe", 0.6)
 	bola.lancar(_ponto_aleatorio_no_lado(1 - time, 2.0, 8.0), 5.0)
 	_ao_lancar_bola()
 
@@ -1144,7 +1175,23 @@ func _avisar_qualidade(atleta: Node3D, qualidade: Qualidade) -> void:
 		cor = AnelDeTempo.COR_PERFEITO
 	elif qualidade == Qualidade.BOM:
 		cor = AnelDeTempo.COR_BOM
-	AvisoDeToque.mostrar(self, atleta.position + Vector3(0.0, 2.3, 0.0), TempoDoToque.nome(qualidade), cor)
+	var aviso := AvisoDeToque.mostrar(self, atleta.position + Vector3(0.0, 2.3, 0.0), TempoDoToque.nome(qualidade), cor)
+	# Perfeito: texto maior e um sininho. Ruim: um som curto de erro.
+	if qualidade == Qualidade.PERFEITO:
+		aviso.font_size = TAMANHO_DO_AVISO_PERFEITO
+		aviso.outline_size = 14
+		sons.tocar("perfeito")
+	elif qualidade == Qualidade.RUIM:
+		sons.tocar("ruim")
+
+
+## Volume das batidas pela qualidade do toque (perfeito = mais forte).
+func _intensidade_do_som(qualidade: Qualidade) -> float:
+	if qualidade == Qualidade.PERFEITO:
+		return 1.0
+	if qualidade == Qualidade.BOM:
+		return 0.75
+	return 0.5
 
 
 # --- Atributos e mergulho ---
@@ -1178,6 +1225,7 @@ func _mergulhar(time: int) -> void:
 	var ate_a_bola := Vector2(bola.position.x - atleta.position.x, bola.position.z - atleta.position.z)
 	var alcanca: bool = bola.em_voo and bola.position.y <= ALTURA_MAXIMA_DO_MERGULHO \
 		and ate_a_bola.length() <= alcance
+	sons.tocar("mergulho")
 	if alcanca:
 		_tentar_tocar(time, false, true)
 		# Se joga até perto da bola. A animação vem depois do toque, pra
@@ -1319,9 +1367,12 @@ func _ao_bola_tocar_chao(posicao: Vector3) -> void:
 		# Caiu do lado do time 0 (z positivo): ponto do time 1, e vice-versa.
 		var quem := 1 if posicao.z > 0.0 else 0
 		OndaNoChao.mostrar(self, posicao, _cor_do_time(quem))
+		Estouro.mostrar(self, Vector3(posicao.x, 0.1, posicao.z), _cor_do_time(quem), 0.6)
 		impacto.ponto()
+		sons.tocar("quique")
 		_encerrar_rally(quem, "dentro")
 	else:
+		sons.tocar("quique", 0.7)
 		_encerrar_rally(1 - ultimo_toque, "fora")
 
 
@@ -1337,14 +1388,21 @@ func _encerrar_rally(vencedor: int, motivo: String) -> void:
 	var nome := str(times_em_jogo[vencedor]["nome"])
 	var explicacao := _explicacao_do_ponto(motivo)
 	_mostrar_mensagem("Ponto %s!%s" % [nome, " (%s)" % explicacao if explicacao != "" else ""])
+	# Apito do juiz e a torcida (mais forte nos pontos bonitos).
+	sons.tocar("apito")
+	var torcida := 0.6
 	if motivo == "dentro" and saque_do_rally_em_jogo and vencedor == placar.quem_saca:
 		faixa.mostrar("ACE!", nome, _cor_do_time(vencedor), vencedor)
+		torcida = 1.0
 	elif motivo == "dentro" and vencedor == _ponto_de_bloqueio:
 		faixa.mostrar("BLOQUEIO!", nome, _cor_do_time(vencedor), vencedor)
+		torcida = 1.0
 	elif motivo == "dentro":
 		faixa.mostrar("PONTO!", nome, _cor_do_time(vencedor), vencedor)
+		torcida = 0.8
 	else:
 		faixa.mostrar("PONTO!", "%s  ·  %s" % [nome, explicacao], _cor_do_time(vencedor), vencedor)
+	sons.tocar("torcida", torcida)
 	# A faixa já diz quem pontuou e o motivo: a caixa do meio fica escondida
 	# (o texto continua lá, pros testes e pro robô).
 	caixa_da_mensagem.visible = false
@@ -1552,6 +1610,7 @@ func _ao_encerrar_partida(vencedor: int) -> void:
 	_limpar_mensagens()
 	caixa_da_pausa.visible = false
 	faixa.mostrar("JOGO!", "%s venceu" % times_em_jogo[vencedor]["nome"], _cor_do_time(vencedor), vencedor)
+	sons.tocar("torcida", 1.3)
 	for atleta in atletas[vencedor]:
 		_animar(atleta, "comemoracao_torcida")
 	for atleta in atletas[1 - vencedor]:
@@ -1763,6 +1822,16 @@ func _criar_atletas(time: int) -> void:
 	anel.cor = cor_detalhe
 	add_child(anel)
 	aneis_do_controlado[time] = anel
+	# Seta em cima da cabeça, na cor forte do time (a do menu). Com os dois
+	# jogadores no mesmo time, o Jogador 2 usa a cor de detalhe do uniforme
+	# reserva, pra uma seta não ser igual à outra.
+	var seta := SetaDoControlado.new()
+	seta.name = "SetaDoControlado%d" % time
+	var mesmo_time: bool = time == 1 and str(times_em_jogo[0]["id"]) == id_time
+	seta.cor = cor_detalhe if mesmo_time \
+		else Color.from_string(str(dados_time.get("cor_do_menu", dados_time["cores"][1])), cor_detalhe)
+	add_child(seta)
+	setas_do_controlado[time] = seta
 	controlados[time] = atletas[time][rodizios[time].atleta_na(6)]
 
 
