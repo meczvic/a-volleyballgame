@@ -256,7 +256,7 @@ func _tentar_passe(time: int, _atleta: Node3D, nossos: int) -> void:
 	if not partida._alcanca_bola(time, 0.0, partida.ALTURA_MAXIMA_PASSE):
 		return
 	var tipo := "passe" if nossos == 0 else "levantamento"
-	var erro := TempoDoToque.erro_do_botao(tipo, bola.position, bola.velocidade_atual())
+	var erro := TempoDoToque.erro_do_botao(tipo, bola.position, bola.velocidade_atual(), 0.0, bola.gravidade)
 	if erro > float(_plano.get("tempo", 0.0)):
 		return
 	if nossos == 1:
@@ -280,7 +280,7 @@ func _tentar_ataque(time: int, atleta: Node3D) -> void:
 	var no_chao := Vector2(prevista.x - atleta.position.x, prevista.z - atleta.position.z).length()
 	var alcanca: bool = no_chao <= partida.ALCANCE and prevista.y >= partida.ALTURA_MINIMA_CORTADA \
 		and prevista.y <= partida.ALTURA_MAXIMA_CORTADA and not partida._esta_pulando(atleta)
-	var erro := TempoDoToque.erro_do_botao("cortada", bola.position, bola.velocidade_atual(), partida.TEMPO_ATE_A_BATIDA)
+	var erro := TempoDoToque.erro_do_botao("cortada", bola.position, bola.velocidade_atual(), partida.TEMPO_ATE_A_BATIDA, bola.gravidade)
 	if alcanca and erro <= float(_plano.get("tempo", 0.0)):
 		_escolher_ataque(time)
 		direcao = _plano["mira"]

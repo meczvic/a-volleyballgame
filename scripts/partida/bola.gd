@@ -53,6 +53,8 @@ var usar_visual_anime := true
 var _origem := Vector3.ZERO
 var _velocidade_inicial := Vector3.ZERO
 var _tempo := 0.0
+## Gravidade do voo de agora (m/s²): maior = bola mais rápida e reta.
+var gravidade := Trajetoria.GRAVIDADE
 var _sombra: MeshInstance3D
 var _visual: MeshInstance3D
 
@@ -104,12 +106,12 @@ func amassar(forca: float) -> void:
 	tween.tween_property(_visual, "scale", Vector3.ONE, 0.1)
 
 
-func lancar(destino: Vector3, altura_maxima: float) -> void:
+func lancar(destino: Vector3, altura_maxima: float, gravidade_do_lance := Trajetoria.GRAVIDADE) -> void:
 	var alvo := Vector3(destino.x, RAIO, destino.z)
 	var velocidade := Trajetoria.velocidade_passando_rede(
-		position, alvo, altura_maxima, ALTURA_REDE + FOLGA_REDE
+		position, alvo, altura_maxima, ALTURA_REDE + FOLGA_REDE, gravidade_do_lance
 	)
-	_comecar_voo(position, velocidade)
+	_comecar_voo(position, velocidade, gravidade_do_lance)
 
 
 ## Para a bola num ponto (por exemplo, na mão de quem vai sacar).
@@ -128,7 +130,7 @@ func puxar_para(ponto: Vector3, peso: float) -> void:
 func posicao_daqui_a(segundos: float) -> Vector3:
 	if not em_voo:
 		return position
-	return Trajetoria.posicao_em(_origem, _velocidade_inicial, _tempo + segundos)
+	return Trajetoria.posicao_em(_origem, _velocidade_inicial, _tempo + segundos, gravidade)
 
 
 ## Há quantos segundos a bola foi lançada (ou desviada).
@@ -137,7 +139,7 @@ func tempo_de_voo() -> float:
 
 
 func velocidade_atual() -> Vector3:
-	return _velocidade_inicial + Vector3(0.0, -Trajetoria.GRAVIDADE * _tempo, 0.0)
+	return _velocidade_inicial + Vector3(0.0, -gravidade * _tempo, 0.0)
 
 
 ## Muda o rumo da bola no meio do voo (rede ou bloqueio).
@@ -146,14 +148,15 @@ func _desviar(ponto: Vector3, nova_velocidade: Vector3) -> void:
 	_comecar_voo(ponto, nova_velocidade)
 
 
-func _comecar_voo(de: Vector3, velocidade: Vector3) -> void:
+func _comecar_voo(de: Vector3, velocidade: Vector3, gravidade_do_voo := Trajetoria.GRAVIDADE) -> void:
+	gravidade = gravidade_do_voo
 	lancamentos += 1
 	_ima_peso = 0.0
 	_origem = de
 	_velocidade_inicial = velocidade
 	_tempo = 0.0
 	em_voo = true
-	ponto_previsto = Trajetoria.ponto_de_queda(_origem, _velocidade_inicial, RAIO)
+	ponto_previsto = Trajetoria.ponto_de_queda(_origem, _velocidade_inicial, RAIO, gravidade)
 
 
 func _physics_process(delta: float) -> void:
@@ -165,7 +168,7 @@ func _physics_process(delta: float) -> void:
 func _voar(delta: float) -> void:
 	var antes := position
 	_tempo += delta
-	var agora := Trajetoria.posicao_em(_origem, _velocidade_inicial, _tempo)
+	var agora := Trajetoria.posicao_em(_origem, _velocidade_inicial, _tempo, gravidade)
 
 	# Cruzou a linha da rede neste quadro?
 	if antes.z != 0.0 and signf(antes.z) != signf(agora.z):

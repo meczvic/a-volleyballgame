@@ -59,6 +59,7 @@ const Trajetoria := preload("res://scripts/regras/trajetoria.gd")
 const AnelDeTempo := preload("res://scripts/partida/anel_de_tempo.gd")
 const AvisoDeToque := preload("res://scripts/partida/aviso_de_toque.gd")
 const Impacto := preload("res://scripts/visual/impacto.gd")
+const VelocidadeDaBola := preload("res://scripts/regras/velocidade_da_bola.gd")
 const Rastro := preload("res://scripts/visual/rastro.gd")
 const Mira := preload("res://scripts/regras/mira.gd")
 const Atributos := preload("res://scripts/regras/atributos.gd")
@@ -579,7 +580,7 @@ func _vamos_atacar(time: int) -> bool:
 func _ponto_do_ataque(time: int) -> Vector2:
 	if not cortadas[time].is_empty():
 		return _no_time(time, (cortadas[time]["atleta"] as Node3D).position)
-	var ate_a_batida := TempoDoToque.tempo_ate_altura(bola.position, bola.velocidade_atual(), TempoDoToque.ALTURA_IDEAL["cortada"])
+	var ate_a_batida := TempoDoToque.tempo_ate_altura(bola.position, bola.velocidade_atual(), TempoDoToque.ALTURA_IDEAL["cortada"], bola.gravidade)
 	return _no_time(time, bola.posicao_daqui_a(maxf(ate_a_batida, 0.0)))
 
 
@@ -647,7 +648,7 @@ func _x_do_bloqueio(time: int, indice: int, funcao: String, x_da_funcao: float) 
 		# Ainda lendo o levantamento: fica onde está.
 		return atletas[time][indice].position.x * _lado(time)
 	# Onde a bola vai estar na altura da cortada (descendo).
-	var ate_a_batida := TempoDoToque.tempo_ate_altura(bola.position, bola.velocidade_atual(), TempoDoToque.ALTURA_IDEAL["cortada"])
+	var ate_a_batida := TempoDoToque.tempo_ate_altura(bola.position, bola.velocidade_atual(), TempoDoToque.ALTURA_IDEAL["cortada"], bola.gravidade)
 	var alvo_x: float = bola.posicao_daqui_a(maxf(ate_a_batida, 0.0)).x * _lado(time)
 	if funcao == "central" or absf(alvo_x - x_da_funcao) <= AJUDA_DO_BLOQUEIO:
 		return alvo_x
@@ -749,7 +750,7 @@ func _qualidade_do_botao_do_bloqueio(time: int) -> Qualidade:
 	if not cortadas[outro].is_empty():
 		ate_a_batida = maxf(TEMPO_ATE_A_BATIDA - float(cortadas[outro]["tempo"]), 0.0)
 	elif bola.em_voo and toques.time_com_a_bola == outro and toques.toques >= 2 and _lado_da_queda() == outro:
-		ate_a_batida = maxf(TempoDoToque.tempo_ate_altura(bola.position, bola.velocidade_atual(), TempoDoToque.ALTURA_IDEAL["cortada"]), 0.0)
+		ate_a_batida = maxf(TempoDoToque.tempo_ate_altura(bola.position, bola.velocidade_atual(), TempoDoToque.ALTURA_IDEAL["cortada"], bola.gravidade), 0.0)
 	if ate_a_batida < 0.0:
 		return Qualidade.RUIM
 	return JeitosDeDefender.qualidade_do_bloqueio(JeitosDeDefender.erro_do_bloqueio(ate_a_batida, DURACAO_DO_PULO))
@@ -964,7 +965,7 @@ func _sacar(time: int, flutuante: bool, forca := 0.4, alvo := Mira.ALVO_INICIAL)
 	var destino := Vector3(ponto.x, 0.0, ponto.y * _lado(1 - time))
 	_peso_do_toque(time, bola.position, forca if not flutuante else forca * 0.5)
 	# Provisório: o flutuante só sai mais baixo. O balanço vem depois.
-	bola.lancar(destino, Mira.altura_do_saque(forca, flutuante))
+	bola.lancar(destino, Mira.altura_do_saque(forca, flutuante), VelocidadeDaBola.do_saque(forca, flutuante))
 	ultimo_toque = time
 	estado = Estado.RALLY
 	_limpar_mensagens()
@@ -976,7 +977,8 @@ func _esconder_ajuda() -> void:
 	if _ajuda_escondida:
 		return
 	_ajuda_escondida = true
-	var alvos: Array = ajudas_de_comandos.duplicate()
+	var alvos: Array = []
+	alvos.append_array(ajudas_de_comandos)
 	alvos.append(caixa_da_pausa)
 	for alvo in alvos:
 		if not is_instance_valid(alvo):
@@ -1301,7 +1303,7 @@ func _cortar(time: int, qualidade: Qualidade = Qualidade.BOM) -> void:
 			_mostrar_mensagem(efeito["nome"], time, false)
 	var ponto_da_batida: Vector3 = bola.position
 	_forca_da_cortada = int(Qualidade.PERFEITO) if super_cortada else int(qualidade)
-	bola.lancar(destino, bola.position.y + subida)
+	bola.lancar(destino, bola.position.y + subida, VelocidadeDaBola.da_cortada(qualidade, super_cortada))
 	_ao_lancar_bola()
 	sons.tocar("cortada", _intensidade_do_som(qualidade))
 	bola.amassar(1.0 if super_cortada else _forca_da_qualidade(qualidade, 1.0, 0.7))
@@ -1419,7 +1421,7 @@ func _tipo_do_toque(numero: int, atacando: bool) -> String:
 func _qualidade_do_toque(tipo: String, time: int) -> Qualidade:
 	if tipo == "levantamento" and Atributos.levantamento_perfeito(times_em_jogo[time]):
 		return Qualidade.PERFEITO
-	var erro := TempoDoToque.erro_do_botao(tipo, bola.position, bola.velocidade_atual(), _atraso_do_toque(tipo))
+	var erro := TempoDoToque.erro_do_botao(tipo, bola.position, bola.velocidade_atual(), _atraso_do_toque(tipo), bola.gravidade)
 	return TempoDoToque.qualidade(erro, Atributos.escala_da_janela(times_em_jogo[time], tipo))
 
 
@@ -1441,10 +1443,10 @@ func _atualizar_anel_de_tempo(time: int) -> void:
 		numero = toques.toques + 1
 	var tipo := _tipo_do_toque(numero, false)
 	var velocidade: Vector3 = bola.velocidade_atual()
-	var segundos := TempoDoToque.erro_do_botao(tipo, bola.position, velocidade, _atraso_do_toque(tipo))
+	var segundos := TempoDoToque.erro_do_botao(tipo, bola.position, velocidade, _atraso_do_toque(tipo), bola.gravidade)
 	var atleta := controlados[time]
 	# Longe de onde a bola vai estar na hora certa, o anel só atrapalha.
-	var na_hora := Trajetoria.posicao_em(bola.position, velocidade, maxf(segundos, 0.0))
+	var na_hora := Trajetoria.posicao_em(bola.position, velocidade, maxf(segundos, 0.0), bola.gravidade)
 	if _distancia_no_chao(atleta, na_hora) > DISTANCIA_DO_ANEL_DE_TEMPO:
 		anel.esconder()
 		return

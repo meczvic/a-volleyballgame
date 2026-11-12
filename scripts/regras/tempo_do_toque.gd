@@ -73,19 +73,19 @@ const CORTADA := {
 ## Segundos até a bola (agora em "posicao", com "velocidade") descer até
 ## "altura". Negativo: ela já passou dessa altura descendo (há quanto tempo).
 ## Se ela nem chega nessa altura, o melhor momento é o alto da subida.
-static func tempo_ate_altura(posicao: Vector3, velocidade: Vector3, altura: float) -> float:
-	var a := 0.5 * Trajetoria.GRAVIDADE
+static func tempo_ate_altura(posicao: Vector3, velocidade: Vector3, altura: float, gravidade := Trajetoria.GRAVIDADE) -> float:
+	var a := 0.5 * gravidade
 	var delta := velocidade.y * velocidade.y + 4.0 * a * (posicao.y - altura)
 	if delta < 0.0:
-		return velocidade.y / Trajetoria.GRAVIDADE
+		return velocidade.y / gravidade
 	return (velocidade.y + sqrt(delta)) / (2.0 * a)
 
 
 ## Erro (s) do botão apertado agora pra um toque do "tipo" ("passe",
 ## "levantamento" ou "cortada"). "atraso": tempo entre o botão e o contato
 ## (a cortada bate no alto do pulo). Positivo = cedo, negativo = tarde.
-static func erro_do_botao(tipo: String, posicao: Vector3, velocidade: Vector3, atraso: float = 0.0) -> float:
-	return tempo_ate_altura(posicao, velocidade, ALTURA_IDEAL[tipo]) - atraso
+static func erro_do_botao(tipo: String, posicao: Vector3, velocidade: Vector3, atraso: float = 0.0, gravidade := Trajetoria.GRAVIDADE) -> float:
+	return tempo_ate_altura(posicao, velocidade, ALTURA_IDEAL[tipo], gravidade) - atraso
 
 
 ## Qualidade pelo erro em segundos. "escala" aumenta (> 1) ou diminui (< 1)

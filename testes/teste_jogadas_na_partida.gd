@@ -159,7 +159,7 @@ func _teste_bloqueio_le_o_levantamento() -> void:
 	var partida = _nova_partida()
 	_levantar(partida, 0, TempoDoToque.ALTURA_DO_LEVANTAMENTO_NORMAL)
 	_passar(partida, partida.REACAO_DO_BLOQUEIO + 0.05)
-	var ate := TempoDoToque.tempo_ate_altura(partida.bola.position, partida.bola.velocidade_atual(), TempoDoToque.ALTURA_IDEAL["cortada"])
+	var ate := TempoDoToque.tempo_ate_altura(partida.bola.position, partida.bola.velocidade_atual(), TempoDoToque.ALTURA_IDEAL["cortada"], partida.bola.gravidade)
 	var x_do_levantamento: float = partida.bola.posicao_daqui_a(ate).x
 	var central := _bloqueador(partida, "central")
 	_verificar(central >= 0, "time 1 tem central na rede")
@@ -221,4 +221,4 @@ func _teste_bloqueio_tem_tempo_de_reacao() -> void:
 
 func _tempo_ate_a_cortada(partida: Node) -> float:
 	var bola = partida.bola
-	return TempoDoToque.tempo_ate_altura(bola.position, bola.velocidade_atual(), TempoDoToque.ALTURA_IDEAL["cortada"])
+	return TempoDoToque.tempo_ate_altura(bola.position, bola.velocidade_atual(), TempoDoToque.ALTURA_IDEAL["cortada"], bola.gravidade)

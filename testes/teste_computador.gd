@@ -12,7 +12,10 @@ extends SceneTree
 const EntradaDoComputador := preload("res://scripts/entrada/entrada_do_computador.gd")
 const NIVEIS := ["facil", "normal", "dificil"]
 ## Cada partida de teste: times, semente e tempo (s) de jogo.
-const ARGUMENTOS_DO_ROBO := ["times=brasil,karasuno", "estadio=ginasio_japones", "semente=7", "segundos=90", "dois=1"]
+const ARGUMENTOS_DO_ROBO := ["times=brasil,karasuno", "estadio=ginasio_japones", "segundos=90", "dois=1"]
+## Sementes de cada nível. Uma semente só dá uns 5 rallies e o resultado balança;
+## o Fácil e o Difícil são comparados pela média de três.
+const SEMENTES := {"facil": [7, 11, 22], "normal": [7], "dificil": [7, 11, 22]}
 
 var falhas := 0
 
@@ -96,27 +99,34 @@ func _teste_partida_contra_o_computador() -> void:
 func _teste_partidas_nos_tres_niveis() -> void:
 	var medias := {}
 	for nivel in NIVEIS:
-		var resumo := _rodar_o_robo(nivel)
-		_verificar(resumo.has("rallies"), "%s: o robô terminou e imprimiu o resumo" % nivel)
-		if not resumo.has("rallies"):
-			continue
-		print("  %s: %d rallies, média de %.1f bolas por rally" % [nivel, resumo["rallies"], resumo.get("media", 0.0)])
-		_verificar(int(resumo["rallies"]) >= 2, "%s: teve pontos (%d rallies)" % [nivel, resumo["rallies"]])
-		medias[nivel] = float(resumo.get("media", 0.0))
+		var soma := 0.0
+		var partidas := 0
+		for semente in SEMENTES[nivel]:
+			var resumo := _rodar_o_robo(nivel, int(semente))
+			_verificar(resumo.has("rallies"), "%s (semente %d): o robô terminou e imprimiu o resumo" % [nivel, semente])
+			if not resumo.has("rallies"):
+				continue
+			print("  %s (semente %d): %d rallies, média de %.1f bolas por rally" % [nivel, semente, resumo["rallies"], resumo.get("media", 0.0)])
+			_verificar(int(resumo["rallies"]) >= 2, "%s (semente %d): teve pontos (%d rallies)" % [nivel, semente, resumo["rallies"]])
+			soma += float(resumo.get("media", 0.0))
+			partidas += 1
+		if partidas > 0:
+			medias[nivel] = soma / partidas
 	if medias.has("facil") and medias.has("dificil"):
 		_verificar(medias["dificil"] > medias["facil"],
 			"no Difícil o rally é mais longo que no Fácil (%.1f x %.1f)" % [medias["dificil"], medias["facil"]])
 
 
 ## Roda o robô com o computador nos dois times e lê o resumo.
-func _rodar_o_robo(nivel: String) -> Dictionary:
+func _rodar_o_robo(nivel: String, semente: int) -> Dictionary:
 	var argumentos: Array[String] = ["--headless", "--fixed-fps", "60",
 		"--path", ProjectSettings.globalize_path("res://"),
 		"--script", "res://ferramentas/robo.gd", "--", "computador=" + nivel]
 	argumentos.append_array(ARGUMENTOS_DO_ROBO)
+	argumentos.append("semente=%d" % semente)
 	var saida: Array = []
 	var codigo := OS.execute(OS.get_executable_path(), argumentos, saida, true)
-	_verificar(codigo == 0, "%s: o robô saiu com código %d" % [nivel, codigo])
+	_verificar(codigo == 0, "%s (semente %d): o robô saiu com código %d" % [nivel, semente, codigo])
 	var resumo := {}
 	for linha in "\n".join(saida).split("\n"):
 		var limpa := linha.strip_edges()
