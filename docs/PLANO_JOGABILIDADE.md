@@ -109,3 +109,11 @@ Muita coisa muda a partida com semente, então cada parte regrava o teste uma ve
 ### Riscos
 - O **rally pode ficar curto demais** se o ataque ficar forte e a defesa não acompanhar: por isso a 3B vem logo depois da 3A.
 - Botões a mais: o levantamento depende de **segurar Ataque** antes do toque. Se ficar confuso jogando, vira opção no menu.
+
+### Parte 3A: feita (12/11/2026, ainda não jogada pelo Victor)
+- **Levantamento rápido:** segurar o botão de flutuante (I, 5 ou RB) enquanto levanta. Precisa de passe e levantamento que não sejam ruins; se não forem os dois perfeitos, o atacante recebe a bola com mais erro. Não usei "segurar Ataque" porque Ataque já vira pedido de cortada.
+- **Ataque rápido do meio, pipe, diagonal e paralela:** `scripts/regras/jeitos_de_atacar.gd`. Cada um encolhe a largura do bloqueio (rápido do meio 0,6, pipe 0,7, paralela 0,85) e aparece na tela. Pipe sobe 0,08 m a menos; paralela erra 0,4 m a mais; diagonal erra 0,2 m a menos. Cortada ruim não aproveita o jeito.
+- **Bola de segunda:** atacar no 2º toque agora empurra a bola curta (como a largada) em vez de cortar.
+- **Computador:** `chance_de_rapido` e `chance_de_segunda` em `dados/dificuldades.json`. Diagonal e paralela ele já mirava.
+- **Teste novo:** `testes/teste_ataques.gd`. Teste com semente regravado (4 rallies, maior com 48 toques).
+- **Ficou de fora:** `dados/ajustes.json` (os números estão no arquivo de regras, vão pro JSON na Etapa 5) e o levantamento "alto" escolhido pelo jogador (continua automático pelo passe).

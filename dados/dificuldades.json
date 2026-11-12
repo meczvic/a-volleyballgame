@@ -1,5 +1,5 @@
 {
-	"_comentario": "Jeito de jogar do computador em cada dificuldade (modo 1 jogador). Lido por scripts/entrada/entrada_do_computador.gd. chance_*: de 0 a 1. reacao e atraso_do_bloqueio: segundos. erro_do_tempo: desvio (s) do botão em relação à hora certa (Perfeito até 0,06 s, Bom até 0,15 s). velocidade: fator da corrida do atleta controlado. forca_do_saque: [mínima, máxima], de 0 a 1. esperteza: chance de mirar no buraco (saque, cortada e levantamento).",
+	"_comentario": "Jeito de jogar do computador em cada dificuldade (modo 1 jogador). Lido por scripts/entrada/entrada_do_computador.gd. chance_*: de 0 a 1. reacao e atraso_do_bloqueio: segundos. erro_do_tempo: desvio (s) do botão em relação à hora certa (Perfeito até 0,06 s, Bom até 0,15 s). velocidade: fator da corrida do atleta controlado. forca_do_saque: [mínima, máxima], de 0 a 1. esperteza: chance de mirar no buraco (saque, cortada e levantamento). chance_de_rapido: levantar rápido (segurando o botão de flutuante). chance_de_segunda: atacar no 2º toque (bola de segunda).",
 	"niveis": [
 		{
 			"id": "facil",
@@ -15,7 +15,9 @@
 			"forca_do_saque": [0.2, 0.55],
 			"chance_de_flutuante": 0.1,
 			"esperteza": 0.1,
-			"chance_de_largada": 0.05
+			"chance_de_largada": 0.05,
+			"chance_de_rapido": 0.05,
+			"chance_de_segunda": 0.0
 		},
 		{
 			"id": "normal",
@@ -31,7 +33,9 @@
 			"forca_do_saque": [0.35, 0.8],
 			"chance_de_flutuante": 0.25,
 			"esperteza": 0.5,
-			"chance_de_largada": 0.12
+			"chance_de_largada": 0.12,
+			"chance_de_rapido": 0.2,
+			"chance_de_segunda": 0.05
 		},
 		{
 			"id": "dificil",
@@ -47,7 +51,9 @@
 			"forca_do_saque": [0.55, 0.9],
 			"chance_de_flutuante": 0.35,
 			"esperteza": 0.9,
-			"chance_de_largada": 0.18
+			"chance_de_largada": 0.18,
+			"chance_de_rapido": 0.4,
+			"chance_de_segunda": 0.12
 		}
 	]
 }

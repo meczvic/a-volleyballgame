@@ -43,6 +43,7 @@ const Rodizio := preload("res://scripts/regras/rodizio.gd")
 const Escalacao := preload("res://scripts/regras/escalacao.gd")
 const Formacao := preload("res://scripts/regras/formacao.gd")
 const EscolhaAtaque := preload("res://scripts/regras/escolha_ataque.gd")
+const JeitosDeAtacar := preload("res://scripts/regras/jeitos_de_atacar.gd")
 const EntradaLocal := preload("res://scripts/entrada/entrada_local.gd")
 const EntradaDoComputador := preload("res://scripts/entrada/entrada_do_computador.gd")
 const Bola := preload("res://scripts/partida/bola.gd")
@@ -286,6 +287,13 @@ var faixa: Control
 ## Time que bloqueou por último no rally (pra saber se o ponto foi de
 ## bloqueio). -1 depois de qualquer toque.
 var _ponto_de_bloqueio := -1
+## Botões que cada time está segurando agora ({ tipo: true }): o levantamento
+## rápido pede o botão de flutuante segurado enquanto levanta.
+var _segurando_botao: Array = [{}, {}]
+## Último levantamento de cada time: { "nome": ataque, "rapido": bool }. A cortada lê.
+var _ultimo_levantamento: Array = [{}, {}]
+## Quanto o último ataque encolhe a largura do bloqueio (1.0 = normal).
+var _bloqueio_do_ataque := 1.0
 var rotulo_mensagem: Label
 ## Caixa escura atrás da mensagem; some quando não tem mensagem.
 var caixa_da_mensagem: PanelContainer
@@ -703,7 +711,7 @@ func _bloquear(time: int) -> void:
 ## - NENHUM: ninguém encosta.
 func _tipo_do_bloqueio(ponto_na_rede: Vector3, lado_destino: float) -> Bloqueio:
 	var time := 0 if lado_destino > 0.0 else 1
-	var largura := LARGURA_DO_BLOQUEIO * Atributos.largura_do_bloqueio(times_em_jogo[time])
+	var largura := LARGURA_DO_BLOQUEIO * Atributos.largura_do_bloqueio(times_em_jogo[time]) * _bloqueio_do_ataque
 	var resultado := Bloqueio.NENHUM
 	for i in 6:
 		if not Rodizio.e_da_rede(rodizios[time].posicao_de(i)):
@@ -742,6 +750,7 @@ func _ao_bola_ser_bloqueada() -> void:
 	# O bloqueio não conta como toque: quem bloqueou ainda tem 3 toques.
 	toques.registrar_bloqueio(time_que_bloqueou)
 	ultimo_toque = time_que_bloqueou
+	_bloqueio_do_ataque = 1.0
 	_ponto_de_bloqueio = time_que_bloqueou
 	impacto.bloqueio()
 	sons.tocar("bloqueio")
@@ -762,6 +771,7 @@ func _ao_bola_tocar_bloqueio() -> void:
 		return
 	toques.registrar_bloqueio(time_que_bloqueou)
 	ultimo_toque = time_que_bloqueou
+	_bloqueio_do_ataque = 1.0
 	_ponto_de_bloqueio = -1
 	impacto.ponto()
 	sons.tocar("bloqueio", 0.45)
@@ -805,6 +815,7 @@ func _ao_receber_comando(jogador: int, tipo: String) -> void:
 	if _escolhendo_cartas():
 		return
 	var time := jogador - 1
+	_segurando_botao[time][tipo] = true
 	match estado:
 		Estado.SAQUE:
 			# Segurar carrega a força; o saque sai quando solta (_ao_soltar_botao).
@@ -854,9 +865,10 @@ func _atender_pedido(time: int) -> void:
 
 
 func _ao_soltar_botao(jogador: int, tipo: String) -> void:
+	var time := jogador - 1
+	_segurando_botao[time].erase(tipo)
 	if _escolhendo_cartas():
 		return
-	var time := jogador - 1
 	if estado != Estado.SAQUE or time != placar.quem_saca or carga_do_saque < 0.0:
 		return
 	if tipo != ("saque_flutuante" if saque_flutuante else "ataque"):
@@ -877,6 +889,8 @@ func _sacar(time: int, flutuante: bool, forca := 0.4, alvo := Mira.ALVO_INICIAL)
 	if falta_de_posicao >= 0:
 		_encerrar_rally(1 - falta_de_posicao, "posição errada no saque")
 		return
+	_bloqueio_do_ataque = 1.0
+	_ultimo_levantamento = [{}, {}]
 	toques.reiniciar()
 	toques.registrar(time, atletas[time].find(controlados[time]))
 	sons.tocar("saque", lerpf(0.5, 1.1, forca))
@@ -919,6 +933,7 @@ func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> bool:
 		saque_em_jogo = false
 	ultimo_toque = time
 	_ponto_de_bloqueio = -1
+	_bloqueio_do_ataque = 1.0
 	_mostrar_marcas_de_ataque(-1)
 
 	var numero: int = toques.toques
@@ -951,6 +966,7 @@ func _passar_pro_levantador(time: int, qualidade: Qualidade) -> void:
 	_animar(controlados[time], "manchete")
 	sons.tocar("passe", _intensidade_do_som(qualidade))
 	qualidade_do_passe[time] = qualidade
+	_ultimo_levantamento[time] = {}
 	var erro := _erro_aleatorio(TempoDoToque.ERRO_DO_PASSE[qualidade])
 	# O passe nunca passa da rede nem sai pela lateral.
 	var lugar := PONTO_DO_LEVANTADOR + erro
@@ -968,15 +984,27 @@ func _levantar(time: int, qualidade: Qualidade) -> void:
 	sons.tocar("levantamento", _intensidade_do_som(qualidade))
 	var passe: Qualidade = qualidade_do_passe[time]
 	var escolhido := _ataque_escolhido(time, passe)
-	var erro := _erro_aleatorio(TempoDoToque.ERRO_DO_LEVANTAMENTO[qualidade])
-	var alvo: Vector3 = alvos_de_ataque[time][escolhido] + Vector3(erro.x, 0.0, erro.y)
 	var altura := TempoDoToque.altura_do_levantamento(passe, qualidade)
 	if Atributos.levantamento_rapido(times_em_jogo[time]):
 		altura = TempoDoToque.ALTURA_DO_LEVANTAMENTO_RAPIDO
+	# Segurando o botão de flutuante: levantamento rápido mesmo com passe só
+	# "bom". Passe ou levantamento ruim não deixam. Se não forem perfeitos, o
+	# atacante recebe a bola com mais erro.
+	var raio: float = TempoDoToque.ERRO_DO_LEVANTAMENTO[qualidade]
+	var quer_rapido: bool = _segurando_botao[time].get("saque_flutuante", false)
+	if quer_rapido and altura != TempoDoToque.ALTURA_DO_LEVANTAMENTO_RAPIDO \
+			and passe != Qualidade.RUIM and qualidade != Qualidade.RUIM:
+		altura = TempoDoToque.ALTURA_DO_LEVANTAMENTO_RAPIDO
+		if passe != Qualidade.PERFEITO or qualidade != Qualidade.PERFEITO:
+			raio *= JeitosDeAtacar.ERRO_DO_RAPIDO_FORCADO
+	var erro := _erro_aleatorio(raio)
+	var alvo: Vector3 = alvos_de_ataque[time][escolhido] + Vector3(erro.x, 0.0, erro.y)
 	bola.lancar(alvo, altura)
 	_ao_lancar_bola()
 	var nome: String = ATAQUES[escolhido]["nome"]
-	if altura == TempoDoToque.ALTURA_DO_LEVANTAMENTO_RAPIDO:
+	var rapido: bool = altura == TempoDoToque.ALTURA_DO_LEVANTAMENTO_RAPIDO
+	_ultimo_levantamento[time] = { "nome": nome, "rapido": rapido }
+	if rapido:
 		_mostrar_mensagem("Levantamento rápido: %s" % nome, time)
 	elif altura == TempoDoToque.ALTURA_DO_LEVANTAMENTO_ALTO:
 		_mostrar_mensagem("Levantamento alto: %s" % nome, time)
@@ -1103,6 +1131,10 @@ func _bater_na_bola(time: int, atleta: Node3D) -> void:
 ## a força (quanto a bola sobe), o erro da mira e a profundidade.
 ## Cortada ruim sai fraca e torta.
 func _cortar(time: int, qualidade: Qualidade = Qualidade.BOM) -> void:
+	if toques.toques == 2:
+		# Atacar no 2º toque: bola de segunda, o levantador empurra a bola.
+		_largar(time, qualidade, "Bola de segunda!")
+		return
 	if controlados[time].get_meta("largada", false):
 		_largar(time, qualidade)
 		return
@@ -1110,9 +1142,21 @@ func _cortar(time: int, qualidade: Qualidade = Qualidade.BOM) -> void:
 	# A direção mira: esquerda/direita, e pra frente (funda) ou pra trás (curta).
 	var alvo := _alvo_da_cortada(time)
 	alvo.y = clampf(alvo.y, jeito["fundo_min"], jeito["fundo_max"])
-	var destino := _destino_na_quadra_do_outro(time, alvo, jeito["erro_da_mira"])
+	# Jeito do ataque: rápido do meio, pipe, diagonal ou paralela.
+	var levantamento: Dictionary = _ultimo_levantamento[time]
+	_ultimo_levantamento[time] = {}
+	var efeito := JeitosDeAtacar.efeito(
+		levantamento.get("nome", ""), levantamento.get("rapido", false),
+		JeitosDeAtacar.jeito_da_mira(controlados[time].position.x, alvo.x))
+	var erro_da_mira := maxf(float(jeito["erro_da_mira"]) + float(efeito["erro_a_mais"]), 0.1)
+	var destino := _destino_na_quadra_do_outro(time, alvo, erro_da_mira)
 	miras[time].esconder()
-	var subida := maxf(float(jeito["subida"]) - Atributos.cortada_mais_forte(times_em_jogo[time]), 0.05)
+	var subida := maxf(float(jeito["subida"]) - Atributos.cortada_mais_forte(times_em_jogo[time]) - float(efeito["subida_a_menos"]), 0.05)
+	if qualidade != Qualidade.RUIM:
+		# Cortada ruim não aproveita o jeito: o bloqueio pega normal.
+		_bloqueio_do_ataque = float(efeito["bloqueio"])
+		if efeito["nome"] != "":
+			_mostrar_mensagem(efeito["nome"], time)
 	var ponto_da_batida: Vector3 = bola.position
 	bola.lancar(destino, bola.position.y + subida)
 	_ao_lancar_bola()
@@ -1127,7 +1171,7 @@ func _cortar(time: int, qualidade: Qualidade = Qualidade.BOM) -> void:
 
 ## Largada: bola curta, devagar e por cima do bloqueio. A direção mira o lado
 ## (esquerda/direita); a qualidade (tempo do botão) só muda o erro.
-func _largar(time: int, qualidade: Qualidade) -> void:
+func _largar(time: int, qualidade: Qualidade, mensagem := "Largada!") -> void:
 	var alvo := _alvo_da_cortada(time)
 	alvo.y = (LARGADA_FUNDO_MIN + LARGADA_FUNDO_MAX) / 2.0
 	var destino := _destino_na_quadra_do_outro(time, alvo, ERRO_DA_LARGADA[qualidade], LARGADA_FUNDO_MIN, LARGADA_FUNDO_MAX)
@@ -1135,7 +1179,7 @@ func _largar(time: int, qualidade: Qualidade) -> void:
 	bola.lancar(destino, bola.position.y + SUBIDA_DA_LARGADA)
 	_ao_lancar_bola()
 	sons.tocar("levantamento", 0.6)
-	_mostrar_mensagem("Largada!", time)
+	_mostrar_mensagem(mensagem, time)
 
 
 ## Ponto do mundo na quadra do outro time: "alvo" (x = lado, y = distância
@@ -2148,12 +2192,12 @@ func _criar_interface() -> void:
 
 	# Comandos de cada jogador embaixo da metade dele (ou só do J1, sem tela dividida).
 	var ajudas := [
-		"J1 teclado: WASD move · J passe · K saque/cortada · I flutuante · L bloqueio · Espaço mergulho",
+		"J1 teclado: WASD move · J passe · K saque/cortada · I flutuante · L bloqueio · Espaço mergulho · I segurado ao levantar = rápido · K no 2º toque = bola de segunda",
 		"J2 teclado: setas movem · 1 passe · 2 saque/cortada · 5 flutuante · 3 bloqueio · 0 mergulho (numérico)",
 	]
 	for jogador in (2 if tela_dividida else 1):
 		var ajuda := _rotulo_da_interface(16, false)
-		ajuda.text = ajudas[jogador] + "\nControle: A passe · X saque/cortada · RB flutuante · Y bloqueio · B mergulho · Passe no pulo = largada"
+		ajuda.text = ajudas[jogador] + "\nControle: A passe · X saque/cortada · RB flutuante · Y bloqueio · B mergulho · Passe no pulo = largada · RB segurado ao levantar = rápido · X no 2º toque = bola de segunda"
 		ajuda.position = Vector2(20.0 + jogador * 800.0, 848.0)
 		camada.add_child(ajuda)
 
