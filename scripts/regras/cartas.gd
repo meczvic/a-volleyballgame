@@ -11,8 +11,11 @@ extends RefCounted
 ## Cartas que já têm efeito no jogo. Só estas entram no sorteio; as outras
 ## continuam em dados/cartas.json esperando o efeito ser feito.
 const IMPLEMENTADAS := [
-	"maos_firmes", "pes_leves", "tapete_vermelho", "saque_firme", "levantador_preciso",
-	"muro", "ataque_rapido",
+	"maos_firmes", "leitura_de_jogo", "tapete_vermelho", "pes_leves", "saque_firme",
+	"braco_quente", "salto_alto", "levantador_preciso",
+	"super_saque", "muro", "bloqueio_leitor", "ataque_rapido", "diagonal_mortal",
+	"defesa_de_ferro", "contra_ataque",
+	"cortada_sinistra", "bola_fantasma", "saque_canhao", "muralha_total", "relampago",
 	"troca_de_lugar",
 ]
 
@@ -30,6 +33,26 @@ const EFEITOS := {
 	"levantador_preciso": { "levantamento_perfeito": 1.0 },
 	"muro": { "largura_do_bloqueio": 1.3 },
 	"ataque_rapido": { "levantamento_rapido": 1.0 },
+	"leitura_de_jogo": { "janela_passe": 1.15 },
+	"braco_quente": { "janela_cortada": 1.25 },
+	"salto_alto": { "alcance_do_bloqueio": 0.2 },
+	"super_saque": { "velocidade_do_saque": 1.3 },
+	"bloqueio_leitor": { "bloqueio_leitor": 1.0 },
+	"diagonal_mortal": { "diagonal_mortal": 1.0 },
+	"defesa_de_ferro": { "defesa_de_ferro": 1.0 },
+	"contra_ataque": { "contra_ataque": 1.0 },
+	"cortada_sinistra": { "cortada_sinistra": 1.0 },
+	"bola_fantasma": { "bola_fantasma": 1.0 },
+}
+
+## Cartas que valem por usos ou por tempo: o que o time ganha na hora que pega
+## a carta (time["cargas"], veja Atributos.carga). Defesa de Ferro recarrega a
+## cada set (partida._ao_encerrar_set).
+const CARGAS_AO_PEGAR := {
+	"saque_canhao": { "saque_canhao": 1.0 },
+	"muralha_total": { "muralha_total": 3.0 },
+	"relampago": { "relampago": 20.0 },
+	"defesa_de_ferro": { "defesa_de_ferro": 1.0 },
 }
 
 ## Bônus de conjunto: conjunto -> quantidade mínima -> efeito. Quem tem 3
@@ -41,7 +64,9 @@ const BONUS_DE_CONJUNTO := {
 	"velocidade": { 2: { "velocidade": 1.1 }, 3: { "tempo_no_chao": 0.0 } },
 }
 
-const SOMAS := ["forca_da_cortada", "alcance_do_mergulho", "levantamento_perfeito", "levantamento_rapido"]
+const SOMAS := ["forca_da_cortada", "alcance_do_mergulho", "levantamento_perfeito", "levantamento_rapido",
+	"alcance_do_bloqueio", "bloqueio_leitor", "diagonal_mortal", "defesa_de_ferro", "contra_ataque",
+	"cortada_sinistra", "bola_fantasma"]
 
 const ID_DA_TROCA := "troca_de_lugar"
 

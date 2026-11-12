@@ -98,6 +98,9 @@ func _qualidade_do_botao_do_bloqueio(time: int) -> TempoDoToque.Qualidade:
 ##   ponta da mão. A bola segue pro lado do bloqueio, mais devagar.
 ## - NENHUM: ninguém encosta.
 func _tipo_do_bloqueio(ponto_na_rede: Vector3, lado_destino: float) -> int:
+	if p._ataque_atravessa:
+		# Cortada Sinistra (Modo Caos): passa pelo bloqueio.
+		return p.Bloqueio.NENHUM
 	var time = 0 if lado_destino > 0.0 else 1
 	var largura = p.LARGURA_DO_BLOQUEIO * Atributos.largura_do_bloqueio(p.times_em_jogo[time]) * p._bloqueio_do_ataque
 	var resultado = p.Bloqueio.NENHUM
@@ -112,7 +115,8 @@ func _tipo_do_bloqueio(ponto_na_rede: Vector3, lado_destino: float) -> int:
 		var distancia = absf(atleta.position.x - ponto_na_rede.x)
 		if distancia > largura + p.FOLGA_DO_TOQUE_NO_BLOQUEIO:
 			continue
-		if ponto_na_rede.y > p.ALTURA_DAS_MAOS + atleta.position.y + Bola.RAIO:
+		# Salto Alto (Modo Caos): as mãos chegam mais alto.
+		if ponto_na_rede.y > p.ALTURA_DAS_MAOS + atleta.position.y + Bola.RAIO + Atributos.soma(p.times_em_jogo[time], "alcance_do_bloqueio"):
 			continue
 		var no_alto: bool = atleta.position.y >= p.ALTURA_DO_PULO * p.ALTURA_MINIMA_DO_BLOQUEIO
 		if distancia <= largura and no_alto \

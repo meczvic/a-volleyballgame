@@ -5,6 +5,7 @@ extends RefCounted
 ## tudo que é dela aparece como p.algo.
 
 const Cartas := preload("res://scripts/regras/cartas.gd")
+const Atributos := preload("res://scripts/regras/atributos.gd")
 const EscolhaDeCartas := preload("res://scripts/partida/escolha_de_cartas.gd")
 
 ## A partida (partida.gd).
@@ -95,7 +96,19 @@ func _ao_escolher_cartas(escolhas: Array) -> void:
 		# A última carta é a que entrou na mão (a cópia, no caso da Troca de Lugar).
 		if p.cartas_dos_times[time].size() > mao_antes.size():
 			p.ultima_carta[time] = p.cartas_dos_times[time][p.cartas_dos_times[time].size() - 1]
+			_dar_cargas(time, str(p.ultima_carta[time]))
 	_aplicar_cartas()
+
+
+## Cartas que valem por usos ou tempo (Saque Canhão, Muralha Total, Relâmpago,
+## Defesa de Ferro): o time ganha a carga na hora que pega.
+func _dar_cargas(time: int, id: String) -> void:
+	var cargas: Dictionary = Cartas.CARGAS_AO_PEGAR.get(id, {})
+	for chave in cargas:
+		var dados_do_time: Dictionary = p.times_em_jogo[time]
+		Atributos.mudar_carga(dados_do_time, chave, Atributos.carga(dados_do_time, chave) + float(cargas[chave]))
+		if chave == "relampago":
+			p.interface.mostrar_mensagem("Relâmpago!", time, false)
 
 
 ## Passa o efeito das cartas de cada time pro jogo (time["modificadores"]).

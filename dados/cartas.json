@@ -8,7 +8,7 @@
 	"_sobre_a_escolha": "Os dois jogadores escolhem uma carta antes do 1º saque e depois a cada 'pontos_por_escolha' pontos (contando os dois times). Só entram no sorteio as cartas que já têm efeito no jogo (lista IMPLEMENTADAS em scripts/regras/cartas.gd).",
 	"cartas": [
 		{ "id": "maos_firmes", "nome": "Mãos Firmes", "raridade": "prata", "conjunto": "defesa", "efeito": "Passes ficam mais precisos" },
-		{ "id": "leitura_de_jogo", "nome": "Leitura de Jogo", "raridade": "prata", "conjunto": "defesa", "efeito": "O marcador de queda aparece mais cedo" },
+		{ "id": "leitura_de_jogo", "nome": "Leitura de Jogo", "raridade": "prata", "conjunto": "defesa", "efeito": "O time lê a bola antes: passe mais fácil" },
 		{ "id": "tapete_vermelho", "nome": "Tapete Vermelho", "raridade": "prata", "conjunto": "defesa", "efeito": "Mergulhos levantam mais rápido do chão" },
 		{ "id": "pes_leves", "nome": "Pés Leves", "raridade": "prata", "conjunto": "velocidade", "efeito": "Atletas correm 15% mais rápido" },
 		{ "id": "saque_firme", "nome": "Saque Firme", "raridade": "prata", "conjunto": "saque", "efeito": "Saque erra menos ao carregar no máximo" },

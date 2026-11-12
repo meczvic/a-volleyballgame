@@ -52,6 +52,7 @@ func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> bool:
 	p.ultimo_toque = time
 	p._ponto_de_bloqueio = -1
 	p._bloqueio_do_ataque = 1.0
+	p._ataque_atravessa = false
 	var cortada_recebida = p._forca_da_cortada
 	p._forca_da_cortada = -1
 	p._mostrar_marcas_de_ataque(-1)
@@ -73,6 +74,16 @@ func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> bool:
 		qualidade = JeitosDeDefender.qualidade_da_recepcao(qualidade, cortada_recebida)
 		if qualidade != antes:
 			p.interface.mostrar_mensagem("Cortada forte!", time, false)
+	if numero == 1 and not atacando:
+		if p._saque_canhao:
+			# Saque Canhão (Modo Caos): a recepção desse saque sai ruim.
+			p._saque_canhao = false
+			qualidade = TempoDoToque.Qualidade.RUIM
+		elif cortada_recebida >= 0 and qualidade != TempoDoToque.Qualidade.RUIM \
+				and Atributos.tem(p.times_em_jogo[time], "contra_ataque"):
+			# Contra-Ataque (Modo Caos): defendeu a cortada, o próximo ataque sai mais forte.
+			Atributos.mudar_carga(p.times_em_jogo[time], "contra_ataque", 1.0)
+			p.interface.mostrar_mensagem("Contra-ataque!", time, false)
 	if atacando or numero <= 2:
 		p._avisar_qualidade(p.controlados[time], qualidade)
 	# Energia do toque (a cortada soma depois de sair, pra não gastar o que acabou de ganhar).
@@ -286,6 +297,19 @@ func _cortar(time: int, qualidade: TempoDoToque.Qualidade = TempoDoToque.Qualida
 		JeitosDeAtacar.jeito_da_mira(p.controlados[time].position.x, alvo.x))
 	# Energia cheia e cortada que não saiu ruim: SUPER CORTADA.
 	var super_cortada: bool = p.energias[time].cheia() and qualidade != TempoDoToque.Qualidade.RUIM
+	var dados_do_time: Dictionary = p.times_em_jogo[time]
+	# Diagonal Mortal (Modo Caos): a diagonal abre mais o ângulo e o bloqueio pega menos.
+	if Atributos.tem(dados_do_time, "diagonal_mortal") \
+			and JeitosDeAtacar.jeito_da_mira(p.controlados[time].position.x, alvo.x) == "diagonal":
+		alvo.x = clampf(alvo.x + signf(alvo.x) * 0.9, -p.LARGURA / 2.0 + 0.3, p.LARGURA / 2.0 - 0.3)
+		efeito["bloqueio"] = float(efeito["bloqueio"]) * 0.85
+		efeito["nome"] = "Diagonal Mortal!"
+	# Contra-Ataque (Modo Caos): depois de defender uma cortada, este ataque sai mais forte.
+	var contra_ataque := Atributos.carga(dados_do_time, "contra_ataque") >= 1.0 and qualidade != TempoDoToque.Qualidade.RUIM
+	Atributos.mudar_carga(dados_do_time, "contra_ataque", 0.0)
+	if contra_ataque:
+		efeito["bloqueio"] = float(efeito["bloqueio"]) * 0.85
+		efeito["subida_a_menos"] = float(efeito["subida_a_menos"]) + 0.12
 	var erro_da_mira = maxf(float(jeito["erro_da_mira"]) + float(efeito["erro_a_mais"]), 0.1)
 	if super_cortada:
 		erro_da_mira = minf(erro_da_mira, Energia.ajuste("erro_da_super", Energia.ERRO_DA_SUPER))
@@ -301,10 +325,19 @@ func _cortar(time: int, qualidade: TempoDoToque.Qualidade = TempoDoToque.Qualida
 			p._bloqueio_do_ataque = minf(p._bloqueio_do_ataque, Energia.ajuste("bloqueio_da_super", Energia.BLOQUEIO_DA_SUPER))
 		if efeito["nome"] != "":
 			p.interface.mostrar_mensagem(efeito["nome"], time, false)
+		if qualidade == TempoDoToque.Qualidade.PERFEITO and Atributos.tem(dados_do_time, "cortada_sinistra"):
+			# Cortada Sinistra (Modo Caos): a cortada perfeita atravessa o bloqueio.
+			p._ataque_atravessa = true
+			p.interface.mostrar_mensagem("Cortada Sinistra!", time, false)
 	var ponto_da_batida: Vector3 = p.bola.position
 	p._forca_da_cortada = int(TempoDoToque.Qualidade.PERFEITO) if super_cortada else int(qualidade)
 	p.bola.lancar(destino, p.bola.position.y + subida, VelocidadeDaBola.da_cortada(qualidade, super_cortada))
 	p._ao_lancar_bola()
+	# Muralha Total (Modo Caos) do outro time: este ataque gasta um uso.
+	if Atributos.gastar_carga(p.times_em_jogo[1 - time], "muralha_total"):
+		p.interface.mostrar_mensagem("Muralha!", 1 - time, false)
+	if qualidade != TempoDoToque.Qualidade.RUIM and Atributos.tem(dados_do_time, "bola_fantasma"):
+		_bola_fantasma()
 	p.sons.tocar("cortada", p._intensidade_do_som(qualidade))
 	p.bola.amassar(1.0 if super_cortada else p._forca_da_qualidade(qualidade, 1.0, 0.7))
 	if super_cortada:
@@ -321,6 +354,17 @@ func _cortar(time: int, qualidade: TempoDoToque.Qualidade = TempoDoToque.Qualida
 		Estouro.mostrar(p, ponto_da_batida, p.COR_DA_CORTADA_PERFEITA if perfeita else Color(1.0, 1.0, 1.0), 1.0 if perfeita else 0.45)
 		if perfeita:
 			p.rastro.destacar(p.COR_DA_CORTADA_PERFEITA)
+
+
+## Bola Fantasma (Modo Caos): a marca de onde a bola vai cair some por um
+## instante logo depois da cortada.
+func _bola_fantasma() -> void:
+	p.marcador.esconder()
+	if not p.is_inside_tree():
+		return
+	await p.get_tree().create_timer(0.6, false).timeout
+	if is_instance_valid(p) and p.bola.em_voo and p.estado == p.Estado.RALLY:
+		p.marcador.mostrar_em(p.bola.ponto_previsto)
 
 
 ## Largada: bola curta, devagar e por cima do bloqueio. A direção mira o lado

@@ -38,7 +38,7 @@ func _teste_dados(dados: Dictionary) -> void:
 	for id in Cartas.IMPLEMENTADAS:
 		_verificar(not Cartas.por_id(dados, id).is_empty(), "%s existe em cartas.json" % id)
 		if id != Cartas.ID_DA_TROCA:
-			_verificar(Cartas.EFEITOS.has(id), "%s tem efeito" % id)
+			_verificar(Cartas.EFEITOS.has(id) or Cartas.CARGAS_AO_PEGAR.has(id), "%s tem efeito" % id)
 	for id in Cartas.EFEITOS:
 		_verificar(Cartas.IMPLEMENTADAS.has(id), "%s tem efeito mas não está em IMPLEMENTADAS" % id)
 	_verificar(Cartas.tempo_limite(dados) == 60.0, "tempo limite de 60 s")

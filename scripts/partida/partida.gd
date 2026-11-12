@@ -354,6 +354,10 @@ var ultima_carta: Array = ["", ""]
 var dados_das_cartas: Dictionary = {}
 var pontos_jogados := 0
 var escolha_de_cartas = null
+## Saque Canhão em jogo: a recepção desse saque sai ruim.
+var _saque_canhao := false
+## Cortada Sinistra em jogo: a bola passa pelo bloqueio.
+var _ataque_atravessa := false
 
 
 func _ready() -> void:
@@ -448,6 +452,7 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_relogio += delta
+	_gastar_relampago(delta)
 	for time in 2:
 		var controlado := controlados[time]
 		var sacando: bool = estado == Estado.SAQUE and time == placar.quem_saca
@@ -616,7 +621,12 @@ func _sacar(time: int, flutuante: bool, forca := 0.4, alvo := Mira.ALVO_INICIAL)
 	var destino := Vector3(ponto.x, 0.0, ponto.y * _lado(1 - time))
 	_peso_do_toque(time, bola.position, forca if not flutuante else forca * 0.5)
 	# Provisório: o flutuante só sai mais baixo. O balanço vem depois.
-	bola.lancar(destino, Mira.altura_do_saque(forca, flutuante), VelocidadeDaBola.do_saque(forca, flutuante))
+	# Modo Caos: Super Saque deixa a bola mais rápida; Saque Canhão derruba quem recebe.
+	var gravidade_do_saque := VelocidadeDaBola.do_saque(forca, flutuante) * Atributos.modificador(times_em_jogo[time], "velocidade_do_saque")
+	_saque_canhao = Atributos.gastar_carga(times_em_jogo[time], "saque_canhao")
+	if _saque_canhao:
+		interface.mostrar_mensagem("Saque Canhão!", time, false)
+	bola.lancar(destino, Mira.altura_do_saque(forca, flutuante), gravidade_do_saque)
 	ultimo_toque = time
 	_mudar_estado(Estado.RALLY)
 	interface.limpar_mensagens()
@@ -730,6 +740,37 @@ func _quem_vai_na_bola(time: int, queda: Vector3) -> Node3D:
 
 
 # --- Toque no tempo certo ---
+
+## Relâmpago (Modo Caos): o tempo de cada time vai acabando.
+func _gastar_relampago(delta: float) -> void:
+	for t in 2:
+		var resta := Atributos.carga(times_em_jogo[t], "relampago")
+		if resta > 0.0:
+			Atributos.mudar_carga(times_em_jogo[t], "relampago", resta - delta)
+
+
+## Defesa de Ferro (Modo Caos): uma vez por set, a bola que ia cair na quadra
+## do "time" é salva sozinha pelo atleta mais perto e sobe pro levantador.
+## Devolve true se salvou.
+func _defesa_de_ferro(time: int, posicao: Vector3) -> bool:
+	if Atributos.carga(times_em_jogo[time], "defesa_de_ferro") < 1.0:
+		return false
+	var atleta := _mais_perto(time, posicao)
+	if atleta == null or not toques.registrar(time, atletas[time].find(atleta)):
+		return false
+	Atributos.gastar_carga(times_em_jogo[time], "defesa_de_ferro")
+	controlados[time] = atleta
+	ultimo_toque = time
+	_ponto_de_bloqueio = -1
+	_animar(atleta, "manchete")
+	sons.tocar("passe", 0.9)
+	bola.position = Vector3(posicao.x, 0.5, posicao.z)
+	bola.lancar(_no_mundo(time, Vector2(0.0, 2.0)), 4.5)
+	_ao_lancar_bola()
+	Estouro.mostrar(self, bola.position, _cor_do_time(time), 0.8)
+	interface.mostrar_mensagem("Defesa de Ferro!", time, false)
+	return true
+
 
 ## Troca o estado da partida (SAQUE, RALLY, PONTO, FIM). Troca fora da regra
 ## (EstadoDaPartida.TROCAS) avisa no console, mas acontece.
@@ -944,6 +985,8 @@ func _ao_bola_tocar_chao(posicao: Vector3) -> void:
 	if dentro:
 		# Caiu do lado do time 0 (z positivo): ponto do time 1, e vice-versa.
 		var quem := 1 if posicao.z > 0.0 else 0
+		if _defesa_de_ferro(1 - quem, posicao):
+			return
 		OndaNoChao.mostrar(self, posicao, _cor_do_time(quem))
 		Estouro.mostrar(self, Vector3(posicao.x, 0.1, posicao.z), _cor_do_time(quem), 0.6)
 		impacto.ponto()
@@ -1041,6 +1084,8 @@ func _depois_do_ponto() -> void:
 
 func _preparar_saque() -> void:
 	_mudar_estado(Estado.SAQUE)
+	_saque_canhao = false
+	_ataque_atravessa = false
 	ultimo_toque = -1
 	_ponto_de_bloqueio = -1
 	qualidade_do_passe = [Qualidade.BOM, Qualidade.BOM]
@@ -1107,6 +1152,10 @@ func _conectar_placar() -> void:
 
 ## Fim de um set. Se foi o último, _ao_encerrar_partida troca a mensagem logo depois.
 func _ao_encerrar_set(vencedor: int) -> void:
+	# Defesa de Ferro (Modo Caos) vale uma vez por set.
+	for t in 2:
+		if cartas_dos_times[t].has("defesa_de_ferro"):
+			Atributos.mudar_carga(times_em_jogo[t], "defesa_de_ferro", 1.0)
 	# Cada set começa com a escalação do começo.
 	for rodizio in rodizios:
 		rodizio.reiniciar()

@@ -23,7 +23,9 @@ static func fator(time: Dictionary, nome: String, passo: float) -> float:
 
 
 static func velocidade(time: Dictionary) -> float:
-	return fator(time, "velocidade", 0.08) * modificador(time, "velocidade")
+	# Relâmpago (Modo Caos): enquanto dura, o time corre bem mais.
+	var relampago := RELAMPAGO if carga(time, "relampago") > 0.0 else 1.0
+	return fator(time, "velocidade", 0.08) * modificador(time, "velocidade") * relampago
 
 
 ## Escala da janela de tempo por tipo de toque.
@@ -72,6 +74,36 @@ static func soma(time: Dictionary, chave: String) -> float:
 ## Quanto o atleta fica no chão depois de um mergulho (1.0 = o normal).
 static func escala_do_tempo_no_chao(time: Dictionary) -> float:
 	return modificador(time, "tempo_no_chao")
+
+
+## Carta (que soma) na mão do time?
+static func tem(time: Dictionary, chave: String) -> bool:
+	return soma(time, chave) > 0.0
+
+
+## Quanto o Relâmpago acelera o time.
+const RELAMPAGO := 1.5
+
+
+## Cartas com carga (usos ou segundos que sobram), em time["cargas"].
+static func carga(time: Dictionary, chave: String) -> float:
+	var cargas: Dictionary = time.get("cargas", {})
+	return float(cargas.get(chave, 0.0))
+
+
+static func mudar_carga(time: Dictionary, chave: String, valor: float) -> void:
+	if not time.has("cargas"):
+		time["cargas"] = {}
+	time["cargas"][chave] = maxf(valor, 0.0)
+
+
+## Gasta um uso. Devolve false se não tinha.
+static func gastar_carga(time: Dictionary, chave: String) -> bool:
+	var agora := carga(time, chave)
+	if agora < 1.0:
+		return false
+	mudar_carga(time, chave, agora - 1.0)
+	return true
 
 
 ## Levantador Preciso: todo levantamento sai perfeito.

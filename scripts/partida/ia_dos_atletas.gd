@@ -9,6 +9,7 @@ const Rodizio := preload("res://scripts/regras/rodizio.gd")
 const TempoDoToque := preload("res://scripts/regras/tempo_do_toque.gd")
 
 const Lance := preload("res://scripts/regras/lance.gd")
+const Atributos := preload("res://scripts/regras/atributos.gd")
 
 ## A partida (partida.gd).
 var p
@@ -160,13 +161,16 @@ func _x_do_bloqueio(time: int, indice: int, funcao: String, x_da_funcao: float) 
 	var bola_x_do_time: float = p.bola.position.x * p._lado(time)
 	if p.toques.toques < 2 or not p.bola.em_voo or p._lado_da_queda() == time:
 		return lerpf(x_da_funcao, bola_x_do_time, 0.5)
-	if p.bola.tempo_de_voo() < p.REACAO_DO_BLOQUEIO:
+	# Modo Caos: Bloqueio Leitor lê o levantamento na hora; Muralha Total junta os três.
+	var leitor := Atributos.tem(p.times_em_jogo[time], "bloqueio_leitor")
+	var muralha := Atributos.carga(p.times_em_jogo[time], "muralha_total") >= 1.0
+	if p.bola.tempo_de_voo() < p.REACAO_DO_BLOQUEIO and not leitor and not muralha:
 		# Ainda lendo o levantamento: fica onde está.
 		return p.atletas[time][indice].position.x * p._lado(time)
 	# Onde a bola vai estar na altura da cortada (descendo).
 	var ate_a_batida = TempoDoToque.tempo_ate_altura(p.bola.position, p.bola.velocidade_atual(), TempoDoToque.ALTURA_IDEAL[Lance.CORTADA], p.bola.gravidade)
 	var alvo_x: float = p.bola.posicao_daqui_a(maxf(ate_a_batida, 0.0)).x * p._lado(time)
-	if funcao == "central" or absf(alvo_x - x_da_funcao) <= p.AJUDA_DO_BLOQUEIO:
+	if funcao == "central" or muralha or absf(alvo_x - x_da_funcao) <= p.AJUDA_DO_BLOQUEIO:
 		return alvo_x
 	return x_da_funcao
 
