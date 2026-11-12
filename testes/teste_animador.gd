@@ -29,6 +29,24 @@ func _init() -> void:
 				"o trecho de %s é [início, fim] ou [início, fim, velocidade]" % nome)
 		_teste_no_lugar(nome, animacao)
 
+	# Comemorações, reações e mergulhos apontam pra animações que existem.
+	for nome in Animador.COMEMORACOES + Animador.REACOES_AO_PONTO_PERDIDO + Animador.SAEM_AO_ANDAR \
+			+ [Animador.MERGULHO_ESQUERDA, Animador.MERGULHO_DIREITA, "espera_defesa"]:
+		_verificar(biblioteca.has_animation(nome), "%s está na biblioteca" % nome)
+	for nome in Animador.SAEM_AO_ANDAR:
+		_verificar(not (nome in Animador.EM_LOOP), "%s não repete (sai ao andar)" % nome)
+
+	# Mergulho pro lado certo: olhando pro +z, a esquerda do atleta é o +x.
+	_verificar(Animador.lance_do_mergulho(Vector2(1, 0), 0.0) == Animador.MERGULHO_ESQUERDA,
+		"olhando pro +z, mergulho pro +x é pra esquerda")
+	_verificar(Animador.lance_do_mergulho(Vector2(-1, 0), 0.0) == Animador.MERGULHO_DIREITA,
+		"olhando pro +z, mergulho pro -x é pra direita")
+	_verificar(Animador.lance_do_mergulho(Vector2(1, 0), PI) == Animador.MERGULHO_DIREITA,
+		"olhando pro -z, mergulho pro +x é pra direita")
+	_verificar(Animador.lance_do_mergulho(Vector2(-1, 0.3), PI) == Animador.MERGULHO_ESQUERDA,
+		"olhando pro -z, mergulho pro -x é pra esquerda")
+	_teste_lado_das_animacoes_de_mergulho()
+
 	# Carregar de novo não refaz o trabalho.
 	_verificar(Animador.biblioteca() == biblioteca, "a biblioteca é carregada uma vez só")
 
@@ -43,6 +61,18 @@ func _verificar(condicao: bool, mensagem: String) -> void:
 	if not condicao:
 		falhas += 1
 		print("  falha: " + mensagem)
+
+
+## Nos arquivos originais (antes de travar o quadril), o "mergulho" leva o
+## quadril pro +x (esquerda do atleta) e o "mergulho_direita" pro -x.
+func _teste_lado_das_animacoes_de_mergulho() -> void:
+	for item in [[Animador.MERGULHO_ESQUERDA, 1.0], [Animador.MERGULHO_DIREITA, -1.0]]:
+		var cena: Node = load(Animador.ARQUIVOS[item[0]]).instantiate()
+		var animacao: Animation = cena.get_node("AnimationPlayer").get_animation("mixamo_com")
+		var trilha := animacao.find_track(NodePath("%GeneralSkeleton:Hips"), Animation.TYPE_POSITION_3D)
+		var andou := animacao.position_track_interpolate(trilha, 2.0).x - animacao.position_track_interpolate(trilha, 0.0).x
+		_verificar(andou * float(item[1]) > 1.0, "%s mergulha pro lado certo (quadril andou %.2f m em x)" % [item[0], andou])
+		cena.free()
 
 
 ## O quadril não anda no chão; na cortada e no bloqueio também não sobe

@@ -48,9 +48,14 @@ essas são adaptadas de outros esportes.
   de lado olhando pra rede; corrida (virado pra onde vai) no resto. A velocidade da
   animação acompanha a do atleta.
 - **Lances:** saque, manchete (1º toque e bola devolvida de graça), levantamento,
-  cortada, bloqueio (os da rede), mergulho (botão Mergulho; por enquanto só a
-  animação, ainda não alcança mais longe), palmas do time que fez o ponto e
-  comemoração do time que venceu a partida.
+  cortada, bloqueio (os da rede) e mergulho (botão Mergulho). O mergulho vai pro
+  lado da bola: `mergulho` pra esquerda do atleta, `mergulho_direita` pra direita.
+- **Ponto:** quem fez o ponto comemora (palmas, punho ou pulo, cada atleta uma) e
+  quem perdeu reage (desanimado ou frustrado). A comemoração e a reação param assim
+  que o atleta anda pro lugar do próximo saque. No fim da partida, quem venceu
+  comemora com a torcida e quem perdeu fica frustrado.
+- **Defesa:** parado em quadra, o time que espera o saque ou o ataque do outro fica
+  agachado (`espera_defesa`); o time com a bola fica na pose de espera normal.
 - Cada lance toca só o trecho que importa (tabela `TRECHOS` no começo do arquivo).
   Na cortada e no bloqueio o alto do pulo da animação cai junto com o alto do pulo do jogo.
 - O quadril fica travado no lugar em todas (até na corrida, que veio sem In Place):
@@ -58,10 +63,11 @@ essas são adaptadas de outros esportes.
   o jogo já faz o pulo.
 
 Pra ajustar um lance (ex.: a cortada começa cedo demais), mude os números em `TRECHOS`.
-`defesa_lateral` e `comemoracao_vitoria` ainda não estão em uso, nem as 12 baixadas em
-12/11/2026 (de `bloqueio_tapa` a `ponto_perdido_desanimado` na tabela). Elas já importam
-no esqueleto comum, falta ligar no `animador.gd`. Vieram sem In Place (o animador trava o
-quadril).
+Ainda sem uso: `defesa_lateral`, `comemoracao_vitoria`, `bloqueio_tapa`, `bloqueio_erro`,
+`pulo_parado`, `pulo_correndo`, `aterrissagem` e `levantar_do_chao`. Os pulos e o bloqueio
+com tapa trazem corrida ou queda própria e não casam com o pulo do jogo (0,6 s, feito pela
+partida); o mergulho já levanta sozinho no fim, então o `levantar_do_chao` sobrou. As
+baixadas em 12/11/2026 vieram sem In Place (o animador trava o quadril).
 
 ## Animações do DeepMotion
 
