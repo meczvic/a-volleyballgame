@@ -13,6 +13,8 @@ const JeitosDeDefender := preload("res://scripts/regras/jeitos_de_defender.gd")
 const TempoDoToque := preload("res://scripts/regras/tempo_do_toque.gd")
 const VelocidadeDaBola := preload("res://scripts/regras/velocidade_da_bola.gd")
 
+const Lance := preload("res://scripts/regras/lance.gd")
+
 ## A partida (partida.gd).
 var p
 
@@ -78,11 +80,11 @@ func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> bool:
 	if mergulho:
 		ganho = Energia.ajuste("ganho_do_mergulho", Energia.GANHO_DO_MERGULHO) if qualidade != TempoDoToque.Qualidade.RUIM else 0.0
 	elif atacando:
-		ganho = Energia.ganho_do_toque("cortada", qualidade) if numero != 2 and not atleta_que_tocou.get_meta("largada", false) else 0.0
+		ganho = Energia.ganho_do_toque(Lance.CORTADA, qualidade) if numero != 2 and not atleta_que_tocou.get_meta("largada", false) else 0.0
 	elif numero == 1:
-		ganho = Energia.ganho_do_toque("passe", qualidade)
+		ganho = Energia.ganho_do_toque(Lance.PASSE, qualidade)
 	elif numero == 2:
-		ganho = Energia.ganho_do_toque("levantamento", qualidade)
+		ganho = Energia.ganho_do_toque(Lance.LEVANTAMENTO, qualidade)
 	if atacando:
 		_cortar(time, qualidade)
 	elif numero == 1:
@@ -128,7 +130,7 @@ func _levantar(time: int, qualidade: TempoDoToque.Qualidade) -> void:
 	# "bom". Passe ou levantamento ruim não deixam. Se não forem perfeitos, o
 	# atacante recebe a bola com mais erro.
 	var raio: float = TempoDoToque.ERRO_DO_LEVANTAMENTO[qualidade]
-	var quer_rapido: bool = p._segurando_botao[time].get("saque_flutuante", false)
+	var quer_rapido: bool = p._segurando_botao[time].get(Lance.BOTAO_FLUTUANTE, false)
 	if quer_rapido and altura != TempoDoToque.ALTURA_DO_LEVANTAMENTO_RAPIDO \
 			and passe != TempoDoToque.Qualidade.RUIM and qualidade != TempoDoToque.Qualidade.RUIM:
 		altura = TempoDoToque.ALTURA_DO_LEVANTAMENTO_RAPIDO
@@ -184,7 +186,7 @@ func _comecar_cortada(time: int) -> bool:
 	p.bloqueios._pular(atleta, clampf(prevista.y - mao_acima_dos_pes, p.PULO_MINIMO_DA_CORTADA, p.PULO_MAXIMO_DA_CORTADA))
 	p._animar(atleta, "cortada")
 	# O tempo da cortada vale no botão: a batida vem TEMPO_ATE_A_BATIDA depois.
-	atleta.set_meta("qualidade_da_cortada", p._qualidade_do_toque("cortada", time))
+	atleta.set_meta("qualidade_da_cortada", p._qualidade_do_toque(Lance.CORTADA, time))
 	p.cortadas[time] = {
 		"atleta": atleta, "tempo": 0.0,
 		"de": Vector2(atleta.position.x, atleta.position.z),
@@ -345,7 +347,7 @@ func _mergulhar(time: int) -> void:
 	# mais tempo no chão.
 	var tempo_do_botao = TempoDoToque.Qualidade.RUIM
 	if p.bola.em_voo:
-		tempo_do_botao = p._qualidade_do_toque("passe", time)
+		tempo_do_botao = p._qualidade_do_toque(Lance.PASSE, time)
 	var alcance = p.ALCANCE_DO_MERGULHO + Atributos.alcance_extra_do_mergulho(p.times_em_jogo[time]) \
 		+ JeitosDeDefender.alcance_a_mais(tempo_do_botao)
 	var ate_a_bola = Vector2(p.bola.position.x - atleta.position.x, p.bola.position.z - atleta.position.z)

@@ -53,6 +53,7 @@ const VisualAnime := preload("res://scripts/visual/visual_anime.gd")
 const Dados := preload("res://scripts/comum/dados.gd")
 const MenuDePausa := preload("res://scripts/menus/menu_de_pausa.gd")
 const Estilo := preload("res://scripts/menus/estilo.gd")
+const Lance := preload("res://scripts/regras/lance.gd")
 const InterfaceDaPartida := preload("res://scripts/partida/interface_da_partida.gd")
 const LancesDaPartida := preload("res://scripts/partida/lances_da_partida.gd")
 const BloqueioNaPartida := preload("res://scripts/partida/bloqueio_na_partida.gd")
@@ -82,7 +83,9 @@ const Estouro := preload("res://scripts/visual/estouro.gd")
 const SetaDoControlado := preload("res://scripts/partida/seta_do_controlado.gd")
 const Qualidade := TempoDoToque.Qualidade
 
-enum Estado { SAQUE, RALLY, PONTO, FIM }
+const EstadoDaPartida := preload("res://scripts/regras/estado_da_partida.gd")
+## Estados da partida e as trocas que valem (scripts/regras/estado_da_partida.gd).
+const Estado := EstadoDaPartida.Estado
 
 ## Medidas oficiais da quadra, em metros.
 const COMPRIMENTO := 18.0
@@ -532,23 +535,23 @@ func _ao_receber_comando(jogador: int, tipo: String) -> void:
 		Estado.SAQUE:
 			# Segurar carrega a força; o saque sai quando solta (_ao_soltar_botao).
 			if time == placar.quem_saca and carga_do_saque < 0.0 \
-					and (tipo == "ataque" or tipo == "saque_flutuante"):
+					and (tipo == Lance.BOTAO_ATAQUE or tipo == Lance.BOTAO_FLUTUANTE):
 				carga_do_saque = 0.0
-				saque_flutuante = tipo == "saque_flutuante"
+				saque_flutuante = tipo == Lance.BOTAO_FLUTUANTE
 				alvo_do_saque = Mira.ALVO_INICIAL
 		Estado.RALLY:
-			if tipo == "passe":
+			if tipo == Lance.BOTAO_PASSE:
 				if not cortadas[time].is_empty():
 					# Passe no ar, durante a cortada: vira largada.
 					controlados[time].set_meta("largada", true)
 				elif not lances._tentar_tocar(time, false):
 					_guardar_pedido(time, tipo)
-			elif tipo == "ataque":
+			elif tipo == Lance.BOTAO_ATAQUE:
 				if not lances._comecar_cortada(time):
 					_guardar_pedido(time, tipo)
-			elif tipo == "bloqueio":
+			elif tipo == Lance.BOTAO_BLOQUEIO:
 				bloqueios._bloquear(time)
-			elif tipo == "mergulho":
+			elif tipo == Lance.BOTAO_MERGULHO:
 				lances._mergulhar(time)
 
 
@@ -567,7 +570,7 @@ func _atender_pedido(time: int) -> void:
 		pedidos[time] = {}
 		return
 	var tipo: String = pedidos[time]["tipo"]
-	var atendido: bool = lances._comecar_cortada(time) if tipo == "ataque" else lances._tentar_tocar(time, false)
+	var atendido: bool = lances._comecar_cortada(time) if tipo == Lance.BOTAO_ATAQUE else lances._tentar_tocar(time, false)
 	if atendido:
 		pedidos[time] = {}
 	elif _relogio > float(pedidos[time]["ate"]):
@@ -583,7 +586,7 @@ func _ao_soltar_botao(jogador: int, tipo: String) -> void:
 		return
 	if estado != Estado.SAQUE or time != placar.quem_saca or carga_do_saque < 0.0:
 		return
-	if tipo != ("saque_flutuante" if saque_flutuante else "ataque"):
+	if tipo != (Lance.BOTAO_FLUTUANTE if saque_flutuante else Lance.BOTAO_ATAQUE):
 		return
 	var forca := Mira.forca(carga_do_saque)
 	carga_do_saque = -1.0
@@ -615,7 +618,7 @@ func _sacar(time: int, flutuante: bool, forca := 0.4, alvo := Mira.ALVO_INICIAL)
 	# Provisório: o flutuante só sai mais baixo. O balanço vem depois.
 	bola.lancar(destino, Mira.altura_do_saque(forca, flutuante), VelocidadeDaBola.do_saque(forca, flutuante))
 	ultimo_toque = time
-	estado = Estado.RALLY
+	_mudar_estado(Estado.RALLY)
 	interface.limpar_mensagens()
 	_ao_lancar_bola()
 
@@ -728,17 +731,25 @@ func _quem_vai_na_bola(time: int, queda: Vector3) -> Node3D:
 
 # --- Toque no tempo certo ---
 
+## Troca o estado da partida (SAQUE, RALLY, PONTO, FIM). Troca fora da regra
+## (EstadoDaPartida.TROCAS) avisa no console, mas acontece.
+func _mudar_estado(novo: Estado) -> void:
+	if not EstadoDaPartida.pode_mudar(estado, novo):
+		push_warning("Troca de estado fora da regra: %s -> %s" % [EstadoDaPartida.nome(estado), EstadoDaPartida.nome(novo)])
+	estado = novo
+
+
 ## Tipo do toque pra medir o tempo: o 1º é passe, o 2º levantamento, o 3º
 ## (ou qualquer ataque) cortada.
 func _tipo_do_toque(numero: int, atacando: bool) -> String:
 	if atacando or numero >= 3:
-		return "cortada"
-	return "levantamento" if numero == 2 else "passe"
+		return Lance.CORTADA
+	return Lance.LEVANTAMENTO if numero == 2 else Lance.PASSE
 
 
 ## Qualidade do toque feito agora, pelo tempo do botão.
 func _qualidade_do_toque(tipo: String, time: int) -> Qualidade:
-	if tipo == "levantamento" and Atributos.levantamento_perfeito(times_em_jogo[time]):
+	if tipo == Lance.LEVANTAMENTO and Atributos.levantamento_perfeito(times_em_jogo[time]):
 		return Qualidade.PERFEITO
 	var erro := TempoDoToque.erro_do_botao(tipo, bola.position, bola.velocidade_atual(), _atraso_do_toque(tipo), bola.gravidade)
 	return TempoDoToque.qualidade(erro, Atributos.escala_da_janela(times_em_jogo[time], tipo))
@@ -746,7 +757,7 @@ func _qualidade_do_toque(tipo: String, time: int) -> Qualidade:
 
 ## Tempo entre o botão e a mão encostar na bola (a cortada bate no alto do pulo).
 func _atraso_do_toque(tipo: String) -> float:
-	return TEMPO_ATE_A_BATIDA if tipo == "cortada" else 0.0
+	return TEMPO_ATE_A_BATIDA if tipo == Lance.CORTADA else 0.0
 
 
 ## Mostra o anel de tempo pro atleta controlado do "time" quando a bola está
@@ -946,7 +957,7 @@ func _ao_bola_tocar_chao(posicao: Vector3) -> void:
 func _encerrar_rally(vencedor: int, motivo: String) -> void:
 	if estado != Estado.SAQUE and estado != Estado.RALLY:
 		return
-	estado = Estado.PONTO
+	_mudar_estado(Estado.PONTO)
 	var saque_do_rally_em_jogo := saque_em_jogo
 	saque_em_jogo = false
 	marcador.esconder()
@@ -1029,7 +1040,7 @@ func _depois_do_ponto() -> void:
 # --- Modo Caos ---
 
 func _preparar_saque() -> void:
-	estado = Estado.SAQUE
+	_mudar_estado(Estado.SAQUE)
 	ultimo_toque = -1
 	_ponto_de_bloqueio = -1
 	qualidade_do_passe = [Qualidade.BOM, Qualidade.BOM]
@@ -1069,7 +1080,7 @@ func _preparar_saque() -> void:
 
 
 func _ao_encerrar_partida(vencedor: int) -> void:
-	estado = Estado.FIM
+	_mudar_estado(Estado.FIM)
 	marcador.esconder()
 	_mostrar_marcas_de_ataque(-1)
 	# A tela de fim de jogo já diz quem venceu.

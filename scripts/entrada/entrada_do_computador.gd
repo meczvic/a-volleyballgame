@@ -13,6 +13,7 @@ extends Node
 signal comando(jogador: int, tipo: String)
 signal soltou(jogador: int, tipo: String)
 
+const Lance := preload("res://scripts/regras/lance.gd")
 const TempoDoToque := preload("res://scripts/regras/tempo_do_toque.gd")
 const Mira := preload("res://scripts/regras/mira.gd")
 const EscolhaAtaque := preload("res://scripts/regras/escolha_ataque.gd")
@@ -137,7 +138,7 @@ func _jogar_saque(time: int, delta: float) -> void:
 		_saque = {
 			"espera": sorteio.randf_range(ESPERA_DO_SAQUE[0], ESPERA_DO_SAQUE[1]),
 			"forca": sorteio.randf_range(float(forca[0]), float(forca[1])),
-			"botao": "saque_flutuante" if sorteio.randf() < float(ajustes["chance_de_flutuante"]) else "ataque",
+			"botao": Lance.BOTAO_FLUTUANTE if sorteio.randf() < float(ajustes["chance_de_flutuante"]) else Lance.BOTAO_ATAQUE,
 			"alvo": _alvo_do_saque(time),
 			"segurando": false, "feito": false, "tempo": 0.0,
 		}
@@ -255,7 +256,7 @@ func _tentar_passe(time: int, _atleta: Node3D, nossos: int) -> void:
 	var bola = partida.bola
 	if not partida._alcanca_bola(time, 0.0, partida.ALTURA_MAXIMA_PASSE):
 		return
-	var tipo := "passe" if nossos == 0 else "levantamento"
+	var tipo := Lance.PASSE if nossos == 0 else Lance.LEVANTAMENTO
 	var erro := TempoDoToque.erro_do_botao(tipo, bola.position, bola.velocidade_atual(), 0.0, bola.gravidade)
 	if erro > float(_plano.get("tempo", 0.0)):
 		return
@@ -266,10 +267,10 @@ func _tentar_passe(time: int, _atleta: Node3D, nossos: int) -> void:
 	var rapido: bool = nossos == 1 and _plano.get("rapido", false)
 	if rapido:
 		# Segura o botão de flutuante enquanto levanta: levantamento rápido.
-		comando.emit(jogador, "saque_flutuante")
-	comando.emit(jogador, "passe")
+		comando.emit(jogador, Lance.BOTAO_FLUTUANTE)
+	comando.emit(jogador, Lance.BOTAO_PASSE)
 	if rapido:
-		soltou.emit(jogador, "saque_flutuante")
+		soltou.emit(jogador, Lance.BOTAO_FLUTUANTE)
 
 
 ## Cortada (3º toque): pula perto da hora certa, já mirando. Se não der pra
@@ -280,17 +281,17 @@ func _tentar_ataque(time: int, atleta: Node3D) -> void:
 	var no_chao := Vector2(prevista.x - atleta.position.x, prevista.z - atleta.position.z).length()
 	var alcanca: bool = no_chao <= partida.ALCANCE and prevista.y >= partida.ALTURA_MINIMA_CORTADA \
 		and prevista.y <= partida.ALTURA_MAXIMA_CORTADA and not partida.bloqueios._esta_pulando(atleta)
-	var erro := TempoDoToque.erro_do_botao("cortada", bola.position, bola.velocidade_atual(), partida.TEMPO_ATE_A_BATIDA, bola.gravidade)
+	var erro := TempoDoToque.erro_do_botao(Lance.CORTADA, bola.position, bola.velocidade_atual(), partida.TEMPO_ATE_A_BATIDA, bola.gravidade)
 	if alcanca and erro <= float(_plano.get("tempo", 0.0)):
 		_escolher_ataque(time)
 		direcao = _plano["mira"]
 		_apertou = true
-		comando.emit(jogador, "ataque")
+		comando.emit(jogador, Lance.BOTAO_ATAQUE)
 		return
 	var descendo: bool = bola.velocidade_atual().y < 0.0
 	if descendo and bola.position.y < 1.6 and partida._alcanca_bola(time, 0.0, partida.ALTURA_MAXIMA_PASSE):
 		_apertou = true
-		comando.emit(jogador, "passe")
+		comando.emit(jogador, Lance.BOTAO_PASSE)
 
 
 ## No pulo da cortada: segura a mira e, se decidiu, vira largada.
@@ -300,7 +301,7 @@ func _no_ar_da_cortada() -> void:
 	direcao = _plano["mira"]
 	if _plano.get("largada", false) and not _plano.get("largou", false):
 		_plano["largou"] = true
-		comando.emit(jogador, "passe")
+		comando.emit(jogador, Lance.BOTAO_PASSE)
 
 
 ## Decide a mira da cortada e se vai ser largada.
@@ -388,7 +389,7 @@ func _talvez_bloquear(time: int) -> void:
 	# A direção "pra frente" do bloqueio é rumo à rede (y do mundo = lado do outro time).
 	var jeito := float(_plano.get("jeito_do_bloqueio", 0.0))
 	_apertar_no_mundo(time, Vector2(lado_x, jeito * partida._lado(outro)))
-	comando.emit(jogador, "bloqueio")
+	comando.emit(jogador, Lance.BOTAO_BLOQUEIO)
 
 
 ## Mergulho: bola baixa, fora do alcance normal mas ao alcance do mergulho.
@@ -404,7 +405,7 @@ func _talvez_mergulhar(time: int, atleta: Node3D) -> void:
 		_plano["mergulhar"] = sorteio.randf() < float(ajustes["chance_de_mergulho"])
 	if _plano["mergulhar"]:
 		_apertou = true
-		comando.emit(jogador, "mergulho")
+		comando.emit(jogador, Lance.BOTAO_MERGULHO)
 
 
 # --- Ajudas ---

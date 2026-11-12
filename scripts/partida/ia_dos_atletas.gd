@@ -8,6 +8,8 @@ const Formacao := preload("res://scripts/regras/formacao.gd")
 const Rodizio := preload("res://scripts/regras/rodizio.gd")
 const TempoDoToque := preload("res://scripts/regras/tempo_do_toque.gd")
 
+const Lance := preload("res://scripts/regras/lance.gd")
+
 ## A partida (partida.gd).
 var p
 
@@ -94,7 +96,7 @@ func _vamos_atacar(time: int) -> bool:
 func _ponto_do_ataque(time: int) -> Vector2:
 	if not p.cortadas[time].is_empty():
 		return p._no_time(time, (p.cortadas[time]["atleta"] as Node3D).position)
-	var ate_a_batida = TempoDoToque.tempo_ate_altura(p.bola.position, p.bola.velocidade_atual(), TempoDoToque.ALTURA_IDEAL["cortada"], p.bola.gravidade)
+	var ate_a_batida = TempoDoToque.tempo_ate_altura(p.bola.position, p.bola.velocidade_atual(), TempoDoToque.ALTURA_IDEAL[Lance.CORTADA], p.bola.gravidade)
 	return p._no_time(time, p.bola.posicao_daqui_a(maxf(ate_a_batida, 0.0)))
 
 
@@ -162,7 +164,7 @@ func _x_do_bloqueio(time: int, indice: int, funcao: String, x_da_funcao: float) 
 		# Ainda lendo o levantamento: fica onde está.
 		return p.atletas[time][indice].position.x * p._lado(time)
 	# Onde a bola vai estar na altura da cortada (descendo).
-	var ate_a_batida = TempoDoToque.tempo_ate_altura(p.bola.position, p.bola.velocidade_atual(), TempoDoToque.ALTURA_IDEAL["cortada"], p.bola.gravidade)
+	var ate_a_batida = TempoDoToque.tempo_ate_altura(p.bola.position, p.bola.velocidade_atual(), TempoDoToque.ALTURA_IDEAL[Lance.CORTADA], p.bola.gravidade)
 	var alvo_x: float = p.bola.posicao_daqui_a(maxf(ate_a_batida, 0.0)).x * p._lado(time)
 	if funcao == "central" or absf(alvo_x - x_da_funcao) <= p.AJUDA_DO_BLOQUEIO:
 		return alvo_x

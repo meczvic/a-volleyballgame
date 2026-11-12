@@ -13,6 +13,8 @@ const JeitosDeDefender := preload("res://scripts/regras/jeitos_de_defender.gd")
 const Rodizio := preload("res://scripts/regras/rodizio.gd")
 const TempoDoToque := preload("res://scripts/regras/tempo_do_toque.gd")
 
+const Lance := preload("res://scripts/regras/lance.gd")
+
 ## A partida (partida.gd).
 var p
 
@@ -82,7 +84,7 @@ func _qualidade_do_botao_do_bloqueio(time: int) -> TempoDoToque.Qualidade:
 	if not p.cortadas[outro].is_empty():
 		ate_a_batida = maxf(p.TEMPO_ATE_A_BATIDA - float(p.cortadas[outro]["tempo"]), 0.0)
 	elif p.bola.em_voo and p.toques.time_com_a_bola == outro and p.toques.toques >= 2 and p._lado_da_queda() == outro:
-		ate_a_batida = maxf(TempoDoToque.tempo_ate_altura(p.bola.position, p.bola.velocidade_atual(), TempoDoToque.ALTURA_IDEAL["cortada"], p.bola.gravidade), 0.0)
+		ate_a_batida = maxf(TempoDoToque.tempo_ate_altura(p.bola.position, p.bola.velocidade_atual(), TempoDoToque.ALTURA_IDEAL[Lance.CORTADA], p.bola.gravidade), 0.0)
 	if ate_a_batida < 0.0:
 		return TempoDoToque.Qualidade.RUIM
 	return JeitosDeDefender.qualidade_do_bloqueio(JeitosDeDefender.erro_do_bloqueio(ate_a_batida, p.DURACAO_DO_PULO))
