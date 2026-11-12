@@ -34,6 +34,8 @@ const PADRAO := {
 	"chance_de_flutuante": 0.25,
 	"esperteza": 0.5,
 	"chance_de_largada": 0.12,
+	"chance_de_rapido": 0.2,
+	"chance_de_segunda": 0.05,
 }
 
 ## Lugares (em coordenadas da quadra do alvo: x = lado, y = distância da rede)
@@ -208,7 +210,9 @@ func _jogar_rally(time: int) -> void:
 		alvo = Vector3(prevista.x, 0.0, prevista.z + lado * 0.3)
 	_andar_ate(time, atleta, alvo)
 
-	if nossos < 2:
+	if nossos == 1 and _plano.get("segunda", false):
+		_tentar_ataque(time, atleta)
+	elif nossos < 2:
 		_tentar_passe(time, atleta, nossos)
 	else:
 		_tentar_ataque(time, atleta)
@@ -227,6 +231,10 @@ func _novo_lance() -> void:
 		"errar": sorteio.randf() < float(ajustes["chance_de_errar"]),
 		# Quanto antes (+) ou depois (-) da hora certa ele aperta, em segundos.
 		"tempo": sorteio.randfn(0.0, float(ajustes["erro_do_tempo"])),
+		# Levantamento rápido (segurando o botão de flutuante) e bola de segunda
+		# (atacar no 2º toque): sorteados uma vez por lance.
+		"rapido": sorteio.randf() < float(ajustes["chance_de_rapido"]),
+		"segunda": sorteio.randf() < float(ajustes["chance_de_segunda"]),
 	}
 
 
@@ -253,7 +261,13 @@ func _tentar_passe(time: int, _atleta: Node3D, nossos: int) -> void:
 		_segurando = _direcao_do_levantamento(time)
 		direcao = _segurando
 	_apertou = true
+	var rapido: bool = nossos == 1 and _plano.get("rapido", false)
+	if rapido:
+		# Segura o botão de flutuante enquanto levanta: levantamento rápido.
+		comando.emit(jogador, "saque_flutuante")
 	comando.emit(jogador, "passe")
+	if rapido:
+		soltou.emit(jogador, "saque_flutuante")
 
 
 ## Cortada (3º toque): pula perto da hora certa, já mirando. Se não der pra

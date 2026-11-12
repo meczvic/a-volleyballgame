@@ -68,3 +68,52 @@ Ficou pra depois (precisa de você jogando): **aumentar o tempo do botão guarda
 2. O computador parece "gente" ou faz algo estranho (fica parado, corre errado)?
 3. Os seus companheiros cobrem e defendem melhor? Algum fica no caminho?
 4. A tela cheia ficou boa? Falta alguma informação na tela?
+
+
+## Etapa 3: plano (perguntas respondidas em 12/11/2026, falta aprovar)
+
+### O que o Victor decidiu
+- **Ataques novos:** ataque rápido do meio, bola de segunda, diagonal e paralela, ataque de fundo (pipe).
+- **Defesa:** bloqueio duplo/triplo, bloqueio controlável, recepção com tempo, mergulho mais arriscado.
+- **Tática do levantador:** direção (como hoje) + botão extra pra escolher o tipo de levantamento.
+- **Ritmo:** rallies mais variados e com média mais longa (o robô mede).
+
+### Como está hoje (pra entender o plano)
+- Os 3 da rede **já pulam juntos** no bloqueio (`_bloquear`), e `_tipo_do_bloqueio` já decide DEVOLVE ou TOQUE pelo atleta mais bem posicionado. Então "duplo/triplo" vira **escolha sua**: quantos pulam.
+- A cortada tem uma mira (esquerda/direita, curta/funda) e a qualidade do tempo decide força e erro (`TempoDoToque.CORTADA`).
+- O levantamento tem 4 alvos (Ponta, Meio, Oposto, Fundo) e a altura vem da qualidade do passe/levantamento.
+
+### Dividir em duas partes (recomendado)
+Muita coisa muda a partida com semente, então cada parte regrava o teste uma vez.
+
+**Parte 3A: ataque e tática**
+1. **Tipo de levantamento (botão extra):** segurar **Ataque** junto com a direção do levantamento escolhe: *rápido* (bola baixa, chega antes do bloqueio, exige passe bom), *normal* ou *alto* (dá tempo de armar, mas o bloqueio fecha).
+2. **Ataque rápido do meio:** o central bate numa bola baixa e veloz. Janela de tempo mais curta, mas o bloqueio só reage tarde.
+3. **Diagonal e paralela:** a mira da cortada ganha dois jeitos claros: diagonal (cruza a quadra) e paralela (rente à lateral). A mira visual mostra qual é.
+4. **Pipe (fundo):** cortada saindo de trás da linha de 3 m; mais forte que a normal de fundo e com bloqueio mais difícil (os da rede sobem atrasados).
+5. **Bola de segunda:** apertar **Ataque** no 2º toque faz o levantador empurrar a bola pro outro lado (curta e sem força). Surpreende o bloqueio, mas a bola é fácil de pegar se ele ler.
+6. **Computador** usa os novos ataques, mais no Difícil.
+
+**Parte 3B: defesa**
+1. **Quantos bloqueiam:** direção + Bloqueio escolhe **só 1**, **dupla** ou **tripla**. Quanto mais pulam, mais fechada a rede, mas sobra menos gente no fundo (a defesa fica com buraco).
+2. **Bloqueio controlável:** bloqueio no tempo certo (Perfeito) devolve a bola mais forte e pro lugar que você mirar; sem tempo, só "toque" que a bola sobra.
+3. **Recepção com tempo:** cortada forte (Perfeita) exige acertar o tempo do botão; senão a bola foge e vira passe ruim.
+4. **Mergulho mais arriscado:** mergulhar fora do tempo deixa mais tempo no chão; no tempo, salva bola que antes era impossível.
+5. **Computador** bloqueia dupla/tripla e mergulha conforme a dificuldade.
+
+### Testes e dados
+- Números novos em `dados/ajustes.json` (começa na Etapa 5, mas esta parte já cria o arquivo só com os números novos).
+- Teste novo por parte (`teste_ataques.gd`, `teste_defesa.gd`) e teste com semente regravado.
+- O robô passa a mostrar quantos ataques de cada tipo e a média de bolas por rally.
+
+### Riscos
+- O **rally pode ficar curto demais** se o ataque ficar forte e a defesa não acompanhar: por isso a 3B vem logo depois da 3A.
+- Botões a mais: o levantamento depende de **segurar Ataque** antes do toque. Se ficar confuso jogando, vira opção no menu.
+
+### Parte 3A: feita (12/11/2026, ainda não jogada pelo Victor)
+- **Levantamento rápido:** segurar o botão de flutuante (I, 5 ou RB) enquanto levanta. Precisa de passe e levantamento que não sejam ruins; se não forem os dois perfeitos, o atacante recebe a bola com mais erro. Não usei "segurar Ataque" porque Ataque já vira pedido de cortada.
+- **Ataque rápido do meio, pipe, diagonal e paralela:** `scripts/regras/jeitos_de_atacar.gd`. Cada um encolhe a largura do bloqueio (rápido do meio 0,6, pipe 0,7, paralela 0,85) e aparece na tela. Pipe sobe 0,08 m a menos; paralela erra 0,4 m a mais; diagonal erra 0,2 m a menos. Cortada ruim não aproveita o jeito.
+- **Bola de segunda:** atacar no 2º toque agora empurra a bola curta (como a largada) em vez de cortar.
+- **Computador:** `chance_de_rapido` e `chance_de_segunda` em `dados/dificuldades.json`. Diagonal e paralela ele já mirava.
+- **Teste novo:** `testes/teste_ataques.gd`. Teste com semente regravado (4 rallies, maior com 48 toques).
+- **Ficou de fora:** `dados/ajustes.json` (os números estão no arquivo de regras, vão pro JSON na Etapa 5) e o levantamento "alto" escolhido pelo jogador (continua automático pelo passe).

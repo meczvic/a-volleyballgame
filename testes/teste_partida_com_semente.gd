@@ -26,8 +26,8 @@ const LINHAS_DO_RESUMO := ["fim depois de", "rallies (maior", "quedas (cm)"]
 const ESPERADO := {
 	"Windows": [
 		"fim depois de 90 s de jogo. Sets 0 x 0, pontos 1 x 3, estado RALLY.",
-		"4 rallies (maior com 42 toques), lances: { \"saques\": 5, \"passes\": 46, \"levantamentos\": 42, \"cortadas\": 40, \"bloqueios\": 332 }",
-		"quedas (cm): 31,583 -353,129 -42,-383 99,111",
+		"4 rallies (maior com 48 toques), lances: { \"saques\": 5, \"passes\": 46, \"levantamentos\": 44, \"cortadas\": 44, \"bloqueios\": 296 }",
+		"quedas (cm): 31,583 1,564 -72,-402 28,652",
 	],
 }
 
