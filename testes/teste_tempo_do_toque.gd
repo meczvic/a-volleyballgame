@@ -13,6 +13,7 @@ var falhas := 0
 func _init() -> void:
 	_teste_tempo_ate_altura()
 	_teste_qualidade_pelo_erro()
+	_teste_aviso_de_cedo_e_tarde()
 	_teste_botao_na_hora_certa_e_perfeito()
 	_teste_cortada_conta_o_pulo()
 	_teste_bola_que_nao_sobe_tanto()
@@ -112,3 +113,11 @@ func _teste_um_toque_muda_o_proximo() -> void:
 	_verificar(TempoDoToque.ataque_liberado(Q.RUIM, "Ponta"), "passe ruim deixa levantar na ponta")
 	_verificar(TempoDoToque.pior(Q.PERFEITO, Q.RUIM) == Q.RUIM, "a pior das duas")
 	_verificar(TempoDoToque.CORTADA[Q.PERFEITO]["subida"] < TempoDoToque.CORTADA[Q.RUIM]["subida"], "cortada perfeita é mais forte")
+
+
+## Toque ruim por causa do tempo diz pra que lado errou (o Volleyball Legends
+## do Roblox faz isso, e tira a sensação de que foi sorte).
+func _teste_aviso_de_cedo_e_tarde() -> void:
+	_verificar(TempoDoToque.nome_do_ruim(0.3) == "Cedo!", "erro positivo (apertou antes) é Cedo!")
+	_verificar(TempoDoToque.nome_do_ruim(-0.3) == "Tarde!", "erro negativo (apertou depois) é Tarde!")
+	_verificar(TempoDoToque.nome_do_ruim(0.0) == "Ruim", "ruim por outro motivo continua Ruim")

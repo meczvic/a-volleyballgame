@@ -56,8 +56,24 @@ func _teste_saque_sai_quando_solta() -> void:
 	_verificar(partida.miras[0].visible, "a mira aparece enquanto carrega")
 	_verificar(not partida.miras[1].visible, "o outro time não tem mira")
 	partida._ao_soltar_botao(1, "ataque")
-	_verificar(partida.estado == partida.Estado.RALLY, "soltar saca")
+	# O botão de ataque é o saque viagem: o atleta pula e a bola só sai na batida
+	# (TEMPO_ATE_A_BATIDA depois), no alto do pulo.
+	var sacador: Node3D = partida.controlados[0]
+	_verificar(partida.estado == partida.Estado.SAQUE and not partida.saque_viagem.is_empty(), "soltar começa o saque viagem")
+	_verificar(partida.bloqueios._esta_pulando(sacador), "o atleta pula no saque viagem")
 	_verificar(not partida.miras[0].visible, "a mira some depois do saque")
+	var passos := 0
+	var mais_alto := 0.0
+	while partida.estado == partida.Estado.SAQUE and passos < 60:
+		partida.bloqueios._atualizar_pulo(sacador, 1.0 / 60.0)
+		partida._atualizar_saque_viagem(1.0 / 60.0, sacador, -0.5)
+		mais_alto = maxf(mais_alto, sacador.position.y)
+		passos += 1
+	_verificar(partida.estado == partida.Estado.RALLY, "soltar saca (depois do pulo)")
+	_verificar(passos > 10 and passos < 30, "a bola sai na batida, ~0,3 s depois (%d quadros)" % passos)
+	_verificar(mais_alto > 0.7, "o atleta subiu de verdade (%.2f m)" % mais_alto)
+	_verificar(partida.bola.position.y > 3.0, "bate na bola no alto, não rente ao chão (%.2f m)" % partida.bola.position.y)
+	_verificar(partida.saque_viagem.is_empty(), "o saque viagem terminou")
 	_fechar(partida)
 
 

@@ -120,6 +120,15 @@ func _teste_fora_de_posicao_no_saque() -> void:
 	_verificar(_pontos(partida) == [1, 0], "o ponto é de quem sacou")
 	_fechar(partida)
 
+	# Regra de 2025: o time que SACA pode ficar fora da ordem do rodízio.
+	var livre = _nova_partida()
+	var meio_de_quem_saca := _na_posicao(livre, 0, 3)
+	meio_de_quem_saca.position = livre._no_mundo(0, Vector2(0.0, 8.0))
+	livre._sacar(0, false)
+	_verificar(livre.estado == livre.Estado.RALLY, "time que saca fora da ordem não é falta (regra de 2025)")
+	_verificar(_pontos(livre) == [0, 0], "ninguém pontua por isso")
+	_fechar(livre)
+
 
 func _teste_oito_segundos_pra_sacar() -> void:
 	var partida = _nova_partida()

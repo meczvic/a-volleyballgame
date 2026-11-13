@@ -75,6 +75,24 @@ static func qualidade_da_recepcao(qualidade: Qualidade, cortada_recebida: int) -
 	return qualidade
 
 
+## Cortada perfeita só é defendida (de manchete, sem mergulho) se vier na linha
+## do corpo: com o defensor a mais disso (m, no chão) da bola, ela passa e é
+## ponto. Antes (até 13/11/2026) qualquer um a até ALCANCE (1,8 m) defendia, e o
+## computador chegava em quase tudo: 1,9 a 2,3 cortadas por rally contra o
+## Normal, quando no vôlei de verdade são 1,3 a 1,6.
+const ALCANCE_CONTRA_CORTADA_PERFEITA := 0.9
+## A cortada boa também é forte (sai reta), mas dá um pouco mais de tempo.
+const ALCANCE_CONTRA_CORTADA_BOA := 1.3
+
+
+static func segura_cortada(cortada_recebida: int, distancia: float) -> bool:
+	if cortada_recebida == int(Qualidade.PERFEITO):
+		return distancia <= valor("alcance_contra_cortada_perfeita", ALCANCE_CONTRA_CORTADA_PERFEITA)
+	if cortada_recebida == int(Qualidade.BOM):
+		return distancia <= valor("alcance_contra_cortada_boa", ALCANCE_CONTRA_CORTADA_BOA)
+	return true
+
+
 # --- Mergulho ---
 
 ## Mergulho fora do tempo (ou no vazio) fica mais tempo no chão.

@@ -43,6 +43,8 @@ var ajudas_de_comandos: Array[Label] = []
 var rotulos_de_cartas: Array[Label] = []
 
 var _ajuda_escondida := false
+## Times cujas mensagens não aparecem (o do computador, no modo 1 jogador).
+var times_sem_mensagem: Array = []
 ## Conta de mensagens por lugar (meio, time 0, time 1), pra saber se a de um
 ## aviso rápido ainda é a que está na tela.
 var _validade_da_mensagem := [0, 0, 0]
@@ -116,10 +118,11 @@ func montar(tela_dividida: bool, nomes: Array, cores: Array, ids: Array, modo_ca
 		centro_da_barra.add_child(barra)
 		barras_de_forca[time] = barra
 
-		# Medidor de energia (super cortada), acima da barra de força.
+		# Medidor de energia (super cortada), rente à borda de baixo (13/11/2026:
+		# acima da barra de força ele ficava em cima da quadra com a câmera perto).
 		var centro_da_energia := CenterContainer.new()
 		centro_da_energia.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		centro_da_energia.position = Vector2(800.0 * time, 690.0)
+		centro_da_energia.position = Vector2(800.0 * time, 840.0)
 		centro_da_energia.size = Vector2(800.0, 60.0)
 		camada.add_child(centro_da_energia)
 		var barra_de_energia := BarraDeEnergia.new()
@@ -150,15 +153,15 @@ func montar(tela_dividida: bool, nomes: Array, cores: Array, ids: Array, modo_ca
 	# Comandos de cada jogador embaixo da metade dele (ou só do J1, sem tela dividida).
 	# Curtos: somem no primeiro saque (o resto fica por conta do jogo ensinar).
 	var ajudas_teclado := [
-		"Teclado: WASD move · J passe · K saque/cortada · I flutuante · L bloqueio · Espaço mergulho",
-		"Teclado: setas movem · 1 passe · 2 saque/cortada · 5 flutuante · 3 bloqueio · 0 mergulho",
+		"Teclado: WASD move · J passe (segure no levantamento = mais alto) · K saque/cortada · I flutuante · L bloqueio · Espaço mergulho",
+		"Teclado: setas movem · 1 passe (segure = mais alto) · 2 saque/cortada · 5 flutuante · 3 bloqueio · 0 mergulho",
 	]
-	var ajuda_do_controle := "Controle: A passe · X saque/cortada · RB flutuante · Y bloqueio · B mergulho"
+	var ajuda_do_controle := "Controle: A passe (segure no levantamento = mais alto) · X saque/cortada · RB flutuante · Y bloqueio · B mergulho"
 	var controles_ligados := Input.get_connected_joypads().size()
 	for jogador in (2 if tela_dividida else 1):
 		var ajuda := _rotulo_da_interface(16, false)
 		ajuda.text = ajuda_do_controle if controles_ligados > jogador else ajudas_teclado[jogador]
-		ajuda.position = Vector2(20.0 + jogador * 800.0, 860.0)
+		ajuda.position = Vector2(20.0 + jogador * 800.0, 800.0)
 		camada.add_child(ajuda)
 		ajudas_de_comandos.append(ajuda)
 
@@ -182,6 +185,9 @@ func montar(tela_dividida: bool, nomes: Array, cores: Array, ids: Array, modo_ca
 ## (avisos rápidos). Fixa: fica até outra mensagem ou o próximo lance.
 func mostrar_mensagem(texto: String, time := -1, fixa := true) -> void:
 	mensagem_mostrada.emit(texto, time, fixa)
+	if time in times_sem_mensagem:
+		caixas_do_time[time].visible = false
+		return
 	_validade_da_mensagem[time + 1] += 1
 	var numero: int = _validade_da_mensagem[time + 1]
 	if time < 0:

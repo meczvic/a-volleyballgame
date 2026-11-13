@@ -22,12 +22,13 @@ const ARGUMENTOS_DO_ROBO := ["times=brasil,karasuno", "estadio=ginasio_japones",
 ## A do desempenho fica de fora: depende da máquina.
 const LINHAS_DO_RESUMO := ["fim depois de", "rallies (maior", "quedas (cm)"]
 ## Resultado gravado, por sistema (OS.get_name()), sem o "Robô: " do começo.
-## Regravado em 12/11/2026 (gesto novo da cortada: muda a altura da mão na batida).
+## Regravado em 12/11/2026 (bola com a gravidade certa, formação em W, cortada reta,
+## saque viagem, defesa de perímetro e regra de 2025 da falta de posição).
 const ESPERADO := {
 	"Windows": [
-		"fim depois de 90 s de jogo. Sets 0 x 0, pontos 1 x 1, estado RALLY.",
-		"2 rallies (maior com 62 toques), lances: { \"saques\": 3, \"passes\": 36, \"levantamentos\": 32, \"cortadas\": 30, \"bloqueios\": 256 }",
-		"quedas (cm): -101,-64 -346,114",
+		"fim depois de 90 s de jogo. Sets 0 x 1, pontos 0 x 0, estado SAQUE.",
+		"11 rallies (maior com 27 toques), lances: { \"saques\": 11, \"passes\": 42, \"levantamentos\": 16, \"cortadas\": 24, \"bloqueios\": 86 }",
+		"quedas (cm): -108,-108 109,96 -9,582 -95,-113 -6,-113 104,86 -1,-122 348,113 -350,122 92,93 -61,587",
 	],
 }
 

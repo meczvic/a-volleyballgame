@@ -13,11 +13,15 @@ const ARQUIVOS := {
 	"correr": "res://animacoes/correr.fbx",
 	"lateral_esquerda": "res://animacoes/lateral_esquerda.fbx",
 	"lateral_direita": "res://animacoes/lateral_direita.fbx",
-	"manchete": "res://animacoes/manchete.fbx",
-	"levantamento": "res://animacoes/levantamento.tres",
+	# Manchete, toque, saque em pé e saque viagem de verdade: DeepMotion a partir
+	# de vídeos livres do Pexels (producao/videos_pexels/LEIA-ME.md). As antigas
+	# do Mixamo (manchete.fbx, saque.fbx) continuam na pasta.
+	"manchete": "res://animacoes/manchete_deepmotion.tres",
+	"levantamento": "res://animacoes/levantamento_deepmotion.tres",
 	"cortada": "res://animacoes/cortada_deepmotion.tres",
 	"bloqueio": "res://animacoes/bloqueio.fbx",
-	"saque": "res://animacoes/saque.fbx",
+	"saque": "res://animacoes/saque_deepmotion.tres",
+	"saque_viagem": "res://animacoes/saque_viagem_deepmotion.tres",
 	"mergulho": "res://animacoes/mergulho.fbx",
 	"mergulho_direita": "res://animacoes/mergulho_direita.fbx",
 	"espera_defesa": "res://animacoes/espera_defesa.fbx",
@@ -61,12 +65,28 @@ const PARADO_NO_JOGO := "espera"
 ##   da batida (MAO_DA_CORTADA) passa pela bola em 1,62 s (BATIDA_DA_CORTADA), que a 1,23x cai em
 ##   0,3 s, o alto do pulo, quando a partida solta a bola da mão; a queda (2,0 s)
 ##   fica no fim do pulo.
+## - manchete e levantamento: o toque começa NA POSE DE CONTATO. O preparo até
+##   essa pose fica em PREPARO e roda antes da bola chegar (preparar_toque).
+## - manchete (DeepMotion, 13/11/2026): mãos juntas (~0,19 m) de 0,5 a 2,4 s;
+##   de 1,6 a 2,2 s o atleta afunda na base (quadril de 0,74 a 0,70 m) e o
+##   contato é em 2,2 s; até 3,0 s os braços seguem e ele começa a levantar.
+## - saque em pé (DeepMotion, vídeo em câmera lenta, por isso 3x): em 5,1 s o
+##   braço direito está armado atrás da cabeça e passa por cima dela (a batida)
+##   em ~5,3 s, logo depois de a partida soltar a bola; até 6,6 s acompanha.
+## - saque viagem (DeepMotion, câmera lenta, 4,4x): sai do chão em 3,6 s, bate
+##   com a mão esquerda no alto em 4,9 s, que a 4,4x cai em 0,3 s (o alto do
+##   pulo do jogo, quando a bola sai), e cai em 6,25 s (0,6 s, o fim do pulo).
+## - levantamento (toque de verdade, DeepMotion): de 0 a 1,2 s os joelhos
+##   dobrados e as mãos sobem do peito até a testa; o contato é em 1,25 s, quando
+##   as mãos passam da cabeça e as pernas começam a esticar; até 2,1 s braços e
+##   pernas terminam de empurrar a bola (mãos a 1,70 m).
 const TRECHOS := {
-	"manchete": [0.2, 1.2],
-	"levantamento": [0.2, 1.0],
+	"manchete": [2.2, 3.0],
+	"levantamento": [1.25, 2.3],
 	"cortada": [1.25, 2.0, 1.23],
 	"bloqueio": [0.55, 1.6],
-	"saque": [1.0, 2.0],
+	"saque": [5.1, 6.6, 3.0],
+	"saque_viagem": [3.6, 6.25, 4.4],
 	# Mergulho a 2,2x: deita em ~0,45 s e começa a levantar em ~0,8 s, quando o
 	# atleta pode andar de novo (TEMPO_NO_CHAO da partida).
 	"mergulho": [0.5, 2.8, 2.2],
@@ -112,14 +132,41 @@ const GESTO_DA_CORTADA := [
 		"RightUpperArm": Vector3(60, 0, -10), "RightLowerArm": Vector3.ZERO}],
 ]
 
+## Preparo de cada toque: [início, pose de contato] em segundos da animação.
+## A pose de contato é o começo do trecho do toque (TRECHOS), então o preparo
+## termina exatamente onde o toque começa.
+const PREPARO := {
+	"manchete": [1.6, 2.2],
+	"levantamento": [0.6, 1.25],
+}
+## O preparo pode tocar mais rápido ou mais devagar pra chegar junto com a bola.
+const PREPARO_VELOCIDADE_MINIMA := 0.6
+const PREPARO_VELOCIDADE_MAXIMA := 2.5
+## Quanto o preparo segura na pose se a bola demorar um pouco mais (s).
+const PREPARO_FOLGA := 0.25
+
 ## Lances em que o jogo já faz o atleta subir: aí a animação não sobe junto.
-const PULAM_NO_JOGO := ["cortada", "bloqueio"]
+const PULAM_NO_JOGO := ["cortada", "bloqueio", "saque_viagem"]
+## Em que segundo da animação medir a altura do quadril em pé (o teto do
+## quadril nas que pulam no jogo). Sem entrada, é o primeiro quadro. No saque
+## viagem o DeepMotion deixou o corpo flutuando no começo (a câmera mexe), então
+## mede na hora de sair do chão.
+const QUADRIL_EM_PE := {"saque_viagem": 3.6}
 
 ## Velocidade (m/s) em que a corrida toca na velocidade normal.
 const VELOCIDADE_DA_CORRIDA := 4.0
 const PARADO_ABAIXO_DE := 0.4
 const MISTURA := 0.15
 const TELEPORTE := 15.0
+
+## Cabeça acompanhando a bola (olhar_para): até onde a cabeça pode virar em
+## relação ao corpo, quanto o olhar soma à animação (graus) e quanto do caminho
+## até a bola ela faz (0 a 1).
+const OLHAR_LIMITE := 75.0
+const OLHAR_GIRO_MAXIMO := 55.0
+const OLHAR_PARTE := 0.8
+
+const OlharDaCabeca := preload("res://scripts/visual/olhar_da_cabeca.gd")
 
 const BIBLIOTECA := "volei"
 static var _biblioteca: AnimationLibrary
@@ -183,6 +230,28 @@ func tocar(lance: String) -> void:
 	_personagem.rotation.y = giro_da_rede
 
 
+## Começa o preparo do toque ("manchete" ou "levantamento") pra pose de contato
+## ficar pronta daqui a "segundos_ate_a_bola". Quando o toque vem (tocar), ele
+## continua dali, sem pulo na pose. Se o toque não vier, volta pro movimento
+## normal. Devolve true se começou.
+func preparar_toque(lance: String, segundos_ate_a_bola: float) -> bool:
+	if _player == null or not PREPARO.has(lance) or _tempo_do_lance > 0.0:
+		return false
+	var trecho: Array = PREPARO[lance]
+	var duracao: float = trecho[1] - trecho[0]
+	var velocidade := clampf(duracao / maxf(segundos_ate_a_bola, 0.01), PREPARO_VELOCIDADE_MINIMA, PREPARO_VELOCIDADE_MAXIMA)
+	_player.play(BIBLIOTECA + "/" + lance, MISTURA)
+	_player.seek(trecho[0], true)
+	_player.speed_scale = velocidade
+	_tempo_do_lance = duracao / velocidade + PREPARO_FOLGA
+	# Pode estar chegando na bola: não para no meio do preparo por andar.
+	_sai_ao_andar = true
+	_carencia = duracao / velocidade
+	_em_loop = ""
+	_personagem.rotation.y = giro_da_rede
+	return true
+
+
 ## Mergulho pro lado do "rumo" (direção no chão, x e z do mundo) em relação a
 ## pra onde o atleta olha (a rede).
 func mergulhar(rumo: Vector2) -> void:
@@ -235,6 +304,25 @@ func _esqueleto() -> Skeleton3D:
 	if esqueleto == null:
 		esqueleto = _personagem.get_node_or_null("GeneralSkeleton") as Skeleton3D
 	return esqueleto
+
+
+## Faz a cabeça do atleta acompanhar "alvo" (a bola), em vez de ficar fixa
+## olhando pra rede (veja olhar_da_cabeca.gd: roda por cima da animação, com
+## limite de ângulo pra não torcer o pescoço).
+## Devolve false se o personagem não tem osso "Head" (cápsula, outro esqueleto).
+func olhar_para(alvo: Node3D) -> bool:
+	var esqueleto := _esqueleto()
+	if esqueleto == null or alvo == null or esqueleto.find_bone("Head") < 0:
+		return false
+	var olhar := OlharDaCabeca.new()
+	olhar.name = "OlharABola"
+	olhar.referencia = _personagem
+	olhar.alvo = alvo
+	olhar.limite = deg_to_rad(OLHAR_LIMITE)
+	olhar.giro_maximo = deg_to_rad(OLHAR_GIRO_MAXIMO)
+	olhar.parte = OLHAR_PARTE
+	esqueleto.add_child(olhar)
+	return true
 
 
 ## Volta pro movimento normal (fim de uma comemoração, novo saque).
@@ -308,7 +396,7 @@ static func biblioteca() -> AnimationLibrary:
 			push_warning("Animação %s não carregou (%s)." % [nome, ARQUIVOS[nome]])
 			continue
 		animacao.loop_mode = Animation.LOOP_LINEAR if nome in EM_LOOP else Animation.LOOP_NONE
-		_no_lugar(animacao, nome in PULAM_NO_JOGO)
+		_no_lugar(animacao, nome in PULAM_NO_JOGO, QUADRIL_EM_PE.get(nome, -1.0))
 		if nome == "cortada":
 			_gesto_da_cortada(animacao)
 		_biblioteca.add_animation(nome, animacao)
@@ -395,7 +483,7 @@ static func _carregar(caminho: String) -> Animation:
 
 ## Trava o quadril no lugar no chão (x e z): quem anda é o atleta, não a animação.
 ## Com "sem_subir", trava a altura também, porque o jogo já faz o pulo.
-static func _no_lugar(animacao: Animation, sem_subir: bool) -> void:
+static func _no_lugar(animacao: Animation, sem_subir: bool, quadril_em_pe := -1.0) -> void:
 	for trilha in animacao.get_track_count():
 		if animacao.track_get_type(trilha) != Animation.TYPE_POSITION_3D:
 			continue
@@ -404,6 +492,8 @@ static func _no_lugar(animacao: Animation, sem_subir: bool) -> void:
 		if animacao.track_get_key_count(trilha) == 0:
 			continue
 		var inicio: Vector3 = animacao.track_get_key_value(trilha, 0)
+		if quadril_em_pe >= 0.0:
+			inicio = animacao.position_track_interpolate(trilha, quadril_em_pe)
 		for chave in animacao.track_get_key_count(trilha):
 			var valor: Vector3 = animacao.track_get_key_value(trilha, chave)
 			valor.x = inicio.x

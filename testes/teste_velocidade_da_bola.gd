@@ -22,6 +22,7 @@ func _initialize() -> void:
 
 func _rodar() -> void:
 	_teste_valores()
+	_teste_tempo_de_voo_de_volei()
 	_teste_cai_no_mesmo_lugar_mais_cedo()
 	_teste_tempo_do_toque_com_gravidade()
 	_teste_json_muda_a_velocidade()
@@ -46,7 +47,39 @@ func _teste_valores() -> void:
 	_verificar(Velocidade.do_saque(0.0, true) > 1.0, "até o flutuante é um pouco mais seco que o normal")
 	_verificar(Velocidade.da_cortada(Q.PERFEITO, false) > Velocidade.da_cortada(Q.BOM, false), "cortada perfeita é mais rápida que a boa")
 	_verificar(Velocidade.da_cortada(Q.BOM, false) > 1.0, "cortada boa é mais rápida que um arco normal")
-	_verificar(is_equal_approx(Velocidade.da_cortada(Q.RUIM, false), 1.0), "cortada ruim fica normal")
+	_verificar(Velocidade.da_cortada(Q.RUIM, false) > 1.0, "até a cortada ruim é mais seca que um arco normal")
+	_verificar(Velocidade.da_cortada(Q.BOM, false) > Velocidade.da_cortada(Q.RUIM, false), "cortada boa é mais rápida que a ruim")
+	_verificar(Velocidade.do_passe() > 1.0 and Velocidade.do_levantamento() > 1.0, "passe e levantamento não são câmera lenta")
+
+
+## Pegava o bug de 12/11/2026: os múltiplos da gravidade iam crus pra bola
+## (saque com ~1,5 m/s² levava 4 s pra cruzar a quadra). Aqui o tempo de voo
+## de cada lance é medido com a conversão que a partida usa e tem que ser de
+## vôlei de verdade.
+func _teste_tempo_de_voo_de_volei() -> void:
+	Ajustes.usar_dados({})
+	var saque_forte := _tempo_de_voo(Vector3(0, 2.6, -10), Vector3(0, 0, 5), 3.2, Velocidade.gravidade(Velocidade.do_saque(1.0, false)))
+	var saque_fraco := _tempo_de_voo(Vector3(0, 2.2, -10), Vector3(0, 0, 5), 5.6, Velocidade.gravidade(Velocidade.do_saque(0.0, false)))
+	var cortada := _tempo_de_voo(Vector3(0, 3.2, -1), Vector3(0, 0, 5), 3.5, Velocidade.gravidade(Velocidade.da_cortada(Q.PERFEITO, false)))
+	var passe := _tempo_de_voo(Vector3(0, 1.0, 5), Vector3(2, 0, 1), 3.8, Velocidade.gravidade(Velocidade.do_passe()))
+	var levantamento := _tempo_de_voo(Vector3(2, 1.8, 1), Vector3(4, 0, 0.5), 4.4, Velocidade.gravidade(Velocidade.do_levantamento()))
+	_verificar(saque_forte < 1.1, "saque forte cruza a quadra em menos de 1,1 s (deu %.2f s)" % saque_forte)
+	_verificar(saque_fraco < 1.6, "saque fraco em menos de 1,6 s (deu %.2f s)" % saque_fraco)
+	_verificar(cortada < 0.8, "cortada perfeita em menos de 0,8 s (deu %.2f s)" % cortada)
+	_verificar(passe < 1.4, "passe em menos de 1,4 s (deu %.2f s)" % passe)
+	_verificar(levantamento < 1.3, "levantamento em menos de 1,3 s (deu %.2f s)" % levantamento)
+	_verificar(saque_forte < saque_fraco and cortada < saque_forte, "saque forte é mais rápido que o fraco e a cortada mais que o saque")
+	print("  voo: saque forte %.2f s, fraco %.2f s, cortada %.2f s, passe %.2f s, levantamento %.2f s" % [saque_forte, saque_fraco, cortada, passe, levantamento])
+
+
+func _tempo_de_voo(de: Vector3, para: Vector3, topo: float, gravidade: float) -> float:
+	var bola = Bola.new()
+	root.add_child(bola)
+	bola.position = de
+	bola.lancar(para, topo, gravidade)
+	var t: float = Trajetoria.tempo_ate_altura(bola.position, bola.velocidade_atual(), Bola.RAIO, bola.gravidade)
+	bola.queue_free()
+	return t
 	_verificar(Velocidade.da_cortada(Q.RUIM, true) > Velocidade.da_cortada(Q.PERFEITO, false), "a super cortada é a mais rápida")
 
 

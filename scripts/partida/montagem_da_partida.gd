@@ -196,6 +196,7 @@ func _adicionar_camera(onde: Node, time: int) -> void:
 		Vector3(0.0, 0.0, p.foco_da_camera * lado),
 		p.abertura_da_camera
 	)
+	camera.acompanhamento_lateral = p.acompanhamento_da_camera
 	camera.current = true
 	# O fundo atrás do próprio time fica entre a câmera e a quadra: não desenha.
 	camera.set_cull_mask_value(Cenario.CAMADA_ATRAS_DO_TIME[0 if lado > 0.0 else 1], false)

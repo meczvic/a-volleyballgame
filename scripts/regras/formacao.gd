@@ -19,6 +19,20 @@ const FILA_DA_REDE := [4, 3, 2]
 const FILA_DO_FUNDO := [5, 6, 1]
 ## Lado (x) de cada posição na formação do saque.
 const X_DA_POSICAO := {4: -3.0, 3: 0.0, 2: 3.0, 5: -3.0, 6: 0.0, 1: 3.0}
+## Recebendo o saque o time faz um "W": os pontas (4 e 2) avançam, a zaga
+## (5 e 1) fica funda e o do meio do fundo (6) vem um pouco mais pra frente.
+## Lado (x) de cada um no W. A regra da ordem continua valendo.
+const X_NO_W := {4: -3.2, 3: 0.0, 2: 3.2, 5: -2.4, 6: 0.0, 1: 2.4}
+## Profundidade (y) de cada um no W (o do meio da rede fica colado nela).
+const Y_NO_W := {4: 3.8, 3: 1.6, 2: 3.8, 5: 6.2, 6: 4.9, 1: 6.2}
+## Quem fica na frente de cada posição do fundo (mesma coluna).
+const FRENTE_DA_COLUNA := {5: 4, 6: 3, 1: 2}
+## Defesa de PERÍMETRO no fundo (a mais usada no alto nível): o do meio do
+## fundo fica fundo, no centro, e os das pontas ficam mais à frente, perto das
+## laterais, fechando as diagonais. (Em 12/11/2026 estava ao contrário, que é
+## a defesa "rotacional", usada contra largada. Veja docs/ESTUDO_DO_VOLEI.md.)
+const Y_FUNDO_DA_PONTA := 5.8
+const Y_FUNDO_DO_MEIO := 7.6
 
 ## Metade da largura e o comprimento de cada lado da quadra (m).
 const MEIA_LARGURA := 4.5
@@ -43,14 +57,26 @@ static func e_da_rede(posicao: int) -> bool:
 ## Lugar do atleta na "posicao" do rodízio na hora do saque.
 ## Sempre respeita a regra da ordem (veja o teste teste_formacao.gd).
 static func lugar_no_saque(posicao: int, e_levantador: bool, recebendo: bool) -> Vector2:
+	if recebendo:
+		var x_w: float = X_NO_W[posicao]
+		if e_levantador:
+			# O levantador se esconde: na rede, ou logo atrás do colega da rede.
+			if e_da_rede(posicao):
+				return Vector2(x_w, Y_LEVANTADOR_NA_REDE)
+			# Escondido logo atrás do colega da rede da mesma coluna.
+			var colega_da_frente: int = FRENTE_DA_COLUNA[posicao]
+			return Vector2(x_w, maxf(Y_LEVANTADOR_ESCONDIDO, Y_NO_W[colega_da_frente] + 0.5))
+		return Vector2(x_w, Y_NO_W[posicao])
 	var x: float = X_DA_POSICAO[posicao]
 	if e_da_rede(posicao):
-		if e_levantador and recebendo:
-			return Vector2(x, Y_LEVANTADOR_NA_REDE)
-		return Vector2(x, Y_REDE_RECEBENDO if recebendo else Y_REDE_SACANDO)
-	if e_levantador and recebendo:
-		return Vector2(x, Y_LEVANTADOR_ESCONDIDO)
-	return Vector2(x, Y_FUNDO)
+		return Vector2(x, Y_REDE_SACANDO)
+	return Vector2(x, y_do_fundo(x))
+
+
+## Profundidade do atleta do fundo na defesa, pelo lado dele (perímetro): o do
+## meio fica fundo e os das pontas mais à frente, perto das laterais.
+static func y_do_fundo(x: float) -> float:
+	return Y_FUNDO_DA_PONTA if absf(x) > 1.5 else Y_FUNDO_DO_MEIO
 
 
 ## Faltas de posição: lista vazia = formação certa.

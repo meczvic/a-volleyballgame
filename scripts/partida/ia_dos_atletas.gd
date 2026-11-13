@@ -31,15 +31,46 @@ func _mover(atleta: Node3D, time: int, direcao: Vector2, delta: float) -> void:
 		atleta.position.z = clampf(atleta.position.z, -fundo, -0.4)
 
 
+## Lugar de cada atleta guardado por "momento" (13/11/2026, pedido do Victor:
+## os companheiros andavam o tempo todo, um pouco pra cá e pra lá, e confundia).
+## "time_indice" -> [momento, lugar no mundo].
+var _lugares_guardados := {}
+
+
 ## Lugar (no mundo) pra onde o atleta "indice" do "time" deve ir agora.
-##
-## No saque: a formação na ordem do rodízio (regra). Depois do saque, cada
+## O lugar só muda quando muda o momento do jogo (cada bola lançada: saque,
+## passe, levantamento, ataque, e o ponto): aí cada um vai direto pro lugar
+## novo, sem ficar ajustando. Quem está no bloqueio continua lendo a bola.
+func _alvo_da_ia(time: int, indice: int) -> Vector3:
+	if _esta_no_bloqueio(time, indice):
+		return _calcular_alvo(time, indice)
+	var momento := [p.estado, p.bola.lancamentos, p.toques.time_com_a_bola, p.toques.toques,
+		p.cortadas[0].is_empty(), p.cortadas[1].is_empty(), p.placar.quem_saca]
+	var chave := "%d_%d" % [time, indice]
+	var guardado: Array = _lugares_guardados.get(chave, [])
+	if guardado.is_empty() or guardado[0] != momento:
+		guardado = [momento, _calcular_alvo(time, indice)]
+		_lugares_guardados[chave] = guardado
+	return guardado[1]
+
+
+## O atleta da rede está subindo pro bloqueio (o outro time vai atacar).
+func _esta_no_bloqueio(time: int, indice: int) -> bool:
+	if p.estado != p.Estado.RALLY:
+		return false
+	var posicao: int = p.rodizios[time].posicao_de(indice)
+	var outro := 1 - time
+	return Rodizio.e_da_rede(posicao) and p.toques.time_com_a_bola == outro and p.toques.toques >= 2 \
+		and float(p.atletas[time][indice].get_meta("fora_do_bloqueio_ate", -1.0)) <= p._relogio
+
+
+## Lugar calculado agora (sem guardar). No saque: a formação na ordem do rodízio (regra). Depois do saque, cada
 ## um vai pro lado da sua função (ponteiro na esquerda, central no meio,
 ## oposto e levantador na direita) e o levantador do fundo infiltra pra
 ## levantar quando a bola vem pro nosso lado. Quando o nosso time ataca, os
 ## outros cobrem o atacante; quando o outro time ataca, os do fundo se
 ## posicionam pelo lado do atacante. E ninguém fica em cima de um colega.
-func _alvo_da_ia(time: int, indice: int) -> Vector3:
+func _calcular_alvo(time: int, indice: int) -> Vector3:
 	var posicao: int = p.rodizios[time].posicao_de(indice)
 	var da_rede = Rodizio.e_da_rede(posicao)
 	var e_levantador = indice == p.levantadores[time]
@@ -68,7 +99,7 @@ func _alvo_da_ia(time: int, indice: int) -> Vector3:
 		return p._no_mundo(time, lugar)
 	if _vamos_atacar(time):
 		# Cobertura: chega perto do atacante, cada um do seu lado.
-		var padrao = Vector2(x_da_funcao, 1.5 if da_rede else Formacao.Y_FUNDO)
+		var padrao = Vector2(x_da_funcao, 1.5 if da_rede else Formacao.y_do_fundo(x_da_funcao))
 		lugar = _lugar_na_cobertura(time, padrao, p.COBERTURA_DA_REDE if da_rede else p.COBERTURA_DO_FUNDO)
 	elif e_levantador and montando_o_ataque:
 		# Infiltração: o levantador vai pro lugar do levantamento.
@@ -81,7 +112,7 @@ func _alvo_da_ia(time: int, indice: int) -> Vector3:
 	elif adversario_vai_atacar:
 		lugar = _lugar_na_defesa(time, x_da_funcao)
 	else:
-		lugar = Vector2(x_da_funcao, Formacao.Y_FUNDO)
+		lugar = Vector2(x_da_funcao, Formacao.y_do_fundo(x_da_funcao))
 	return p._no_mundo(time, _abrir_espaco(time, indice, lugar))
 
 
@@ -116,12 +147,12 @@ func _lugar_na_cobertura(time: int, padrao: Vector2, raio: float) -> Vector2:
 func _lugar_na_defesa(time: int, x_da_funcao: float) -> Vector2:
 	var outro = 1 - time
 	if not p.bola.em_voo or p._lado_da_queda() == time and p.cortadas[outro].is_empty():
-		return Vector2(x_da_funcao, Formacao.Y_FUNDO)
+		return Vector2(x_da_funcao, Formacao.y_do_fundo(x_da_funcao))
 	var mundo = p._no_mundo(outro, _ponto_do_ataque(outro))
 	var ataque_x = p._no_time(time, mundo).x
 	var x = clampf(x_da_funcao + ataque_x * p.DEFESA_PRO_LADO_DO_ATAQUE, -p.LARGURA / 2.0 + 0.5, p.LARGURA / 2.0 - 0.5)
 	var longe = clampf((absf(x_da_funcao - ataque_x) - 3.0) / 3.0, -1.0, 1.0)
-	return Vector2(x, Formacao.Y_FUNDO + longe * p.DEFESA_RECUO)
+	return Vector2(x, Formacao.y_do_fundo(x_da_funcao) + longe * p.DEFESA_RECUO)
 
 
 ## Sem amontoar: se um colega já está perto do "lugar", afasta o lugar dele.

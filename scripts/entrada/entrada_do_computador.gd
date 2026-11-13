@@ -25,12 +25,15 @@ const NIVEL_PADRAO := "normal"
 const PADRAO := {
 	"id": "normal", "nome": "Normal",
 	"chance_de_errar": 0.07,
-	"reacao": 0.2,
+	"chance_de_errar_na_recepcao": 0.07,
+	"reacao": 0.25,
 	"erro_do_tempo": 0.08,
 	"velocidade": 0.95,
 	"chance_de_bloquear": 0.5,
 	"atraso_do_bloqueio": 0.12,
-	"chance_de_mergulho": 0.6,
+	"chance_de_mergulho": 0.45,
+	"chance_de_salvar_a_recepcao": 0.0,
+	"erro_do_tempo_na_cortada": 0.08,
 	"forca_do_saque": [0.35, 0.8],
 	"chance_de_flutuante": 0.25,
 	"esperteza": 0.5,
@@ -54,6 +57,9 @@ const ESPERA_DO_SAQUE := [0.8, 1.6]
 const PERTO := 0.15
 ## Bola na quadra curta (largada) a menos disso de qualquer defensor: coberta.
 const LARGADA_COBERTA := 2.5
+## Recepção atrasada: abaixo desta altura (m) a bola está pra bater no chão, e
+## o computador que sorteou "salvar" toca assim mesmo (sai um passe ruim).
+const ALTURA_DO_ULTIMO_INSTANTE := 0.45
 
 @export var jogador := 2
 
@@ -230,14 +236,20 @@ func _novo_lance() -> void:
 	_apertou = false
 	_segurando = Vector2.ZERO
 	_plano = {
-		# Erro: "congela" e deixa a bola cair.
-		"errar": sorteio.randf() < float(ajustes["chance_de_errar"]),
+		# Erro: "congela" e deixa a bola cair. Na recepção do saque tem chance
+		# própria (no Fácil, erra pouco ali e mais no meio do rally).
+		"errar": sorteio.randf() < float(ajustes["chance_de_errar_na_recepcao" if partida.saque_em_jogo else "chance_de_errar"]),
 		# Quanto antes (+) ou depois (-) da hora certa ele aperta, em segundos.
 		"tempo": sorteio.randfn(0.0, float(ajustes["erro_do_tempo"])),
 		# Levantamento rápido (segurando o botão de flutuante) e bola de segunda
 		# (atacar no 2º toque): sorteados uma vez por lance.
 		"rapido": sorteio.randf() < float(ajustes["chance_de_rapido"]),
 		"segunda": sorteio.randf() < float(ajustes["chance_de_segunda"]),
+		# Se atrasar na recepção do saque, toca no último instante (passe ruim)
+		# em vez de deixar cair (ace).
+		"salvar": sorteio.randf() < float(ajustes["chance_de_salvar_a_recepcao"]),
+		# A cortada tem erro próprio: dá pra receber direitinho e atacar fraco.
+		"tempo_da_cortada": sorteio.randfn(0.0, float(ajustes["erro_do_tempo_na_cortada"])),
 	}
 
 
@@ -254,23 +266,51 @@ func _andar_ate(time: int, atleta: Node3D, alvo: Vector3) -> void:
 ## erro sorteado no lance.
 func _tentar_passe(time: int, _atleta: Node3D, nossos: int) -> void:
 	var bola = partida.bola
-	if not partida._alcanca_bola(time, 0.0, partida.ALTURA_MAXIMA_PASSE):
-		return
 	var tipo := Lance.PASSE if nossos == 0 else Lance.LEVANTAMENTO
 	var erro := TempoDoToque.erro_do_botao(tipo, bola.position, bola.velocidade_atual(), 0.0, bola.gravidade)
-	if erro > float(_plano.get("tempo", 0.0)):
-		return
 	if nossos == 1:
-		_segurando = _direcao_do_levantamento(time)
-		direcao = _segurando
+		_tentar_levantamento(time, erro)
+		return
+	if not partida._alcanca_bola(time, 0.0, partida.ALTURA_MAXIMA_PASSE):
+		return
+	if erro > float(_plano.get("tempo", 0.0)) and not _ultimo_instante_da_recepcao():
+		return
 	_apertou = true
-	var rapido: bool = nossos == 1 and _plano.get("rapido", false)
-	if rapido:
-		# Segura o botão de flutuante enquanto levanta: levantamento rápido.
-		comando.emit(jogador, Lance.BOTAO_FLUTUANTE)
 	comando.emit(jogador, Lance.BOTAO_PASSE)
-	if rapido:
-		soltou.emit(jogador, Lance.BOTAO_FLUTUANTE)
+	soltou.emit(jogador, Lance.BOTAO_PASSE)
+
+
+
+## Recepção do saque atrasada e a bola quase no chão: se sorteou "salvar",
+## é agora ou nunca (o toque sai "Tarde", mas a bola continua em jogo).
+func _ultimo_instante_da_recepcao() -> bool:
+	var bola = partida.bola
+	return partida.saque_em_jogo and _plano.get("salvar", false) \
+		and bola.velocidade_atual().y < 0.0 and bola.position.y < ALTURA_DO_ULTIMO_INSTANTE
+
+## Levantamento como uma pessoa faz: aperta o passe antes, segura o tempo da
+## altura escolhida (rápida, normal ou alta) e solta na hora do toque.
+func _tentar_levantamento(time: int, erro: float) -> void:
+	if not _plano.has("segurar"):
+		var alta := sorteio.randf() < 0.35
+		var segundos := 0.08 if _plano.get("rapido", false) else (0.8 if alta else 0.35)
+		_plano["segurar"] = segundos
+	var hora := float(_plano.get("tempo", 0.0))
+	if not _plano.get("segurando", false):
+		# Aperta "segurar" segundos antes da hora (o erro cai 1 s por segundo).
+		if erro > hora + float(_plano["segurar"]):
+			return
+		_plano["segurando"] = true
+		comando.emit(jogador, Lance.BOTAO_PASSE)
+		return
+	# Enquanto segura, continua andando até a bola; a direção do levantamento
+	# (pra quem vai) só conta na hora de soltar.
+	if erro > hora or not partida._alcanca_bola(time, 0.0, partida.ALTURA_MAXIMA_PASSE):
+		return
+	_apertou = true
+	_segurando = _direcao_do_levantamento(time)
+	direcao = _segurando
+	soltou.emit(jogador, Lance.BOTAO_PASSE)
 
 
 ## Cortada (3º toque): pula perto da hora certa, já mirando. Se não der pra
@@ -282,7 +322,7 @@ func _tentar_ataque(time: int, atleta: Node3D) -> void:
 	var alcanca: bool = no_chao <= partida.ALCANCE and prevista.y >= partida.ALTURA_MINIMA_CORTADA \
 		and prevista.y <= partida.ALTURA_MAXIMA_CORTADA and not partida.bloqueios._esta_pulando(atleta)
 	var erro := TempoDoToque.erro_do_botao(Lance.CORTADA, bola.position, bola.velocidade_atual(), partida.TEMPO_ATE_A_BATIDA, bola.gravidade)
-	if alcanca and erro <= float(_plano.get("tempo", 0.0)):
+	if alcanca and erro <= float(_plano.get("tempo_da_cortada", 0.0)):
 		_escolher_ataque(time)
 		direcao = _plano["mira"]
 		_apertou = true

@@ -140,13 +140,22 @@ func _teste_perfeito_tem_destaque() -> void:
 	var partida = _nova_partida()
 	var atleta: Node3D = partida.atletas[0][0]
 	var desde: int = partida.sons.historico.size()
+	var estouros_antes := _estouros(partida)
 	partida._avisar_qualidade(atleta, Qualidade.PERFEITO)
 	_verificar(partida.sons.tocou_desde("perfeito", desde), "Perfeito! toca o sininho")
-	var maior := 0
+	# Tela limpa (13/11/2026): o Perfeito não escreve nada, só brilha na bola.
+	var textos := 0
 	for filho in partida.get_children():
 		if filho is Label3D and filho.text == TempoDoToque.nome(Qualidade.PERFEITO):
-			maior = maxi(maior, filho.font_size)
-	_verificar(maior == partida.TAMANHO_DO_AVISO_PERFEITO, "o texto do Perfeito! é maior (%d)" % maior)
+			textos += 1
+	_verificar(textos == 0, "o Perfeito não escreve texto na tela")
+	_verificar(_estouros(partida) == estouros_antes + 1, "o Perfeito brilha na bola")
+	partida._avisar_qualidade(atleta, Qualidade.RUIM)
+	var ruim := 0
+	for filho in partida.get_children():
+		if filho is Label3D and filho.font_size == partida.TAMANHO_DO_AVISO_RUIM:
+			ruim += 1
+	_verificar(ruim == 1, "o Ruim escreve pequeno (Cedo!/Tarde!)")
 	desde = partida.sons.historico.size()
 	partida._avisar_qualidade(atleta, Qualidade.BOM)
 	_verificar(not partida.sons.tocou_desde("perfeito", desde), "Bom não toca o sininho")

@@ -57,8 +57,8 @@
 			"descricao": "Final do campeonato nacional",
 			"cores": {
 				"fundo": "#0C1230",
-				"zona_livre": "#1D2A5E",
-				"quadra": "#2E86D9",
+				"zona_livre": "#2457B8",
+				"quadra": "#E07A3C",
 				"linhas": "#FFFFFF",
 				"placas": "#2A50C8",
 				"luz": "#DCE6FF",
@@ -80,8 +80,8 @@
 			"descricao": "Jogos nacionais do Brasil",
 			"cores": {
 				"fundo": "#14361F",
-				"zona_livre": "#262E5C",
-				"quadra": "#2B8FE0",
+				"zona_livre": "#1F4596",
+				"quadra": "#2A8C58",
 				"linhas": "#FFFFFF",
 				"placas": "#F2C21B",
 				"luz": "#FFF6DD",
@@ -102,8 +102,8 @@
 			"descricao": "Noite com luzes neon",
 			"cores": {
 				"fundo": "#0A0618",
-				"zona_livre": "#24124A",
-				"quadra": "#1E7FD6",
+				"zona_livre": "#2A1452",
+				"quadra": "#1597B8",
 				"linhas": "#E8F7FF",
 				"placas": "#C23CFF",
 				"luz": "#D9CCFF",

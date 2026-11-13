@@ -21,7 +21,7 @@ Na primeira vez o Godot cria a pasta `.godot/`. Ela é interna e não vai pro Gi
 | --- | --- | --- | --- |
 | Mover | WASD | Setas | Analógico esquerdo |
 | Passe | J | 1 (numérico) | A |
-| Ataque (cortada / saque forte) | K | 2 (numérico) | X |
+| Ataque (cortada / saque viagem) | K | 2 (numérico) | X |
 | Bloqueio | L | 3 (numérico) | Y |
 | Saque flutuante | I | 5 (numérico) | RB |
 | Mergulho | Espaço | 0 (numérico) | B |
@@ -60,9 +60,10 @@ Se os dois escolherem o mesmo time, o Jogador 2 joga com o uniforme reserva.
 
 **Mira:** no saque, **segure** Ataque (ou Flutuante) pra encher a força e **solte** pra sacar. Enquanto segura, a direção move o X vermelho na quadra do outro lado; o círculo mostra onde a bola pode cair. Mais força: bola mais baixa e rápida, mas o círculo cresce, e no máximo (vermelho forte) o risco de sair é grande. A força enche e esvazia, então o tempo de soltar importa. Na cortada, a direção na hora da batida escolhe o lugar: esquerda ou direita, e pra frente (bola funda) ou pra trás (bola curta). A mira aparece quando o levantamento está no ar.
 
-**Toque no tempo certo:** quando a bola vem pro seu atleta, um anel branco fecha em volta dele. Aperte quando o anel encostar no anel do atleta: amarelo é **Bom**, verde é **Perfeito!**. O texto aparece em cima do atleta.
+**Toque no tempo certo:** quando a bola vem pro seu atleta, um anel branco e fino fecha em volta dele. Aperte quando o anel encostar no anel do atleta (ele fica branco cheio). O **Perfeito** brilha verde na bola e toca um sininho; o toque **Ruim** escreve pequeno se foi **Cedo!** ou **Tarde!**.
 - Passe perfeito cai na mão do levantador; passe ruim espirra e só deixa levantar alto, na ponta ou no fundo.
-- Passe e levantamento perfeitos dão o **levantamento rápido** (bola baixa, que chega antes do bloqueio).
+- **Levantamento (segure e solte):** no 2º toque, aperte o passe quando a bola vier, **segure** e **solte na hora do toque** (é no soltar que vale o tempo). Toque curto = bola **rápida** (baixa, chega antes do bloqueio); segurar um pouco = **normal**; segurar bastante = **alta** (dá tempo pro atacante). A direção na hora de soltar escolhe quem ataca (as setas aparecem na quadra: Ponta, Meio, Oposto e **Fundo**, que é o pipe; sem direção vai pro Meio). Com passe ruim só sai a alta.
+- A cortada **Perfeita** só é defendida se vier na linha do corpo do defensor (a **Boa**, um pouco mais longe): mirar longe de quem defende faz ponto. Vale pros dois times.
 - Na cortada, aperte um pouco antes: o atleta pula e bate no alto do pulo. Cortada perfeita é forte e funda (a tela congela por um instante e treme); ruim sai fraca e torta.
 
 **Placar e efeitos:** o placar fica em cima, no meio, como numa transmissão: o emblema e o nome de cada time num bloco inclinado, os pontos numa caixa com a borda na cor do time e, no meio, o set atual com uma bolinha por set (pintada na cor de quem ganhou). Uma bola pequena mostra quem saca. Quando sai ponto, um corte de luz dourado atravessa a caixa de quem pontuou, saem faíscas, o número salta e fica amarelo um instante. Embaixo aparece **SET POINT**, **MATCH POINT** ou **PONTO DECISIVO** (quando os dois fecham o set com o próximo ponto); no fim do jogo o meio mostra **FIM** e a caixa do vencedor brilha. Uma faixa escura com a ponta na cor do time e o emblema de quem pontuou atravessa a tela: **PONTO!** (com o motivo, se foi falta), **ACE!** (saque que cai sem ninguém tocar), **BLOQUEIO!**, **SET!** e **JOGO!**. A bola que cai dentro abre uma onda no chão e treme a tela. O bloqueio congela o jogo por um instante, treme a tela e mostra "Bloqueio!" em cima da bola.

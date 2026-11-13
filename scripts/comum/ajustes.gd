@@ -23,6 +23,16 @@ static func pegar(grupo: String, chave: String, padrao: float) -> float:
 	return padrao
 
 
+## Igual a pegar, pra texto (ex.: o estilo da câmera).
+static func texto(grupo: String, chave: String, padrao: String) -> String:
+	if not _carregado:
+		recarregar()
+	var do_grupo = _dados.get(grupo, {})
+	if do_grupo is Dictionary and do_grupo.get(chave) is String:
+		return do_grupo[chave]
+	return padrao
+
+
 ## Lê o arquivo de novo (pros testes e pra quem editou o JSON com o jogo aberto).
 static func recarregar() -> void:
 	_carregado = true

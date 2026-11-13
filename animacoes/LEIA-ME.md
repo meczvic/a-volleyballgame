@@ -11,9 +11,9 @@ serve pros 42 atletas.
 | `lateral_esquerda.fbx` | Left Strafe | Passo lateral |
 | `lateral_direita.fbx` | Right Strafe | Passo lateral |
 | `defesa_lateral.fbx` | Goalkeeper Sidestep | Deslocamento de defesa |
-| `manchete.fbx` | Goalkeeper Catch 1 | Abaixa e pega a bola baixa |
+| `manchete.fbx` | Goalkeeper Catch 1 | Abaixa e pega a bola baixa (não é mais usada desde 13/11/2026: veja `manchete_deepmotion.tres`) |
 | `bloqueio.fbx` | Goalkeeper Catch | Tem um pulo com os braços pra cima |
-| `saque.fbx` | Goalie Throw | Arremesso com o braço por cima |
+| `saque.fbx` | Goalie Throw | Arremesso com o braço por cima (não é mais usada desde 13/11/2026: veja `saque_deepmotion.tres`) |
 | `mergulho.fbx` | Goalkeeper Diving Save | Mergulho de lado |
 | `comemoracao_torcida.fbx` | Rallying | Comemoração, em loop |
 | `comemoracao_palmas.fbx` | Clapping | Palmas, em loop |
@@ -32,8 +32,12 @@ serve pros 42 atletas.
 | `ponto_perdido_desanimado.fbx` | Disappointed | Ponto perdido |
 
 | `cortada.tres` | (montada) | Pulo do bloqueio + braço do saque batendo no alto do pulo |
-| `levantamento.tres` | (montada) | Pernas paradas + tronco e braços do bloqueio subindo acima da cabeça |
+| `levantamento.tres` | (montada) | Pernas paradas + tronco e braços do bloqueio subindo acima da cabeça. **Não é mais usada** (desde 12/11/2026) |
 | `cortada_deepmotion.tres` | (DeepMotion, gravada pelo Victor) | **Cortada usada no jogo.** Sai de `deepmotion/cortada.fbx` |
+| `levantamento_deepmotion.tres` | (DeepMotion, vídeo livre do Pexels 6217270) | **Levantamento usado no jogo.** Toque de verdade: joelhos dobrados, mãos sobem até a testa, contato em 1,25 s e as pernas esticam empurrando a bola. Sai de `deepmotion/levantamento.fbx` (filmado de frente: sem meia volta). Vídeo e créditos em `producao/videos_pexels/` |
+| `manchete_deepmotion.tres` | (DeepMotion, vídeo livre do Pexels 6217284) | **Manchete usada no jogo** (13/11/2026). Base de recepção, passada pro lado e afundo; mãos juntas (~0,19 m) de 0,5 a 2,4 s, contato em 2,2 s. Sai de `deepmotion/manchete.fbx` (sem meia volta). Tem uma 2ª pessoa ao fundo no vídeo e os braços ficam perto do corpo |
+| `saque_deepmotion.tres` | (DeepMotion, vídeo livre do Pexels 6217332) | **Saque em pé (flutuante) usado no jogo** (13/11/2026). Vídeo em câmera lenta: o jogo toca a 3x, de 5,1 a 6,6 s (batida em ~5,3 s, braço direito por cima da cabeça). Filmado de lado: leva a meia volta |
+| `saque_viagem_deepmotion.tres` | (DeepMotion, vídeo livre do Pexels 6217265) | **Saque viagem usado no jogo** (13/11/2026; antes era a cortada). Câmera lenta, tocado a 4,4x de 3,6 a 6,25 s: sai do chão, bate com a mão esquerda no alto em 4,9 s (0,3 s no jogo) e cai. A câmera do vídeo acompanha o atleta, então as pernas saem tortas em alguns quadros e o corpo "flutua" no começo (por isso `QUADRIL_EM_PE`) |
 
 A `cortada.tres` montada ficou guardada, mas o jogo usa a do DeepMotion.
 As duas montadas saem de `ferramentas/animacoes_combinadas.gd` (rodar de novo se mudar

@@ -1,13 +1,29 @@
 {
 	"musica": { "ligada": true, "volume_db": -14.0 },
+	"camera": {
+		"_comentario": "Câmera de 1 jogador (13/11/2026, estilo console): atrás do próprio time, mais perto e mais baixa que a de TV. Distância e altura em metros (a distância é da rede; a linha de fundo fica a 9 m), abertura vertical em graus. estilo \"tv\" volta pra câmera antiga (alta e longe). A tela dividida usa sempre a de TV.",
+		"estilo": "perto",
+		"distancia": 17.5,
+		"altura": 6.5,
+		"abertura": 52.0,
+		"acompanhamento_lateral": 0.35
+	},
 	"_comentario": "Números de equilíbrio das Etapas 3 e 4 (ataques, defesa e energia). O jogo lê este arquivo; se faltar uma chave, usa o valor que está no código (scripts/regras/jeitos_de_atacar.gd, jeitos_de_defender.gd e energia.gd, com a explicação de cada número). Os nomes aqui são os mesmos do código, em minúsculas. Os ganhos de energia por toque (passe, levantamento e cortada, perfeito e bom) ficam na tabela do código.",
 	"velocidade": {
-		"saque_fraco": 1.1,
-		"saque_forte": 1.5,
-		"saque_flutuante": 1.15,
-		"cortada_perfeita": 1.6,
-		"cortada_boa": 1.4,
-		"super_cortada": 2.0
+		"_comentario": "Múltiplos da gravidade normal (1,0 = 9,8 m/s²): maior = bola mais rápida e reta.",
+		"saque_fraco": 2.0,
+		"saque_forte": 3.0,
+		"saque_flutuante": 2.5,
+		"cortada_perfeita": 3.5,
+		"cortada_boa": 3.0,
+		"cortada_ruim": 2.0,
+		"super_cortada": 5.0,
+		"passe": 1.8,
+		"levantamento": 2.2,
+		"_comentario_reta": "Cortada em linha reta: velocidade em m/s (22 = 80 km/h). Ruim não tem (arco).",
+		"reta_perfeita": 22.0,
+		"reta_boa": 18.0,
+		"reta_super": 28.0
 	},
 	"ataques": {
 		"bloqueio_do_rapido_do_meio": 0.6,
@@ -32,7 +48,9 @@
 		"forca_do_bloqueio_perfeito": 1.4,
 		"empurrao_lateral_perfeito": 3.0,
 		"risco_do_mergulho": 1.6,
-		"alcance_a_mais_no_tempo": 0.5
+		"alcance_a_mais_no_tempo": 0.5,
+		"alcance_contra_cortada_perfeita": 0.9,
+		"alcance_contra_cortada_boa": 1.3
 	},
 	"energia": {
 		"ganho_do_bloqueio_que_devolve": 0.15,

@@ -2,8 +2,8 @@ extends Node3D
 ## Anel de tempo: um anel que fecha em volta do atleta controlado e encosta
 ## no anel dele na hora certa de apertar o botão.
 ##
-## Longe da hora, é grande e branco. Na janela "bom", fica amarelo; na
-## "perfeito", verde. Depois da hora, some aos poucos.
+## Fino e discreto (13/11/2026): longe da hora é pequeno e quase transparente;
+## fica mais forte na janela "bom" e branco cheio na "perfeito". Depois da hora, some.
 ## A partida chama mostrar(ponto, segundos) a cada quadro, com os segundos
 ## que faltam pro momento ideal (veja scripts/regras/tempo_do_toque.gd).
 
@@ -12,14 +12,17 @@ const TempoDoToque := preload("res://scripts/regras/tempo_do_toque.gd")
 ## Raio do anel quando chega na hora: igual ao anel do atleta controlado.
 const RAIO_NA_HORA := 0.6
 ## Quanto o raio cresce por segundo que falta.
-const RAIO_POR_SEGUNDO := 3.2
-const RAIO_MAXIMO := 3.0
+const RAIO_POR_SEGUNDO := 1.0
+const RAIO_MAXIMO := 1.4
 ## Só aparece quando falta menos que isso (s).
 const ANTECEDENCIA := 0.8
 
-const COR_LONGE := Color(1.0, 1.0, 1.0, 0.75)
-const COR_BOM := Color("#FFD23F")
+const COR_LONGE := Color(1.0, 1.0, 1.0, 0.35)
+const COR_BOM := Color(1.0, 1.0, 1.0, 0.7)
 const COR_PERFEITO := Color("#3DDC84")
+## Na janela perfeita o anel só fica branco cheio (o verde ficou pro brilho
+## do toque perfeito, em _avisar_qualidade). Tela limpa, 13/11/2026.
+const COR_NA_HORA := Color(1.0, 1.0, 1.0, 1.0)
 
 var _anel: MeshInstance3D
 var _material: StandardMaterial3D
@@ -27,7 +30,7 @@ var _material: StandardMaterial3D
 
 func _ready() -> void:
 	var toro := TorusMesh.new()
-	toro.inner_radius = 0.8
+	toro.inner_radius = 0.92
 	toro.outer_radius = 1.0
 	toro.rings = 48
 	_anel = MeshInstance3D.new()
@@ -76,7 +79,7 @@ static func raio_para(segundos: float) -> float:
 static func cor_para(segundos: float) -> Color:
 	match TempoDoToque.qualidade(segundos):
 		TempoDoToque.Qualidade.PERFEITO:
-			return COR_PERFEITO
+			return COR_NA_HORA
 		TempoDoToque.Qualidade.BOM:
 			return COR_BOM
 	return COR_LONGE

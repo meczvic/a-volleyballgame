@@ -35,6 +35,10 @@ func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> bool:
 		alcancou = p._alcanca_bola(time, 0.0, p.ALTURA_MAXIMA_PASSE)
 	if not alcancou:
 		return false
+	# Cortada perfeita fora da linha do corpo: o toque não vale e a bola passa.
+	if not atacando and not mergulho and p.ultimo_toque != time \
+			and not JeitosDeDefender.segura_cortada(p._forca_da_cortada, p._distancia_no_chao(p.controlados[time], p.bola.position)):
+		return false
 	if p.saque_em_jogo and time == p.placar.quem_saca:
 		# Quem sacou não pode tocar no próprio saque: o toque é ignorado.
 		# (Se a bola não passar a rede, ela cai do lado de quem sacou e é ponto do outro.)
@@ -64,6 +68,9 @@ func _tentar_tocar(time: int, atacando: bool, mergulho := false) -> bool:
 	if atacando and atleta_que_tocou.has_meta("qualidade_da_cortada"):
 		qualidade = atleta_que_tocou.get_meta("qualidade_da_cortada")
 		atleta_que_tocou.remove_meta("qualidade_da_cortada")
+		# O tempo da cortada vale no botão: o aviso usa o erro de lá.
+		atleta_que_tocou.set_meta("erro_do_toque", atleta_que_tocou.get_meta("erro_da_cortada", 0.0))
+		atleta_que_tocou.remove_meta("erro_da_cortada")
 	if mergulho:
 		# Mergulho: no máximo "bom"; de longe (fora do alcance normal), ruim.
 		var longe = p._distancia_no_chao(atleta_que_tocou, p.bola.position) > p.ALCANCE
@@ -121,7 +128,7 @@ func _passar_pro_levantador(time: int, qualidade: TempoDoToque.Qualidade) -> voi
 	var lugar = p.PONTO_DO_LEVANTADOR + erro
 	lugar.x = clampf(lugar.x, -p.LARGURA / 2.0 + 0.5, p.LARGURA / 2.0 - 0.5)
 	lugar.y = maxf(lugar.y, 0.6)
-	p.bola.lancar(p._no_mundo(time, lugar), TempoDoToque.ALTURA_DO_PASSE[qualidade])
+	p.bola.lancar(p._no_mundo(time, lugar), TempoDoToque.ALTURA_DO_PASSE[qualidade], VelocidadeDaBola.gravidade(VelocidadeDaBola.do_passe()))
 	p._ao_lancar_bola()
 	p._mostrar_marcas_de_ataque(time)
 
@@ -135,13 +142,21 @@ func _levantar(time: int, qualidade: TempoDoToque.Qualidade) -> void:
 	var passe: TempoDoToque.Qualidade = p.qualidade_do_passe[time]
 	var escolhido = _ataque_escolhido(time, passe)
 	var altura = TempoDoToque.altura_do_levantamento(passe, qualidade)
+	# Altura escolhida segurando o passe (13/11/2026): alta ou normal valem
+	# como pedidas; a rápida passa pela regra de baixo. Passe ruim só deixa a alta.
+	var pedida: float = p.altura_pedida[time]
+	p.altura_pedida[time] = -1.0
+	var pediu_rapida := is_equal_approx(pedida, TempoDoToque.ALTURA_DO_LEVANTAMENTO_RAPIDO)
+	if pedida > 0.0 and passe != TempoDoToque.Qualidade.RUIM and not pediu_rapida:
+		altura = pedida
 	if Atributos.levantamento_rapido(p.times_em_jogo[time]):
 		altura = TempoDoToque.ALTURA_DO_LEVANTAMENTO_RAPIDO
-	# Segurando o botão de flutuante: levantamento rápido mesmo com passe só
-	# "bom". Passe ou levantamento ruim não deixam. Se não forem perfeitos, o
-	# atacante recebe a bola com mais erro.
+	# Rápida (toque curto no passe, ou segurando o flutuante): sai mesmo com
+	# passe só "bom". Passe ou levantamento ruim não deixam. Se não forem
+	# perfeitos, o atacante recebe a bola com mais erro.
 	var raio: float = TempoDoToque.ERRO_DO_LEVANTAMENTO[qualidade]
-	var quer_rapido: bool = p._segurando_botao[time].get(Lance.BOTAO_FLUTUANTE, false)
+	var quer_rapido: bool = p._segurando_botao[time].get(Lance.BOTAO_FLUTUANTE, false) \
+		or pediu_rapida
 	if quer_rapido and altura != TempoDoToque.ALTURA_DO_LEVANTAMENTO_RAPIDO \
 			and passe != TempoDoToque.Qualidade.RUIM and qualidade != TempoDoToque.Qualidade.RUIM:
 		altura = TempoDoToque.ALTURA_DO_LEVANTAMENTO_RAPIDO
@@ -149,7 +164,7 @@ func _levantar(time: int, qualidade: TempoDoToque.Qualidade) -> void:
 			raio *= JeitosDeAtacar.valor("erro_do_rapido_forcado", JeitosDeAtacar.ERRO_DO_RAPIDO_FORCADO)
 	var erro = p._erro_aleatorio(raio)
 	var alvo: Vector3 = p.alvos_de_ataque[time][escolhido] + Vector3(erro.x, 0.0, erro.y)
-	p.bola.lancar(alvo, altura)
+	p.bola.lancar(alvo, altura, VelocidadeDaBola.gravidade(VelocidadeDaBola.do_levantamento()))
 	p._ao_lancar_bola()
 	var nome: String = p.ATAQUES[escolhido]["nome"]
 	var rapido: bool = altura == TempoDoToque.ALTURA_DO_LEVANTAMENTO_RAPIDO
@@ -198,6 +213,7 @@ func _comecar_cortada(time: int) -> bool:
 	p._animar(atleta, "cortada")
 	# O tempo da cortada vale no botão: a batida vem TEMPO_ATE_A_BATIDA depois.
 	atleta.set_meta("qualidade_da_cortada", p._qualidade_do_toque(Lance.CORTADA, time))
+	atleta.set_meta("erro_da_cortada", atleta.get_meta("erro_do_toque", 0.0))
 	p.cortadas[time] = {
 		"atleta": atleta, "tempo": 0.0,
 		"de": Vector2(atleta.position.x, atleta.position.z),
@@ -331,7 +347,11 @@ func _cortar(time: int, qualidade: TempoDoToque.Qualidade = TempoDoToque.Qualida
 			p.interface.mostrar_mensagem("Cortada Sinistra!", time, false)
 	var ponto_da_batida: Vector3 = p.bola.position
 	p._forca_da_cortada = int(TempoDoToque.Qualidade.PERFEITO) if super_cortada else int(qualidade)
-	p.bola.lancar(destino, p.bola.position.y + subida, VelocidadeDaBola.da_cortada(qualidade, super_cortada))
+	# A cortada sai em linha reta, pra baixo, direto no destino. Só cai no arco
+	# se a reta bateria na rede (ataque curto) ou se a cortada saiu ruim.
+	var reta := VelocidadeDaBola.da_cortada_reta(qualidade, super_cortada)
+	if reta <= 0.0 or not p.bola.lancar_reto(destino, reta):
+		p.bola.lancar(destino, p.bola.position.y + subida, VelocidadeDaBola.gravidade(VelocidadeDaBola.da_cortada(qualidade, super_cortada)))
 	p._ao_lancar_bola()
 	# Muralha Total (Modo Caos) do outro time: este ataque gasta um uso.
 	if Atributos.gastar_carga(p.times_em_jogo[1 - time], "muralha_total"):

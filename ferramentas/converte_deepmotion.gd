@@ -12,7 +12,24 @@ extends SceneTree
 
 const CONVERSOES := {
 	"res://animacoes/deepmotion/cortada.fbx": "res://animacoes/cortada_deepmotion.tres",
+	# Toque (levantamento) do vídeo livre do Pexels 6217270 (producao/videos_pexels),
+	# trecho de 1 a 4 s, convertido no DeepMotion em 12/11/2026.
+	"res://animacoes/deepmotion/levantamento.fbx": "res://animacoes/levantamento_deepmotion.tres",
+	# Manchete (Pexels 6217284, 3 a 7,5 s), saque em pé (6217332, 3 a 10,3 s, em
+	# câmera lenta) e saque viagem (6217265, 1 a 8,1 s), convertidos em 13/11/2026.
+	"res://animacoes/deepmotion/manchete.fbx": "res://animacoes/manchete_deepmotion.tres",
+	"res://animacoes/deepmotion/saque.fbx": "res://animacoes/saque_deepmotion.tres",
+	"res://animacoes/deepmotion/saque_viagem.fbx": "res://animacoes/saque_viagem_deepmotion.tres",
 }
+## A meia volta só vale pra vídeo filmado de COSTAS pro atleta (a cortada do
+## Victor). Vídeo filmado de FRENTE (como o do Pexels) já sai virado certo.
+## Conferir: o peito tem que apontar pro mesmo lado da animação "parado".
+const SEM_MEIA_VOLTA := [
+	"res://animacoes/deepmotion/levantamento.fbx",
+	"res://animacoes/deepmotion/manchete.fbx",
+	"res://animacoes/deepmotion/saque_viagem.fbx",
+	# O saque em pé (filmado de lado) saía com o peito pra trás: leva a meia volta.
+]
 
 
 func _init() -> void:
@@ -21,7 +38,8 @@ func _init() -> void:
 		var player: AnimationPlayer = cena.get_node("AnimationPlayer")
 		var animacao: Animation = player.get_animation(player.get_animation_list()[0]).duplicate()
 		cena.free()
-		_meia_volta(animacao)
+		if not origem in SEM_MEIA_VOLTA:
+			_meia_volta(animacao)
 		var destino: String = CONVERSOES[origem]
 		var erro := ResourceSaver.save(animacao, destino)
 		print("%s -> %s (%.2f s) %s" % [origem, destino, animacao.length, "ok" if erro == OK else "ERRO %d" % erro])

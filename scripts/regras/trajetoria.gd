@@ -60,6 +60,55 @@ static func ponto_de_queda(origem: Vector3, velocidade: Vector3, altura_chao: fl
 	return posicao_em(origem, velocidade, tempo, gravidade)
 
 
+## Voo da cortada: a trajetória MAIS RETA possível que sai de "origem", passa
+## por cima da rede (z = 0) na altura "altura_na_rede" ou mais e cai em "destino",
+## na velocidade horizontal dada (m/s). Não sobe antes de descer: sai reto ou
+## pra baixo e só vai entortando (a gravidade dá o resto).
+##
+## A conta é feita no perfil do voo: y(s) = y0 + m*s - k*s², com s = distância
+## horizontal andada. Dá pra voltar pra velocidade e gravidade: o ângulo inicial
+## é m, e a gravidade é g = 2*k*v². Devolve { "velocidade": Vector3,
+## "gravidade": float } ou {} se não dá (não cruza a rede, sobe demais ou a curva
+## seria forte demais: aí quem chamou usa o arco de velocidade_passando_rede).
+const K_MINIMO := 0.002
+const SUBIDA_MAXIMA_DO_RETO := 0.3
+const GRAVIDADE_MAXIMA_DO_RETO := 70.0
+
+
+static func voo_reto(origem: Vector3, destino: Vector3, velocidade_horizontal: float, altura_na_rede: float) -> Dictionary:
+	var dz := destino.z - origem.z
+	var horizontal := Vector2(destino.x - origem.x, dz)
+	var total := horizontal.length()
+	if total < 0.5 or velocidade_horizontal <= 0.1 or is_zero_approx(dz):
+		return {}
+	var fracao_da_rede := -origem.z / dz
+	if fracao_da_rede <= 0.0 or fracao_da_rede >= 1.0:
+		return {}
+	var s_rede := fracao_da_rede * total
+	# Primeiro a reta (quase sem curva): se passa da rede com folga, é ela.
+	var k := K_MINIMO
+	var m := (destino.y - origem.y + k * total * total) / total
+	if origem.y + m * s_rede - k * s_rede * s_rede < altura_na_rede:
+		# Não passa: curva mais fraca que passa rente por cima da rede e cai no destino.
+		var c_rede := altura_na_rede - origem.y
+		var c_destino := destino.y - origem.y
+		var det := s_rede * (-total * total) - total * (-s_rede * s_rede)
+		if absf(det) < 0.0001:
+			return {}
+		m = (c_rede * (-total * total) - c_destino * (-s_rede * s_rede)) / det
+		k = (s_rede * c_destino - total * c_rede) / det
+		if k < K_MINIMO or m > SUBIDA_MAXIMA_DO_RETO:
+			return {}
+	var gravidade_do_voo := 2.0 * k * velocidade_horizontal * velocidade_horizontal
+	if gravidade_do_voo > GRAVIDADE_MAXIMA_DO_RETO:
+		return {}
+	var direcao := horizontal / total
+	return {
+		"velocidade": Vector3(direcao.x * velocidade_horizontal, m * velocidade_horizontal, direcao.y * velocidade_horizontal),
+		"gravidade": gravidade_do_voo,
+	}
+
+
 ## Altura da bola quando ela cruza a linha da rede (z = 0).
 ## Devolve INF se ela não vai cruzar a rede.
 static func altura_na_rede(origem: Vector3, velocidade: Vector3, gravidade: float = GRAVIDADE) -> float:

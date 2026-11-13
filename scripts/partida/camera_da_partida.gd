@@ -7,6 +7,8 @@ extends Camera3D
 
 ## Fração do deslocamento da bola (pro lado e em profundidade) que a câmera segue.
 const ACOMPANHAMENTO_LATERAL := 0.22
+## A câmera perto (1 jogador) segue mais a bola pro lado (a partida troca).
+var acompanhamento_lateral := ACOMPANHAMENTO_LATERAL
 const ACOMPANHAMENTO_PROFUNDIDADE := 0.10
 ## Quanto a altura da bola puxa o olhar pra cima (fração).
 const ACOMPANHAMENTO_ALTURA := 0.15
@@ -42,7 +44,7 @@ func ponto_desejado() -> Vector3:
 		return _foco_base
 	var bola := alvo.global_position
 	return _foco_base + Vector3(
-		bola.x * ACOMPANHAMENTO_LATERAL,
+		bola.x * acompanhamento_lateral,
 		bola.y * ACOMPANHAMENTO_ALTURA,
 		(bola.z - _foco_base.z) * ACOMPANHAMENTO_PROFUNDIDADE
 	)

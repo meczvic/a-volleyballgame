@@ -28,6 +28,8 @@ const ALTURA_REDE := 2.43
 const LARGURA_REDE := 10.0
 ## Folga mínima por cima da fita da rede nos lançamentos.
 const FOLGA_REDE := 0.4
+## Lance reto (cortada): folga mínima da bola por cima da fita da rede (m).
+const FOLGA_REDE_NO_RETO := 0.25
 
 var em_voo := false
 ## Quantas vezes a bola já foi lançada (ou desviada). Serve pra saber se um
@@ -55,6 +57,8 @@ var _velocidade_inicial := Vector3.ZERO
 var _tempo := 0.0
 ## Gravidade do voo de agora (m/s²): maior = bola mais rápida e reta.
 var gravidade := Trajetoria.GRAVIDADE
+## Quantas cortadas saíram em linha reta (lancar_reto), pra medir nos testes.
+var retos := 0
 var _sombra: MeshInstance3D
 var _visual: MeshInstance3D
 
@@ -112,6 +116,20 @@ func lancar(destino: Vector3, altura_maxima: float, gravidade_do_lance := Trajet
 		position, alvo, altura_maxima, ALTURA_REDE + FOLGA_REDE, gravidade_do_lance
 	)
 	_comecar_voo(position, velocidade, gravidade_do_lance)
+
+
+## Lance em linha quase reta (a cortada): a bola sai da mão na velocidade
+## horizontal dada (m/s), sem subir antes de descer, passa rente por cima da
+## rede e cai no destino (Trajetoria.voo_reto). Devolve false (sem lançar nada)
+## se não dá (ataque curto, que precisa de arco): aí quem chamou usa `lancar`.
+func lancar_reto(destino: Vector3, velocidade: float) -> bool:
+	var alvo := Vector3(destino.x, RAIO, destino.z)
+	var voo := Trajetoria.voo_reto(position, alvo, velocidade, ALTURA_REDE + FOLGA_REDE_NO_RETO)
+	if voo.is_empty():
+		return false
+	_comecar_voo(position, voo["velocidade"], voo["gravidade"])
+	retos += 1
+	return true
 
 
 ## Para a bola num ponto (por exemplo, na mão de quem vai sacar).

@@ -13,6 +13,13 @@ const ALTURA_DA_FILA := 0.5
 ## Onde começam as arquibancadas (distância do meio).
 const COMECO_LATERAL := 10.6
 const COMECO_DO_FUNDO := 16.2
+const ESPACO_ENTRE_PESSOAS := 0.55
+## Quanto da torcida veste a cor do estádio ou dos times (o resto usa roupa
+## comum, escura ou clara apagada). Com tudo colorido a torcida virava confete
+## e chamava mais atenção que o jogo.
+const TORCIDA_COLORIDA := 0.4
+## Roupas comuns: tons apagados, como a torcida do ginásio.
+const ROUPAS_COMUNS := ["#2B2F3A", "#3A3A40", "#1F2430", "#4A4F5C", "#5C564E", "#7A7F8A", "#8E8778", "#24262B"]
 
 
 static func montar(c) -> void:
@@ -45,14 +52,19 @@ static func _luz(c, neon: bool) -> void:
 
 
 static func _piso(c) -> void:
-	Pecas.no_chao(c, Vector2(44.0, 56.0), Vector3.ZERO, Pecas.material(c.cor("zona_livre", Color("#1D2A5E")), 0.35))
+	# Fora das placas o chão é escuro; dentro delas (área livre) vai a cor do
+	# estádio. Assim a área de jogo parece um palco aceso e a quadra se destaca.
+	var zona_livre: Color = c.cor("zona_livre", Color("#1D2A5E"))
+	Pecas.no_chao(c, Vector2(44.0, 56.0), Vector3.ZERO, Pecas.material(zona_livre.darkened(0.6), 0.5))
+	var area: Vector2 = c.medidas.get("zona_livre", Vector2(17, 28))
+	Pecas.no_chao(c, area + Vector2(0.4, 0.4), Vector3(0.0, 0.002, 0.0), Pecas.material(zona_livre, 0.35))
 
 
 ## Placas de LED em volta da área livre, com o letreiro repetido.
 static func _placas(c, neon: bool) -> void:
 	var cor_da_placa: Color = c.cor("placas", Color("#2A50C8"))
 	var fundo := Pecas.material(Color("#0E1220"), 0.4)
-	var tela := Pecas.material_aceso(cor_da_placa, 1.1 if neon else 0.85)
+	var tela := Pecas.material_aceso(cor_da_placa, 0.8 if neon else 0.85)
 	var letreiro: String = c.texto("letreiro", "CAMPEONATO")
 	var meia_x := float(c.medidas.get("zona_livre", Vector2(17, 28)).x) / 2.0 + 0.2
 	var meio_z := float(c.medidas.get("zona_livre", Vector2(17, 28)).y) / 2.0 + 0.2
@@ -75,7 +87,7 @@ static func _placas(c, neon: bool) -> void:
 
 ## Degraus dos quatro lados, com gente sentada.
 static func _arquibancadas(c) -> void:
-	var degrau := Pecas.material(c.cor("fundo", Color("#0C1230")).lightened(0.18), 0.8)
+	var degrau := Pecas.material(c.cor("fundo", Color("#0C1230")).lightened(0.1), 0.8)
 	var cores_do_publico: Array = []
 	for texto in c.estadio.get("publico", ["#2A50C8", "#F2F2F2", "#E8C547"]):
 		cores_do_publico.append(Color.from_string(str(texto), Color.GRAY))
@@ -94,8 +106,8 @@ static func _arquibancadas(c) -> void:
 			var z := -COMECO_DO_FUNDO + 0.4
 			while z < COMECO_DO_FUNDO - 0.4:
 				if sorteio.randf() > 0.12:
-					pessoas.append([Vector3(x, altura, z), cores_do_publico[sorteio.randi() % cores_do_publico.size()], -lado * PI / 2.0])
-				z += 0.58
+					pessoas.append(_torcedor(sorteio, Vector3(x, altura, z), cores_do_publico, -lado * PI / 2.0))
+				z += ESPACO_ENTRE_PESSOAS
 		Pecas.publico(c, pessoas, true)
 	for lado in [-1.0, 1.0]:
 		var pessoas := []
@@ -107,8 +119,8 @@ static func _arquibancadas(c) -> void:
 			var x := -largura / 2.0 + 0.4
 			while x < largura / 2.0 - 0.4:
 				if sorteio.randf() > 0.12:
-					pessoas.append([Vector3(x, altura, z), cores_do_publico[sorteio.randi() % cores_do_publico.size()], 0.0 if lado < 0.0 else PI])
-				x += 0.58
+					pessoas.append(_torcedor(sorteio, Vector3(x, altura, z), cores_do_publico, 0.0 if lado < 0.0 else PI))
+				x += ESPACO_ENTRE_PESSOAS
 		Pecas.publico(c, pessoas, true)
 
 
@@ -133,3 +145,18 @@ static func _teloes(c, neon: bool) -> void:
 		for lado in [-1.0, 1.0]:
 			Pecas.caixa(c, Vector3(0.08, 0.08, COMECO_DO_FUNDO * 2.0), Vector3(lado * COMECO_LATERAL, ALTURA_DA_FILA + 0.05, 0.0),
 				Pecas.material_aceso(Color("#3AE0FF"), 1.4))
+
+
+## Um torcedor: posição com um tremidinho (ninguém senta alinhado), tamanho um
+## pouco diferente e roupa apagada. As cores do estádio e dos times aparecem
+## em parte da torcida, misturadas com cinza e mais escuras.
+static func _torcedor(sorteio: RandomNumberGenerator, lugar: Vector3, cores: Array, giro: float) -> Array:
+	var cor: Color
+	if sorteio.randf() < TORCIDA_COLORIDA:
+		cor = (cores[sorteio.randi() % cores.size()] as Color).lerp(Color("#3A3D46"), 0.3).darkened(0.2)
+	else:
+		cor = Color(ROUPAS_COMUNS[sorteio.randi() % ROUPAS_COMUNS.size()])
+	# A arquibancada fica na penumbra: só a quadra recebe a luz forte.
+	cor = cor.darkened(0.35)
+	var tremido := Vector3(sorteio.randf_range(-0.07, 0.07), 0.0, sorteio.randf_range(-0.07, 0.07))
+	return [lugar + tremido, cor, giro + sorteio.randf_range(-0.25, 0.25), sorteio.randf_range(0.82, 1.0)]

@@ -64,8 +64,8 @@ const PASTA_ICONES := "res://arte/icones/%s.svg"
 ## onde a foto corta embaixo (0 = pés, 1 = topo)].
 const LANCE_DO_CONJUNTO := {
 	"ataque": ["cortada", 1.62, 0.75, 0.42],
-	"defesa": ["manchete", 0.45, 0.6, 0.3],
-	"saque": ["saque", 1.3, 0.85, 0.4],
+	"defesa": ["manchete", 2.2, 0.6, 0.3],
+	"saque": ["saque", 5.3, 0.85, 0.4],
 	"rede": ["bloqueio", 0.85, 0.3, 0.45],
 	"velocidade": ["correr", 0.35, 1.2, 0.3],
 	"coringa": ["comemoracao_torcida", 0.6, 0.35, 0.4],

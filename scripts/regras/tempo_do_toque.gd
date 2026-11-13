@@ -52,6 +52,19 @@ const ERRO_DO_LEVANTAMENTO := {
 const ALTURA_DO_LEVANTAMENTO_RAPIDO := 3.4
 const ALTURA_DO_LEVANTAMENTO_NORMAL := 4.4
 const ALTURA_DO_LEVANTAMENTO_ALTO := 5.4
+## Levantamento escolhido segurando o botão de passe (13/11/2026): segurou
+## menos que o 1º número (s) = rápida; até o 2º = normal; mais = alta.
+const SEGURAR_PARA_NORMAL := 0.2
+const SEGURAR_PARA_ALTA := 0.55
+
+
+## Altura do levantamento pelo tempo que o botão ficou segurado.
+static func altura_pelo_tempo_segurado(segundos: float) -> float:
+	if segundos < SEGURAR_PARA_NORMAL:
+		return ALTURA_DO_LEVANTAMENTO_RAPIDO
+	if segundos < SEGURAR_PARA_ALTA:
+		return ALTURA_DO_LEVANTAMENTO_NORMAL
+	return ALTURA_DO_LEVANTAMENTO_ALTO
 
 ## Ataques que cada qualidade de passe deixa o levantador escolher.
 ## (Os nomes são os de ATAQUES em partida.gd.)
@@ -105,6 +118,16 @@ static func escala_do_atributo(atributo: int) -> float:
 
 
 ## Texto que aparece na tela.
+## Texto do toque ruim pelo erro do botão (s; positivo = apertou cedo,
+## negativo = tarde). Erro zero = ruim por outro motivo: "Ruim".
+static func nome_do_ruim(erro: float) -> String:
+	if erro > 0.0:
+		return "Cedo!"
+	if erro < 0.0:
+		return "Tarde!"
+	return "Ruim"
+
+
 static func nome(q: Qualidade) -> String:
 	match q:
 		Qualidade.PERFEITO:

@@ -12,3 +12,6 @@ Thumbs.db
 
 # Projeto editável do VRoid (fica no Drive, não no Git)
 *.vroid
+
+# Vídeos de referência pra captura de movimento (pesados; a lista e os créditos ficam no LEIA-ME da pasta)
+producao/videos_pexels/*.mp4

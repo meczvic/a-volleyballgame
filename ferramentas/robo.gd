@@ -10,6 +10,7 @@ extends SceneTree
 ##
 ## Opções: times=<id1>,<id2>  estadio=<id>  segundos=<limite>  prints=<pasta>
 ## (salva um PNG por segundo em <pasta>)  saque=<0|1> (quem saca primeiro)
+## ROBO_PONTOS=1 (variável de ambiente): uma linha por ponto, dizendo como acabou.
 ## semente=<número> (repete a mesma partida; veja abaixo).
 ## gravar=<arquivo.json>: salva os comandos com o número do quadro no fim.
 ## repetir=<arquivo.json>: joga só com a gravação (use a mesma semente e o mesmo
@@ -50,6 +51,8 @@ var _maior_rally := 0
 ## Chance de "errar" um lance (deixar a bola cair) pra partida ter pontos.
 var _chance_de_erro := 0.12
 var _dormindo := [false, false]
+## Levantamento que o robô está fazendo em cada time (veja _levantar).
+var _levantamento := [{}, {}]
 var _ultimo_sorteio := ["", ""]
 ## Sorteios do robô (força do saque, mira, erros). Com semente=, repete.
 var _sorteio := RandomNumberGenerator.new()
@@ -61,6 +64,12 @@ var _times_do_robo: Array[int] = [0, 1]
 ## Bolas lançadas (saque, toques, rede) em todos os rallies e no começo do atual.
 var _lancamentos_nos_rallies := 0
 var _lancamentos_no_comeco := 0
+## Pontos ganhos por cada time na partida toda e tamanho de cada ponto (bolas:
+## saque e toques), pra medir as dificuldades.
+var _pontos_ganhos := [0, 0]
+var _bolas_no_ponto := {"1-2": [0, 0], "3-5": [0, 0], "6-9": [0, 0], "10+": [0, 0]}
+var _lancamentos_no_ponto := 0
+var _dormiu := false
 
 
 func _initialize() -> void:
@@ -112,6 +121,7 @@ func _comecar() -> void:
 		partida.placar.quem_saca = saque
 		partida._preparar_saque()
 	partida.bola.tocou_chao.connect(func(p: Vector3): _fim_do_rally(p))
+	partida.placar.ponto_marcado.connect(_ponto)
 	physics_frame.connect(_jogar)
 	var configuracao := root.get_node("Configuracao")
 	print("Robô: %s x %s, estádio %s%s%s" % [configuracao.times[0], configuracao.times[1], configuracao.estadio,
@@ -201,8 +211,10 @@ func _jogar_time(time: int, delta: float) -> void:
 
 	var dist := Vector2(bola.position.x - atleta.position.x, bola.position.z - atleta.position.z).length()
 	var descendo: bool = bola.velocidade_atual().y < 0.0
-	if toques < 2:
-		# Passe/levantamento: quando a bola chega perto e baixa.
+	if toques == 1:
+		_levantar(time, p, dist < 1.4 and descendo and bola.position.y < 2.6, descendo)
+	elif toques < 2:
+		# Passe: quando a bola chega perto e baixa.
 		if dist < 1.4 and descendo and bola.position.y < 2.6:
 			if _errou(time):
 				return
@@ -236,6 +248,40 @@ func _jogar_time(time: int, delta: float) -> void:
 			_apertar(p + "passe")
 
 
+## Levantamento (13/11/2026): segura o passe e solta na hora do toque; o tempo
+## segurando escolhe a altura. Sorteia uma vez por levantamento: rápida (aperta
+## e solta na hora), normal (segura desde o alto do passe) ou alta (segura desde
+## o passe), e pra onde (direção segurada até soltar).
+func _levantar(time: int, p: String, na_hora: bool, descendo: bool) -> void:
+	var chave := "%d_%d" % [_rallies, partida.bola.lancamentos]
+	if _levantamento[time].get("chave", "") != chave:
+		if _errou(time):
+			return
+		var modos := ["rapida", "normal", "alta"]
+		var direcoes := ["", p + "esquerda", p + "direita"]
+		_levantamento[time] = { "chave": chave, "modo": modos[_sorteio.randi_range(0, 2)],
+			"dir": direcoes[_sorteio.randi_range(0, 2)], "feito": false }
+	var plano: Dictionary = _levantamento[time]
+	if plano["feito"]:
+		return
+	if plano["dir"] != "":
+		_segurar(plano["dir"])
+	if na_hora:
+		plano["feito"] = true
+		_lances["levantamentos"] += 1
+		_toques_no_rally += 1
+		# Rápida, ou não deu tempo de começar a segurar (passe baixo): aperta agora.
+		if plano["modo"] == "rapida" or not _apertados.has(p + "passe"):
+			_apertar(p + "passe")
+		# Nos outros, não pedir o passe neste quadro = soltar = levantar.
+		return
+	# A alta começa depois de a bola subir (senão o botão do passe ainda está
+	# apertado e o levantamento não começa).
+	var subiu: bool = partida.bola.position.y > 2.8 or descendo
+	if (plano["modo"] == "alta" and subiu) or (plano["modo"] == "normal" and descendo):
+		_segurar(p + "passe")
+
+
 ## Sorteia um erro: o jogador "congela" até o fim do rally e a bola cai.
 ## Sorteia uma vez por toque (não a cada quadro).
 func _errou(time: int) -> bool:
@@ -251,6 +297,7 @@ func _errou(time: int) -> bool:
 
 func _fim_do_rally(queda: Vector3) -> void:
 	_quedas.append("%d,%d" % [roundi(queda.x * 100.0), roundi(queda.z * 100.0)])
+	_dormiu = _dormindo[0]
 	if OS.has_environment("ROBO_DEBUG"):
 		print("fim do rally: bola em %s, dormindo=%s, toques=%d, último toque=%d" % [partida.bola.position, _dormindo, _toques_no_rally, partida.ultimo_toque])
 	_dormindo = [false, false]
@@ -259,6 +306,22 @@ func _fim_do_rally(queda: Vector3) -> void:
 	_rallies += 1
 	_maior_rally = maxi(_maior_rally, _toques_no_rally)
 	_toques_no_rally = 0
+
+
+
+func _ponto(time: int) -> void:
+	var bolas: int = partida.bola.lancamentos - _lancamentos_no_ponto
+	_lancamentos_no_ponto = partida.bola.lancamentos
+	_pontos_ganhos[time] += 1
+	var faixa := "1-2" if bolas <= 2 else ("3-5" if bolas <= 5 else ("6-9" if bolas <= 9 else "10+"))
+	_bolas_no_ponto[faixa][time] += 1
+	if OS.has_environment("ROBO_PONTOS"):
+		var b: Vector3 = partida.bola.position
+		var quadra: int = 0 if signf(b.z) == signf(partida._lado(0)) else 1
+		var dentro: bool = absf(b.x) <= partida.LARGURA / 2.0 + 0.1 and absf(b.z) <= partida.COMPRIMENTO / 2.0 + 0.1
+		print("Robô: ponto do time %d em %d bolas; último toque do time %d; caiu %s da quadra do time %d; robô errou de propósito: %s" % [
+			time, bolas, partida.ultimo_toque, "dentro" if dentro else "fora", quadra, "sim" if _dormindo[0] or _dormiu else "não"])
+	_dormiu = false
 
 
 ## Toque: aperta neste quadro e solta no próximo. (Soltar e apertar de novo no
@@ -319,7 +382,10 @@ func _terminar() -> void:
 	print("Robô: fim depois de %.0f s de jogo. Sets %d x %d, pontos %d x %d, estado %s." % [
 		_relogio, placar.sets[0], placar.sets[1], placar.pontos[0], placar.pontos[1], partida.Estado.keys()[partida.estado]])
 	print("Robô: %d rallies (maior com %d toques), lances: %s" % [_rallies, _maior_rally, _lances])
+	print("Robô: cortadas em linha reta: %d de %d" % [partida.bola.retos, int(_lances.get("cortadas", 0))])
 	print("Robô: quedas (cm): %s" % " ".join(_quedas))
+	print("Robô: pontos na partida toda: %d x %d; por tamanho do ponto (bolas: time 0/time 1): %s" % [
+		_pontos_ganhos[0], _pontos_ganhos[1], _bolas_no_ponto])
 	if _rallies > 0:
 		print("Robô: media de bolas por rally (saque e toques): %.1f" % (float(_lancamentos_nos_rallies) / _rallies))
 	if _quadros > 0:

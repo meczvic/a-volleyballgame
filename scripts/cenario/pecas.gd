@@ -122,7 +122,7 @@ static func imagem(pai: Node3D, textura: Texture2D, largura: float, posicao: Vec
 
 
 ## Público barato: cada pessoa é um corpo (cápsula) e uma cabeça (esfera).
-## "pessoas": [posição do quadril, cor da roupa, giro]. Sentada = o quadril é a
+## "pessoas": [posição do quadril, cor da roupa, giro, tamanho (opcional, 1 = normal)]. Sentada = o quadril é a
 ## altura do banco; em pé = o chão.
 static func publico(pai: Node3D, pessoas: Array, sentadas := true) -> void:
 	if pessoas.is_empty():
@@ -148,10 +148,11 @@ static func publico(pai: Node3D, pessoas: Array, sentadas := true) -> void:
 		var pessoa: Array = pessoas[i]
 		var base: Vector3 = pessoa[0]
 		var giro: float = pessoa[2] if pessoa.size() > 2 else 0.0
-		var torcao := Basis(Vector3.UP, giro)
-		corpos.set_instance_transform(i, Transform3D(torcao, base + Vector3(0.0, altura_do_corpo, 0.0)))
+		var tamanho: float = pessoa[3] if pessoa.size() > 3 else 1.0
+		var torcao := Basis(Vector3.UP, giro).scaled(Vector3.ONE * tamanho)
+		corpos.set_instance_transform(i, Transform3D(torcao, base + Vector3(0.0, altura_do_corpo * tamanho, 0.0)))
 		corpos.set_instance_color(i, pessoa[1])
-		cabecas.set_instance_transform(i, Transform3D(torcao, base + Vector3(0.0, altura_da_cabeca, 0.0)))
+		cabecas.set_instance_transform(i, Transform3D(torcao, base + Vector3(0.0, altura_da_cabeca * tamanho, 0.0)))
 		# Metade das cabeças "de costas" mostra o cabelo; a outra, o rosto.
 		cabecas.set_instance_color(i, cabelos[i % cabelos.size()] if i % 3 == 0 else peles[i % peles.size()])
 
