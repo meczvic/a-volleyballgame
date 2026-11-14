@@ -17,6 +17,7 @@ func _initialize() -> void:
 
 func _rodar() -> void:
 	await _teste_convidado_copia_a_foto()
+	_teste_dono_so_comeca_com_convidado()
 	_teste_entrada_pela_rede()
 	_teste_dono_usa_a_entrada_pela_rede()
 	var rede = root.get_node("Rede")
@@ -56,6 +57,10 @@ func _teste_convidado_copia_a_foto() -> void:
 	dono.bola.position = Vector3(-1.0, 3.0, -2.0)
 	dono.placar.pontos[0] = 4
 	dono.placar.pontos[1] = 7
+	# Saque do time 2 carregando: mira e barra de força que o convidado precisa ver.
+	dono.hud["mira"][1] = [Vector3(1.0, 0.0, 6.0), 0.8, true]
+	dono.hud["forca"][1] = [0.9, true]
+	dono.hud["anel"][0] = [Vector3(0.0, 0.0, 4.0), 0.2]
 	var foto: Dictionary = dono.online.foto()
 	_fechar(dono)
 
@@ -66,6 +71,10 @@ func _teste_convidado_copia_a_foto() -> void:
 	_verificar(convidado.get_node_or_null("EnvioDoConvidado") != null, "o convidado manda os botões pro dono")
 	_verificar(convidado.time_da_camera == 1, "o convidado vê pelo lado do time 2")
 	convidado.online.aplicar_foto(foto)
+	_verificar(convidado.miras[1].visible and convidado.miras[1].position.is_equal_approx(Vector3(1.0, 0.04, 6.0)), "o convidado vê a mira do saque")
+	_verificar(convidado.interface.barras_de_forca[1].visible, "o convidado vê a barra de força")
+	_verificar(convidado.aneis_de_tempo[0].visible, "o convidado vê o anel de tempo")
+	_verificar(not convidado.miras[0].visible and not convidado.interface.barras_de_forca[0].visible, "o que o dono escondeu fica escondido")
 	_verificar(convidado.atletas[0][2].position.is_equal_approx(Vector3(2.0, 0.0, 5.0)), "o atleta vai pra onde o dono mandou")
 	_verificar(convidado.bola.position.is_equal_approx(Vector3(-1.0, 3.0, -2.0)), "a bola vai pra onde o dono mandou")
 	_verificar(convidado.placar.pontos == [4, 7], "o placar copia o do dono (%s)" % [convidado.placar.pontos])
@@ -77,6 +86,13 @@ func _teste_convidado_copia_a_foto() -> void:
 	_fechar(convidado)
 	rede.papel = ""
 
+
+## O dono só começa a partida (modo, times e estádio escolhidos) se tem alguém conectado.
+func _teste_dono_so_comeca_com_convidado() -> void:
+	var rede = root.get_node("Rede")
+	rede.papel = "dono"
+	_verificar(not rede.comecar_partida(), "sem convidado conectado, a partida online não começa")
+	rede.papel = ""
 
 func _teste_entrada_pela_rede() -> void:
 	var rede = root.get_node("Rede")

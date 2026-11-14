@@ -397,6 +397,9 @@ var impacto
 var rastro
 ## Mira de cada time (saque carregado e cortada).
 var miras: Array = [null, null]
+## O que a mira, a barra de força e o anel de tempo mostram agora, por time
+## (null = escondido). O dono manda isso na foto pro convidado desenhar igual.
+var hud := {"mira": [null, null], "forca": [null, null], "anel": [null, null]}
 ## Segundos segurando o botão do saque (-1 = não está carregando).
 var carga_do_saque := -1.0
 var saque_flutuante := false
@@ -1050,6 +1053,7 @@ func _atualizar_anel_de_tempo(time: int) -> void:
 	if estado != Estado.RALLY or not bola.em_voo or _lado_da_queda() != time \
 			or (saque_em_jogo and time == placar.quem_saca):
 		anel.esconder()
+		hud["anel"][time] = null
 		return
 	var numero := 1
 	if toques.time_com_a_bola == time:
@@ -1062,8 +1066,10 @@ func _atualizar_anel_de_tempo(time: int) -> void:
 	var na_hora := Trajetoria.posicao_em(bola.position, velocidade, maxf(segundos, 0.0), bola.gravidade)
 	if _distancia_no_chao(atleta, na_hora) > DISTANCIA_DO_ANEL_DE_TEMPO:
 		anel.esconder()
+		hud["anel"][time] = null
 		return
 	anel.mostrar(atleta.position, segundos)
+	hud["anel"][time] = [atleta.position, segundos]
 	_preparar_animacao_do_toque(atleta, tipo, segundos, na_hora)
 
 
@@ -1147,18 +1153,24 @@ func _atualizar_mira(time: int, delta: float) -> void:
 		var forca := Mira.forca(carga_do_saque)
 		var ponto := Vector3(alvo_do_saque.x, 0.0, alvo_do_saque.y * lado_do_alvo)
 		var arriscada: bool = forca >= Mira.FORCA_ARRISCADA
-		mira.mostrar(ponto, _erro_do_saque(time, forca), arriscada)
+		var erro := _erro_do_saque(time, forca)
+		mira.mostrar(ponto, erro, arriscada)
 		interface.barras_de_forca[time].mostrar(forca, arriscada)
+		hud["mira"][time] = [ponto, erro, arriscada]
+		hud["forca"][time] = [forca, arriscada]
 		return
 	interface.barras_de_forca[time].esconder()
+	hud["forca"][time] = null
 	var vai_atacar: bool = estado == Estado.RALLY and (not cortadas[time].is_empty() \
 		or (toques.time_com_a_bola == time and toques.toques == 2 and bola.em_voo and _lado_da_queda() == time))
 	if not vai_atacar:
 		mira.esconder()
+		hud["mira"][time] = null
 		return
 	var alvo := _alvo_da_cortada(time)
 	var raio: float = TempoDoToque.CORTADA[Qualidade.BOM]["erro_da_mira"]
 	mira.mostrar(Vector3(alvo.x, 0.0, alvo.y * lado_do_alvo), raio)
+	hud["mira"][time] = [Vector3(alvo.x, 0.0, alvo.y * lado_do_alvo), raio, false]
 
 
 # --- Regras (faltas) ---

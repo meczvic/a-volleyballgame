@@ -1,22 +1,27 @@
 extends Control
 ## Tela do online (primeira versão, por IP).
 ##
-## HOSPEDAR: este computador vira o dono da partida e espera alguém conectar
-## (usa os times e o estádio da última partida escolhida). CONECTAR: entra na
-## partida de outro computador pelo IP dele (o seu jogador é o time 2).
+## HOSPEDAR: este computador vira o dono da partida e espera alguém conectar.
+## Quando o outro entra, o dono escolhe o modo (rápida ou caos), os times e o
+## estádio, e só então a partida começa nos dois. CONECTAR: entra na partida
+## de outro computador pelo IP dele (o seu jogador é o time 2).
 ## Os dois precisam estar na mesma rede (ou com a porta 7777 aberta).
 
 const Estilo := preload("res://scripts/menus/estilo.gd")
 const MENU := "res://cenas/menu_principal.tscn"
+const CENA_SELECAO := "res://cenas/selecao_de_times.tscn"
 
 var _ip: LineEdit
 var _situacao: Label
 var _rede: Node
+var _conexao: Array[Control] = []
+var _coluna: VBoxContainer
 
 
 func _ready() -> void:
 	_rede = get_node("/root/Rede")
 	_rede.estado_mudou.connect(func(texto: String) -> void: _situacao.text = texto)
+	_rede.convidado_entrou.connect(_escolher_o_modo)
 
 	var fundo := ColorRect.new()
 	fundo.color = Color("#10151D")
@@ -41,6 +46,7 @@ func _ready() -> void:
 	hospedar.custom_minimum_size = Vector2(440.0, 62.0)
 	hospedar.pressed.connect(func() -> void: _rede.hospedar())
 	coluna.add_child(hospedar)
+	_conexao.append(hospedar)
 
 	_ip = LineEdit.new()
 	_ip.placeholder_text = "IP do dono (ex.: 192.168.0.10)"
@@ -48,11 +54,14 @@ func _ready() -> void:
 	_ip.custom_minimum_size = Vector2(440.0, 52.0)
 	_ip.add_theme_font_size_override("font_size", 24)
 	coluna.add_child(_ip)
+	_conexao.append(_ip)
 
 	var conectar := Estilo.botao("CONECTAR")
 	conectar.custom_minimum_size = Vector2(440.0, 62.0)
 	conectar.pressed.connect(func() -> void: _rede.conectar(_ip.text.strip_edges()))
 	coluna.add_child(conectar)
+	_conexao.append(conectar)
+	_coluna = coluna
 
 	var voltar := Estilo.botao("VOLTAR")
 	voltar.custom_minimum_size = Vector2(440.0, 62.0)
@@ -64,6 +73,35 @@ func _ready() -> void:
 	coluna.add_child(_situacao)
 
 	hospedar.grab_focus()
+
+
+## O outro jogador entrou: o dono escolhe o modo e segue pra escolha de times e estádio.
+func _escolher_o_modo() -> void:
+	for controle in _conexao:
+		controle.visible = false
+	var pergunta := Estilo.rotulo_com_contorno(28, true)
+	pergunta.text = "O outro jogador entrou! Qual modo?"
+	_coluna.add_child(pergunta)
+	_coluna.move_child(pergunta, 2)
+	var rapida := Estilo.botao("PARTIDA RÁPIDA")
+	rapida.custom_minimum_size = Vector2(440.0, 62.0)
+	rapida.pressed.connect(_ir_para_a_selecao.bind("rapida"))
+	_coluna.add_child(rapida)
+	_coluna.move_child(rapida, 3)
+	var caos := Estilo.botao("MODO CAOS")
+	caos.custom_minimum_size = Vector2(440.0, 62.0)
+	caos.pressed.connect(_ir_para_a_selecao.bind("caos"))
+	_coluna.add_child(caos)
+	_coluna.move_child(caos, 4)
+	rapida.grab_focus()
+
+
+func _ir_para_a_selecao(modo: String) -> void:
+	var configuracao := get_node("/root/Configuracao")
+	configuracao.modo = modo
+	configuracao.contra_computador = false
+	configuracao.computador_nos_dois = false
+	get_tree().change_scene_to_file(CENA_SELECAO)
 
 
 func _unhandled_input(evento: InputEvent) -> void:

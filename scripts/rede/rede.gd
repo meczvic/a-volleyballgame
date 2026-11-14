@@ -13,6 +13,8 @@ extends Node
 ## semente) e os dois abrem a partida.
 
 signal estado_mudou(texto: String)
+## Alguém entrou na partida que este computador hospeda. Só no dono.
+signal convidado_entrou
 ## Convidado apertou (apertou = true) ou soltou um botão. Só no dono.
 signal botao_do_convidado(tipo: String, apertou: bool)
 ## Foto da partida chegou do dono. Só no convidado.
@@ -37,7 +39,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	multiplayer.peer_connected.connect(_ao_conectar_alguem)
 	multiplayer.peer_disconnected.connect(func(_id: int) -> void: _caiu("O outro jogador saiu."))
-	multiplayer.connected_to_server.connect(func() -> void: estado_mudou.emit("Conectado! Esperando o dono começar..."))
+	multiplayer.connected_to_server.connect(func() -> void: estado_mudou.emit("Conectado! O dono está escolhendo o modo, os times e o estádio..."))
 	multiplayer.connection_failed.connect(func() -> void: _caiu("Não deu pra conectar."))
 	multiplayer.server_disconnected.connect(func() -> void: _caiu("O dono da partida saiu."))
 
@@ -90,6 +92,10 @@ func sair() -> void:
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	papel = ""
 	direcao_do_convidado = Vector2.ZERO
+	# A semente do online não pode ficar valendo nas partidas locais.
+	var configuracao := get_node_or_null("/root/Configuracao")
+	if configuracao:
+		configuracao.semente = -1
 
 
 func _caiu(motivo: String) -> void:
@@ -98,19 +104,30 @@ func _caiu(motivo: String) -> void:
 
 # --- Dono ---
 
-func _ao_conectar_alguem(id: int) -> void:
+func _ao_conectar_alguem(_id: int) -> void:
 	if not e_dono():
 		return
+	estado_mudou.emit("O outro jogador entrou! Escolha o modo, os times e o estádio.")
+	convidado_entrou.emit()
+
+
+## O dono já escolheu modo, times e estádio: manda pro convidado e abre a partida
+## nos dois computadores. Devolve false se não tem ninguém conectado.
+func comecar_partida() -> bool:
+	if not e_dono() or multiplayer.get_peers().is_empty():
+		return false
 	var configuracao := get_node("/root/Configuracao")
-	if int(configuracao.semente) < 0:
-		configuracao.semente = randi() % 100000
+	# Cada partida online tem a sua semente (senão todas saem iguais).
+	configuracao.semente = randi() % 100000
 	var dados := {
-		"times": configuracao.times, "estadio": configuracao.estadio, "semente": configuracao.semente,
+		"times": configuracao.times, "estadio": configuracao.estadio,
+		"modo": configuracao.modo, "semente": configuracao.semente,
 	}
-	_comecar.rpc_id(id, dados)
-	estado_mudou.emit("O outro jogador entrou!")
+	for id in multiplayer.get_peers():
+		_comecar.rpc_id(id, dados)
 	if abrir_partida:
 		_abrir_partida()
+	return true
 
 
 ## Manda a foto da partida (posições, placar...) pro convidado.
@@ -155,6 +172,7 @@ func _comecar(dados: Dictionary) -> void:
 	var configuracao := get_node("/root/Configuracao")
 	configuracao.times = dados["times"]
 	configuracao.estadio = dados["estadio"]
+	configuracao.modo = str(dados.get("modo", "rapida"))
 	configuracao.semente = int(dados["semente"])
 	estado_mudou.emit("Começando!")
 	if abrir_partida:
@@ -174,7 +192,6 @@ func _receber_evento(tipo: String, dados: Array) -> void:
 
 func _abrir_partida() -> void:
 	var configuracao := get_node("/root/Configuracao")
-	configuracao.modo = "rapida"
 	configuracao.contra_computador = false
 	configuracao.computador_nos_dois = false
 	get_tree().change_scene_to_file(CENA_DA_PARTIDA)

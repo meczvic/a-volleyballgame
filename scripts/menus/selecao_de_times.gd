@@ -25,6 +25,7 @@ const EntradaDoComputador := preload("res://scripts/entrada/entrada_do_computado
 
 const CENA_MENU := "res://cenas/menu_principal.tscn"
 const CENA_PARTIDA := "res://cenas/partida.tscn"
+const CENA_ONLINE := "res://cenas/tela_online.tscn"
 
 ## [chave no times.json, nome na tela, ícone em arte/icones/]
 const ATRIBUTOS := [
@@ -48,6 +49,9 @@ const CENTRO_DO_VS := Vector2(800.0, 300.0)
 
 const DICA_DO_COMPUTADOR := "O Jogador 1 escolhe o time do computador
 depois de confirmar o dele"
+
+const DICA_DO_ONLINE := "Você escolhe o seu time e depois o do convidado
+e o estádio. Quando confirmar, a partida começa nos dois"
 
 const DICAS := [
 	"Teclado: A/D escolhe  ·  J confirma  ·  Espaço desfaz\nControle 1: direcional  ·  A confirma  ·  B desfaz",
@@ -143,9 +147,9 @@ func _process(_delta: float) -> void:
 	if selecao == null or _saindo:
 		return
 	if Input.is_action_just_pressed("voltar"):
-		_trocar_de_cena(CENA_MENU)
+		_voltar_ao_menu()
 		return
-	if Configuracao.contra_computador:
+	if _um_controla():
 		_ler_botoes_de_um_jogador()
 		return
 	for jogador in 2:
@@ -177,6 +181,17 @@ func _ler_botoes_de_um_jogador() -> void:
 			_desfazer(0)
 		else:
 			_desfazer(lado)
+
+
+## Quem hospeda o online escolhe os dois times e o estádio sozinho (como no 1 jogador).
+func _e_dono_online() -> bool:
+	var rede := get_node_or_null("/root/Rede")
+	return rede != null and rede.e_dono()
+
+
+## Um só jogador mexe na tela toda: contra o computador ou dono do online.
+func _um_controla() -> bool:
+	return Configuracao.contra_computador or _e_dono_online()
 
 
 func _apertou(numero: int, acao: String) -> bool:
@@ -213,7 +228,14 @@ func _desfazer(jogador: int) -> void:
 	if selecao.desfazer(jogador):
 		_atualizar_tudo(false)
 	else:
-		_trocar_de_cena(CENA_MENU)
+		_voltar_ao_menu()
+
+
+## Saindo da escolha, quem hospeda o online fecha a porta.
+func _voltar_ao_menu() -> void:
+	if _e_dono_online():
+		get_node("/root/Rede").sair()
+	_trocar_de_cena(CENA_MENU)
 
 
 func _comecar_partida() -> void:
@@ -223,6 +245,18 @@ func _comecar_partida() -> void:
 		str(estadios[selecao.estadio]["id"])
 	)
 	_atualizar_tudo(false)
+	if _e_dono_online():
+		# Manda os times, o estádio e o modo pro convidado e abre a partida nos dois.
+		var rede := get_node("/root/Rede")
+		var abrir: bool = rede.abrir_partida
+		rede.abrir_partida = false
+		var foi: bool = rede.comecar_partida()
+		rede.abrir_partida = abrir
+		if not foi:
+			# O convidado saiu enquanto você escolhia.
+			rede.sair()
+			_trocar_de_cena(CENA_ONLINE)
+			return
 	_trocar_de_cena(CENA_PARTIDA)
 
 
@@ -380,12 +414,12 @@ func _atualizar_estadio() -> void:
 func _atualizar_instrucao() -> void:
 	if selecao.fase == Selecao.Fase.COMECANDO:
 		_instrucao.text = "BOA PARTIDA!"
-	elif selecao.fase == Selecao.Fase.ESTADIO and Configuracao.contra_computador:
+	elif selecao.fase == Selecao.Fase.ESTADIO and _um_controla():
 		_instrucao.text = "ESCOLHA O ESTÁDIO E CONFIRME PRA COMEÇAR"
 	elif selecao.fase == Selecao.Fase.ESTADIO:
 		_instrucao.text = "ESCOLHAM O ESTÁDIO E CONFIRMEM PRA COMEÇAR"
-	elif Configuracao.contra_computador:
-		_instrucao.text = "ESCOLHA O TIME DO COMPUTADOR" if selecao.confirmado[0] else "ESCOLHA O SEU TIME"
+	elif _um_controla():
+		_instrucao.text = ("ESCOLHA O TIME DO OUTRO JOGADOR" if _e_dono_online() else "ESCOLHA O TIME DO COMPUTADOR") if selecao.confirmado[0] else "ESCOLHA O SEU TIME"
 	elif selecao.confirmado[0] != selecao.confirmado[1]:
 		var falta := 2 if selecao.confirmado[0] else 1
 		_instrucao.text = "ESPERANDO O JOGADOR %d CONFIRMAR" % falta
@@ -533,6 +567,8 @@ func _criar_cabecalho() -> void:
 
 ## "2 JOGADORES · LOCAL" ou, contra o computador, "1 JOGADOR · NORMAL".
 func _texto_do_modo() -> String:
+	if _e_dono_online():
+		return "ONLINE  ·  VOCÊ ESCOLHE OS DOIS TIMES"
 	if not Configuracao.contra_computador:
 		return "2 JOGADORES  ·  LOCAL"
 	var nivel := EntradaDoComputador.ajustes_do_nivel(str(Configuracao.dificuldade))
@@ -541,6 +577,8 @@ func _texto_do_modo() -> String:
 
 ## Nome do lado: "JOGADOR 1", "JOGADOR 2" ou "COMPUTADOR".
 func _nome_do_lado(jogador: int) -> String:
+	if jogador == 1 and _e_dono_online():
+		return "CONVIDADO"
 	if jogador == 1 and Configuracao.contra_computador:
 		return "COMPUTADOR"
 	return "JOGADOR %d" % (jogador + 1)
@@ -675,7 +713,7 @@ func _criar_painel_do_jogador(jogador: int) -> PainelDoJogador:
 	var abaixo := TOPO_DOS_ATRIBUTOS + ATRIBUTOS.size() * ALTURA_DA_LINHA + 8.0
 	painel.jogada = _rotulo_do_painel(20, Estilo.TEXTO_SUAVE, false, Vector2(x, abaixo), LARGURA_DO_PAINEL, 28.0, alinhamento)
 	var dica := _rotulo_do_painel(15, Estilo.TEXTO_APAGADO, false, Vector2(x, abaixo + 28.0), LARGURA_DO_PAINEL, 40.0, alinhamento)
-	dica.text = DICA_DO_COMPUTADOR if jogador == 1 and Configuracao.contra_computador else DICAS[jogador]
+	dica.text = (DICA_DO_ONLINE if _e_dono_online() else DICA_DO_COMPUTADOR) if jogador == 1 and _um_controla() else DICAS[jogador]
 	return painel
 
 
@@ -762,7 +800,7 @@ func _criar_cartoes() -> void:
 		cartao.add_child(nome)
 
 		for jogador in 2:
-			var texto_da_ficha := "CPU" if jogador == 1 and Configuracao.contra_computador else "J%d" % (jogador + 1)
+			var texto_da_ficha := ("CONV" if _e_dono_online() else "CPU") if jogador == 1 and _um_controla() else "J%d" % (jogador + 1)
 			var ficha := Estilo.etiqueta(texto_da_ficha, Estilo.COR_DO_JOGADOR[jogador], 18)
 			var deslocamento := 6.0 if jogador == 0 else TAMANHO_DO_CARTAO.x - 6.0 - 48.0
 			ficha.position = cartao.position + Vector2(deslocamento, -30.0)

@@ -113,6 +113,7 @@ func foto() -> Dictionary:
 		"st": p.placar.sets.duplicate(),
 		"sa": p.placar.set_atual,
 		"qs": p.placar.quem_saca,
+		"h": p.hud.duplicate(true),
 	}
 
 
@@ -148,7 +149,31 @@ func aplicar_foto(foto: Dictionary) -> void:
 		p.placar.set_atual = int(foto["sa"])
 		p.placar.quem_saca = int(foto["qs"])
 		p._atualizar_placar()
+	_aplicar_hud(foto.get("h", {}))
 	p._atualizar_poses_de_espera()
+
+
+## Convidado: mira, barra de força e anel de tempo do jeito que o dono desenhou.
+## Sem isso, quem saca mexe a direção e não vê nada mudar (a mira só é calculada no dono).
+func _aplicar_hud(hud: Dictionary) -> void:
+	if hud.is_empty():
+		return
+	for time in 2:
+		var mira = hud["mira"][time]
+		if mira == null:
+			p.miras[time].esconder()
+		else:
+			p.miras[time].mostrar(mira[0], float(mira[1]), bool(mira[2]))
+		var forca = hud["forca"][time]
+		if forca == null:
+			p.interface.barras_de_forca[time].esconder()
+		else:
+			p.interface.barras_de_forca[time].mostrar(float(forca[0]), bool(forca[1]))
+		var anel = hud["anel"][time]
+		if anel == null:
+			p.aneis_de_tempo[time].esconder()
+		else:
+			p.aneis_de_tempo[time].mostrar(anel[0], float(anel[1]))
 
 
 ## Convidado: lance, som, mensagem ou faixa que o dono mandou.
@@ -172,17 +197,56 @@ func aplicar_evento(tipo: String, dados: Array) -> void:
 			p.placar.partida_encerrada.emit(int(dados[0]))
 
 
-## Lê o teclado/controle do convidado (como o Jogador 1) e manda pro dono.
+## Lê o teclado/controle do convidado e manda pro dono. Aceita os dois jogos
+## de teclas (WASD + J K L I Espaço, ou setas + teclado numérico), porque quem
+## joga de time 2 tende a usar as setas. Também mostra, no canto da tela, quais
+## são as teclas e se as fotos do dono ainda estão chegando.
 class Envio extends Node:
 	var rede: Node
-	var _entrada: Node
+	var _entradas: Array[Node] = []
+	var _aviso: Label
+	var _fotos_vistas := -1
+	var _parado_ha := 0.0
 
 	func _ready() -> void:
-		_entrada = EntradaLocal.new()
-		_entrada.jogador = 1
-		_entrada.comando.connect(func(_j: int, tipo: String) -> void: rede.enviar_botao(tipo, true))
-		_entrada.soltou.connect(func(_j: int, tipo: String) -> void: rede.enviar_botao(tipo, false))
-		add_child(_entrada)
+		for jogador in [1, 2]:
+			var entrada := EntradaLocal.new()
+			entrada.jogador = jogador
+			entrada.comando.connect(func(_j: int, tipo: String) -> void: rede.enviar_botao(tipo, true))
+			entrada.soltou.connect(func(_j: int, tipo: String) -> void: rede.enviar_botao(tipo, false))
+			add_child(entrada)
+			_entradas.append(entrada)
+		var camada := CanvasLayer.new()
+		camada.layer = 50
+		add_child(camada)
+		_aviso = Label.new()
+		_aviso.add_theme_font_size_override("font_size", 18)
+		_aviso.add_theme_color_override("font_outline_color", Color.BLACK)
+		_aviso.add_theme_constant_override("outline_size", 6)
+		_aviso.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+		_aviso.offset_left = 16.0
+		_aviso.offset_top = -64.0
+		_aviso.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		camada.add_child(_aviso)
+
+	func direcao() -> Vector2:
+		var soma := Vector2.ZERO
+		for entrada in _entradas:
+			soma += entrada.direcao
+		return soma.limit_length(1.0)
 
 	func _physics_process(_delta: float) -> void:
-		rede.enviar_direcao(_entrada.direcao)
+		rede.enviar_direcao(direcao())
+
+	func _process(delta: float) -> void:
+		if rede.fotos_recebidas != _fotos_vistas:
+			_fotos_vistas = rede.fotos_recebidas
+			_parado_ha = 0.0
+		else:
+			_parado_ha += delta
+		if _parado_ha > 1.5:
+			_aviso.text = "SEM RESPOSTA DO DONO DA PARTIDA (%.0f s)" % _parado_ha
+			_aviso.add_theme_color_override("font_color", Color("#FF6B5B"))
+		else:
+			_aviso.text = "Você é o time 2.  Mover: WASD ou setas  ·  J passe  ·  K ataque/saque (segure e solte)  ·  I saque flutuante  ·  L bloqueio  ·  Espaço mergulho"
+			_aviso.add_theme_color_override("font_color", Color.WHITE)
