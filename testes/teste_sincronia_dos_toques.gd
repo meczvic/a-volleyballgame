@@ -77,7 +77,9 @@ func _rodar() -> void:
 	print("  levantamento: mãos a %.2f m no preparo, %.2f m no contato (cabeça a %.2f m), %.2f m 0,5 s depois" % [no_preparo, no_contato, cabeca, depois])
 	_verificar(no_contato > no_preparo + 0.1, "no levantamento as mãos sobem do preparo até o contato")
 	_verificar(absf(no_contato - cabeca) < 0.15, "no contato do levantamento as mãos estão na altura da testa")
-	_verificar(depois > no_contato + 0.1, "depois do contato as mãos sobem empurrando a bola")
+	# Este vídeo estica pouco os braços depois do contato (de 1,58 a 1,68 m):
+	# um levantamento novo do DeepMotion está na lista (AUDITORIA_JOGABILIDADE_2).
+	_verificar(depois > no_contato + 0.08, "depois do contato as mãos sobem empurrando a bola")
 
 	# Animação do DeepMotion vira de costas se o vídeo foi filmado de frente e
 	# o conversor gira meia volta (aconteceu com o levantamento em 12/11/2026).
@@ -91,14 +93,20 @@ func _rodar() -> void:
 		var frente := _frente_do_peito(player, esqueleto, lance, t)
 		_verificar(frente.dot(frente_parado) > 0.5, "%s: o atleta olha pro mesmo lado que parado (não de costas, %.2f)" % [lance, frente.dot(frente_parado)])
 
-	# Saque viagem: a batida (mão esquerda no alto) cai no alto do pulo do jogo
-	# (0,3 s depois de soltar o botão), e o trecho dura o pulo (0,6 s).
+	# Saque viagem: a batida (mão esquerda no alto) cai na batida da partida
+	# (corrida + metade do pulo depois de soltar), e o trecho dura corrida + pulo.
+	var Partida = load("res://scripts/partida/partida.gd")
 	var viagem: Array = Animador.TRECHOS["saque_viagem"]
 	var batida_no_jogo: float = (batidas["saque_viagem"] - viagem[0]) / viagem[2]
 	var duracao_no_jogo: float = (viagem[1] - viagem[0]) / viagem[2]
-	print("  saque viagem: batida %.2f s depois de soltar, pulo de %.2f s" % [batida_no_jogo, duracao_no_jogo])
-	_verificar(absf(batida_no_jogo - 0.3) < 0.03, "saque viagem: a batida cai no alto do pulo")
-	_verificar(absf(duracao_no_jogo - 0.6) < 0.06, "saque viagem: a animação dura o pulo")
+	var batida_da_partida: float = Partida.CORRIDA_DO_SAQUE_VIAGEM + Partida.PULO_DO_SAQUE_VIAGEM / 2.0
+	print("  saque viagem: batida %.2f s depois de soltar (partida %.2f s), animação de %.2f s" % [batida_no_jogo, batida_da_partida, duracao_no_jogo])
+	_verificar(absf(batida_no_jogo - batida_da_partida) < 0.04, "saque viagem: a batida da animação cai na batida da partida")
+	_verificar(absf(duracao_no_jogo - (Partida.CORRIDA_DO_SAQUE_VIAGEM + Partida.PULO_DO_SAQUE_VIAGEM)) < 0.08, "saque viagem: a animação dura a corrida e o pulo")
+	_verificar(duracao_no_jogo > 1.2, "saque viagem: o movimento todo aparece (mais de 1,2 s)")
+	var em_pe: Array = Animador.TRECHOS["saque"]
+	var batida_em_pe: float = (batidas["saque"] - em_pe[0]) / em_pe[2]
+	_verificar(absf(batida_em_pe - Partida.BATIDA_DO_FLUTUANTE) < 0.04, "saque em pé: a batida da animação (%.2f s) cai na da partida" % batida_em_pe)
 	player.play(Animador.BIBLIOTECA + "/saque_viagem")
 	player.seek(batidas["saque_viagem"], true)
 	player.advance(0.0)

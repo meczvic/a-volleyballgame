@@ -28,13 +28,13 @@ window/size/viewport_width=1600
 window/size/viewport_height=900
 window/stretch/mode="canvas_items"
 
-[rendering]
-
-anti_aliasing/quality/msaa_3d=2
-
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/mtoon/plugin.cfg", "res://addons/vrm/plugin.cfg")
+
+[rendering]
+
+anti_aliasing/quality/msaa_3d=2
 
 [vrm]
 

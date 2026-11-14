@@ -60,8 +60,11 @@ static func limitar(alvo: Vector2) -> Vector2:
 ## Altura máxima do saque: fraco sobe bastante (fácil de receber), forte
 ## vem baixo e rápido. O flutuante é sempre um pouco mais baixo.
 static func altura_do_saque(f: float, flutuante: bool) -> float:
-	var altura := lerpf(5.6, 3.2, clampf(f, 0.0, 1.0))
-	return altura - (0.3 if flutuante else 0.0)
+	if flutuante:
+		# O flutuante não fica muito mais rápido com força: o que dificulta é o
+		# balanço (auditoria 2). Assim o viagem é sempre o saque mais rápido.
+		return lerpf(5.3, 4.3, clampf(f, 0.0, 1.0))
+	return lerpf(5.6, 3.2, clampf(f, 0.0, 1.0))
 
 
 ## Erro do saque (m, raio): cresce com a força e salta no talo. Com força

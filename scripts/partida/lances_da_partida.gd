@@ -217,9 +217,35 @@ func _comecar_cortada(time: int) -> bool:
 	p.cortadas[time] = {
 		"atleta": atleta, "tempo": 0.0,
 		"de": Vector2(atleta.position.x, atleta.position.z),
+		# Tempo segurando o botão de ataque; -1 = ainda segurando.
+		"soltou_em": -1.0,
 	}
 	return true
 
+
+## Soltou o ataque no pulo da cortada: cedo = largada; depois, a força fica
+## guardada pela hora em que soltou.
+func _soltar_cortada(time: int) -> void:
+	var cortada: Dictionary = p.cortadas[time]
+	if cortada.is_empty() or float(cortada["soltou_em"]) >= 0.0:
+		return
+	soltou_depois_de(time, float(cortada["tempo"]))
+
+
+## Marca quanto tempo o ataque ficou segurado (s): pouco = largada.
+func soltou_depois_de(time: int, segundos: float) -> void:
+	var cortada: Dictionary = p.cortadas[time]
+	cortada["soltou_em"] = segundos
+	if segundos < p.SOLTAR_PARA_LARGADA:
+		(cortada["atleta"] as Node3D).set_meta("largada", true)
+
+
+## Força da cortada (0 a 1) pelo tempo segurando o ataque: de
+## SOLTAR_PARA_LARGADA (0) até a batida (1). Segurando ainda = 1.
+static func forca_pelo_tempo_segurado(segundos: float, ate_a_batida: float, largada: float) -> float:
+	if segundos < 0.0:
+		return 1.0
+	return clampf((segundos - largada) / maxf(ate_a_batida - largada, 0.01), 0.0, 1.0)
 
 func _atualizar_cortada(time: int, delta: float) -> void:
 	var cortada: Dictionary = p.cortadas[time]
@@ -249,6 +275,7 @@ func _atualizar_cortada(time: int, delta: float) -> void:
 			var peso = smoothstep(p.TEMPO_ATE_A_BATIDA - p.IMA_DA_MAO, p.TEMPO_ATE_A_BATIDA, cortada["tempo"])
 			p.bola.puxar_para(mao, peso)
 		return
+	atleta.set_meta("forca_da_cortada", forca_pelo_tempo_segurado(float(cortada["soltou_em"]), p.TEMPO_ATE_A_BATIDA, p.SOLTAR_PARA_LARGADA))
 	p.cortadas[time] = {}
 	_bater_na_bola(time, atleta)
 	_terminar_cortada(time, atleta)
@@ -260,6 +287,7 @@ func _terminar_cortada(time: int, atleta: Node3D) -> void:
 	p.bola.puxar_para(Vector3.ZERO, 0.0)
 	atleta.remove_meta("saiu_do_chao_em")
 	atleta.remove_meta("largada")
+	atleta.remove_meta("forca_da_cortada")
 
 
 ## Posição da mão da cortada, se ela vai estar perto da bola daqui a
@@ -329,7 +357,15 @@ func _cortar(time: int, qualidade: TempoDoToque.Qualidade = TempoDoToque.Qualida
 	var erro_da_mira = maxf(float(jeito["erro_da_mira"]) + float(efeito["erro_a_mais"]), 0.1)
 	if super_cortada:
 		erro_da_mira = minf(erro_da_mira, Energia.ajuste("erro_da_super", Energia.ERRO_DA_SUPER))
+	# Força da cortada segurada: mais forte = mais rápida e erra mais.
+	var forca: float = float(p.controlados[time].get_meta("forca_da_cortada", 1.0))
+	p.controlados[time].remove_meta("forca_da_cortada")
+	erro_da_mira *= lerpf(0.75, 1.3, forca)
 	var destino = p._destino_na_quadra_do_outro(time, alvo, erro_da_mira)
+	if forca > 0.75:
+		# Quase no talo: erro a mais sem limite da quadra (a bola pode sair).
+		var extra: Vector2 = p._erro_aleatorio((forca - 0.75) / 0.25 * p.RISCO_DA_CORTADA_CHEIA)
+		destino += Vector3(extra.x, 0.0, extra.y)
 	p.miras[time].esconder()
 	var subida = maxf(float(jeito["subida"]) - Atributos.cortada_mais_forte(p.times_em_jogo[time]) - float(efeito["subida_a_menos"]), 0.05)
 	if super_cortada:
@@ -349,7 +385,7 @@ func _cortar(time: int, qualidade: TempoDoToque.Qualidade = TempoDoToque.Qualida
 	p._forca_da_cortada = int(TempoDoToque.Qualidade.PERFEITO) if super_cortada else int(qualidade)
 	# A cortada sai em linha reta, pra baixo, direto no destino. Só cai no arco
 	# se a reta bateria na rede (ataque curto) ou se a cortada saiu ruim.
-	var reta := VelocidadeDaBola.da_cortada_reta(qualidade, super_cortada)
+	var reta := VelocidadeDaBola.da_cortada_reta(qualidade, super_cortada) * lerpf(0.8, 1.1, forca)
 	if reta <= 0.0 or not p.bola.lancar_reto(destino, reta):
 		p.bola.lancar(destino, p.bola.position.y + subida, VelocidadeDaBola.gravidade(VelocidadeDaBola.da_cortada(qualidade, super_cortada)))
 	p._ao_lancar_bola()

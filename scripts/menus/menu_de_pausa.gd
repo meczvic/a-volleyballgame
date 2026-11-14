@@ -92,12 +92,25 @@ func esta_aberto() -> bool:
 func abrir_pausa(resumo: String) -> void:
 	if _fim_de_jogo or _raiz.visible:
 		return
-	_mostrar("PAUSA", resumo, [
+	var opcoes := [
 		["CONTINUAR", fechar],
 		["RECOMEÇAR PARTIDA", _recomecar],
 		["TROCAR TIMES", _ir_para.bind(CENA_SELECAO)],
 		["MENU PRINCIPAL", _ir_para.bind(CENA_MENU)],
-	])
+	]
+	# Trocar a câmera na hora (Perto, TV, Alta), se a partida tiver uma tela só.
+	var partida := get_tree().current_scene
+	if partida and partida.has_method("trocar_camera") and not partida.get("tela_dividida"):
+		opcoes.insert(1, [Configuracao.nome_da_camera(), _trocar_camera])
+	_mostrar("PAUSA", resumo, opcoes)
+
+
+## Troca a câmera e atualiza o texto do botão.
+func _trocar_camera() -> void:
+	var texto: String = get_tree().current_scene.trocar_camera()
+	for botao in _lista.get_children():
+		if botao is Button and (botao as Button).text.begins_with("CÂMERA"):
+			(botao as Button).text = texto
 
 
 func abrir_fim_de_jogo(titulo: String, resumo: String) -> void:

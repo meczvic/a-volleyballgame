@@ -66,13 +66,22 @@ func _verificar(condicao: bool, mensagem: String) -> void:
 ## Nos arquivos originais (antes de travar o quadril), o "mergulho" leva o
 ## quadril pro +x (esquerda do atleta) e o "mergulho_direita" pro -x.
 func _teste_lado_das_animacoes_de_mergulho() -> void:
-	for item in [[Animador.MERGULHO_ESQUERDA, 1.0], [Animador.MERGULHO_DIREITA, -1.0]]:
-		var cena: Node = load(Animador.ARQUIVOS[item[0]]).instantiate()
-		var animacao: Animation = cena.get_node("AnimationPlayer").get_animation("mixamo_com")
+	# [nome, lado, quanto anda no mínimo]. O da direita é do DeepMotion desde
+	# 13/11/2026 (arquivo .tres, anda uns 0,4 m de lado).
+	for item in [[Animador.MERGULHO_ESQUERDA, 1.0, 1.0], [Animador.MERGULHO_DIREITA, -1.0, 0.25]]:
+		var recurso = load(Animador.ARQUIVOS[item[0]])
+		var cena: Node = null
+		var animacao: Animation
+		if recurso is Animation:
+			animacao = recurso
+		else:
+			cena = recurso.instantiate()
+			animacao = cena.get_node("AnimationPlayer").get_animation("mixamo_com")
 		var trilha := animacao.find_track(NodePath("%GeneralSkeleton:Hips"), Animation.TYPE_POSITION_3D)
 		var andou := animacao.position_track_interpolate(trilha, 2.0).x - animacao.position_track_interpolate(trilha, 0.0).x
-		_verificar(andou * float(item[1]) > 1.0, "%s mergulha pro lado certo (quadril andou %.2f m em x)" % [item[0], andou])
-		cena.free()
+		_verificar(andou * float(item[1]) > float(item[2]), "%s mergulha pro lado certo (quadril andou %.2f m em x)" % [item[0], andou])
+		if cena:
+			cena.free()
 
 
 ## O quadril não anda no chão; na cortada e no bloqueio também não sobe

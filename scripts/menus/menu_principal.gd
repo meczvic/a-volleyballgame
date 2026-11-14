@@ -15,16 +15,17 @@ const CENA_SELECAO := "res://cenas/selecao_de_times.tscn"
 const CONTROLES := [
 	["Mover", "W A S D", "Setas", "Analógico ou direcional"],
 	["Passe / levantar", "J", "1 (numérico)", "A"],
-	["Saque / cortada", "K", "2 (numérico)", "X"],
+	["Saque / cortada (segure = forte)", "K", "2 (numérico)", "X"],
 	["Saque flutuante", "I", "5 (numérico)", "RB"],
 	["Bloqueio", "L", "3 (numérico)", "Y"],
 	["Mergulho", "Espaço", "0 (numérico)", "B"],
-	["Largada (no pulo da cortada)", "J", "1 (numérico)", "A"],
+	["Largada (toque rápido no ataque)", "K", "2 (numérico)", "X"],
 	["Pausa", "Esc", "Esc", "Start"],
 ]
 
 var _botoes: Array[Button] = []
 var _botao_controles: Button
+var _botao_camera: Button
 var _tela_de_controles: Control
 var _botao_voltar: Button
 var _botao_um_jogador: Button
@@ -89,6 +90,12 @@ func _modo_caos() -> void:
 	Configuracao.modo = "caos"
 	Configuracao.contra_computador = false
 	_trocar_de_cena(CENA_SELECAO)
+
+
+## Câmera da partida com uma tela só: Perto, TV ou Alta (fica salva).
+func _trocar_camera() -> void:
+	Configuracao.proxima_camera()
+	_botao_camera.text = Configuracao.nome_da_camera()
 
 
 func _mostrar_controles() -> void:
@@ -182,6 +189,7 @@ func _criar_botoes() -> void:
 		["2 JOGADORES", _dois_jogadores],
 		["MODO CAOS", _modo_caos],
 		["ONLINE", _online],
+		[Configuracao.nome_da_camera(), _trocar_camera],
 		["CONTROLES", _mostrar_controles],
 		["SAIR", _sair],
 	]
@@ -198,6 +206,8 @@ func _criar_botoes() -> void:
 		lista.add_child(botao)
 		if opcao[0] == "CONTROLES":
 			_botao_controles = botao
+		elif str(opcao[0]).begins_with("CÂMERA"):
+			_botao_camera = botao
 		elif opcao[0] == "1 JOGADOR":
 			_botao_um_jogador = botao
 

@@ -49,7 +49,10 @@ func _teste_alvo_anda_e_fica_na_quadra() -> void:
 
 func _teste_mais_forca_mais_risco() -> void:
 	_verificar(Mira.altura_do_saque(1.0, false) < Mira.altura_do_saque(0.2, false), "saque forte vem mais baixo")
-	_verificar(Mira.altura_do_saque(0.5, true) < Mira.altura_do_saque(0.5, false), "flutuante vem mais baixo")
+	# Desde a auditoria 2 o flutuante é mais alto e lento que o viagem forte (o
+	# que dificulta é o balanço), e a força muda pouco a altura dele.
+	_verificar(Mira.altura_do_saque(1.0, true) > Mira.altura_do_saque(1.0, false), "flutuante forte vem mais alto que o viagem forte")
+	_verificar(Mira.altura_do_saque(1.0, true) < Mira.altura_do_saque(0.0, true), "flutuante com força vem um pouco mais baixo")
 	_verificar(Mira.erro_do_saque(0.9) > Mira.erro_do_saque(0.2), "mais força, mais erro")
 	_verificar(Mira.erro_do_saque(1.0) > Mira.erro_do_saque(0.9) + 0.5, "no talo, o erro salta")
 

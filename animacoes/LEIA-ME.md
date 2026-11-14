@@ -20,7 +20,7 @@ serve pros 42 atletas.
 | `comemoracao_vitoria.fbx` | Victory | Fim de jogo (mexe pouco) |
 | `bloqueio_tapa.fbx` | Defender (Jumping And Swatting At A Ball) | Pula e bate na bola com o braço; candidata a bloqueio |
 | `bloqueio_erro.fbx` | Goalkeeper Miss | Pula e a bola passa |
-| `mergulho_direita.fbx` | Goalkeeper Diving Save (Right) | Mergulho pro outro lado (o `mergulho.fbx` é o Left) |
+| `mergulho_direita.fbx` | Goalkeeper Diving Save (Right) | Não é mais usado desde 13/11/2026: o mergulho pra direita é o `mergulho_deepmotion.tres` (DeepMotion, vídeo 12169434) |
 | `levantar_do_chao.fbx` | Getting Up (From Stomach) | Levantar depois do mergulho |
 | `espera_defesa.fbx` | Goalkeeper Idle (Without Ball) | Agachado esperando a bola, em loop |
 | `pulo_parado.fbx` | Unarmed Jump | Pulo no lugar |

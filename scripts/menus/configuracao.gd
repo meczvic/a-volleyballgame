@@ -24,6 +24,43 @@ var computador_nos_dois := false
 ## Arquivo com os comandos gravados de uma partida (veja
 ## scripts/entrada/entrada_gravada.gd). Vazio = jogo normal. O robô usa com repetir=.
 var repeticao := ""
+## Câmera da partida com uma tela só (1 jogador e online): "perto" (de console,
+## atrás do time), "tv" (a antiga: alta e longe) ou "alta" (bem de cima, pra
+## ver as duas quadras). A tela dividida usa sempre a "tv". Fica salva em
+## ARQUIVO_DE_OPCOES e vale pra próxima vez que abrir o jogo.
+var camera := "perto"
+
+const CAMERAS := ["perto", "tv", "alta"]
+const NOMES_DAS_CAMERAS := {"perto": "PERTO", "tv": "TV", "alta": "ALTA"}
+const ARQUIVO_DE_OPCOES := "user://opcoes.cfg"
+
+
+func _ready() -> void:
+	var opcoes := ConfigFile.new()
+	if opcoes.load(ARQUIVO_DE_OPCOES) == OK:
+		var salva := str(opcoes.get_value("partida", "camera", camera))
+		if salva in CAMERAS:
+			camera = salva
+
+
+## Troca pra próxima câmera da lista, salva e devolve o nome dela.
+func proxima_camera() -> String:
+	mudar_camera(CAMERAS[(CAMERAS.find(camera) + 1) % CAMERAS.size()])
+	return camera
+
+
+func mudar_camera(estilo: String) -> void:
+	if not estilo in CAMERAS:
+		return
+	camera = estilo
+	var opcoes := ConfigFile.new()
+	opcoes.load(ARQUIVO_DE_OPCOES)
+	opcoes.set_value("partida", "camera", camera)
+	opcoes.save(ARQUIVO_DE_OPCOES)
+
+
+func nome_da_camera() -> String:
+	return "CÂMERA: " + str(NOMES_DAS_CAMERAS.get(camera, camera.to_upper()))
 
 
 func definir_partida(time_jogador_1: String, time_jogador_2: String, id_do_estadio: String) -> void:

@@ -250,6 +250,9 @@ func _novo_lance() -> void:
 		"salvar": sorteio.randf() < float(ajustes["chance_de_salvar_a_recepcao"]),
 		# A cortada tem erro próprio: dá pra receber direitinho e atacar fraco.
 		"tempo_da_cortada": sorteio.randfn(0.0, float(ajustes["erro_do_tempo_na_cortada"])),
+		# Cortada segurada: solta o ataque tantos segundos depois do pulo (a
+		# força cresce até a batida; segurar até o fim = cheia, mais arriscada).
+		"soltar_ataque": sorteio.randf_range(0.18, 0.4),
 	}
 
 
@@ -338,6 +341,11 @@ func _tentar_ataque(time: int, atleta: Node3D) -> void:
 func _no_ar_da_cortada() -> void:
 	if not _plano.has("mira"):
 		return
+	var cortada: Dictionary = partida.cortadas[jogador - 1]
+	if not _plano.get("soltou_ataque", false) and not cortada.is_empty() \
+			and float(cortada["tempo"]) >= float(_plano.get("soltar_ataque", 1.0)):
+		_plano["soltou_ataque"] = true
+		soltou.emit(jogador, Lance.BOTAO_ATAQUE)
 	direcao = _plano["mira"]
 	if _plano.get("largada", false) and not _plano.get("largou", false):
 		_plano["largou"] = true

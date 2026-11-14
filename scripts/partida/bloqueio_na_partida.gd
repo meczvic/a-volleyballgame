@@ -24,11 +24,13 @@ func _init(partida) -> void:
 
 
 ## "altura" muda a altura do pulo (a cortada pula até a mão alcançar a bola).
-func _pular(atleta: Node3D, altura: float = p.ALTURA_DO_PULO) -> void:
+## "duracao" (s): tempo no ar; menor que zero = DURACAO_DO_PULO.
+func _pular(atleta: Node3D, altura: float = p.ALTURA_DO_PULO, duracao := -1.0) -> void:
 	if _esta_pulando(atleta):
 		return
 	atleta.set_meta("tempo_do_pulo", 0.0)
 	atleta.set_meta("altura_do_pulo", altura)
+	atleta.set_meta("duracao_do_pulo", duracao if duracao > 0.0 else p.DURACAO_DO_PULO)
 
 
 func _esta_pulando(atleta: Node3D) -> bool:
@@ -39,11 +41,12 @@ func _atualizar_pulo(atleta: Node3D, delta: float) -> void:
 	if not _esta_pulando(atleta):
 		return
 	var tempo: float = float(atleta.get_meta("tempo_do_pulo")) + delta
-	if tempo >= p.DURACAO_DO_PULO:
+	var duracao: float = atleta.get_meta("duracao_do_pulo", p.DURACAO_DO_PULO)
+	if tempo >= duracao:
 		atleta.position.y = 0.0
 		atleta.set_meta("tempo_do_pulo", -1.0)
 		return
-	var fracao = tempo / p.DURACAO_DO_PULO
+	var fracao = tempo / duracao
 	var altura: float = atleta.get_meta("altura_do_pulo", p.ALTURA_DO_PULO)
 	atleta.position.y = 4.0 * altura * fracao * (1.0 - fracao)
 	atleta.set_meta("tempo_do_pulo", tempo)
@@ -71,8 +74,9 @@ func _bloquear(time: int) -> void:
 			continue
 		atleta.position.x += deslocamento
 		_pular(atleta)
-		if p.estado == p.Estado.RALLY and absf(atleta.position.z) < p.DISTANCIA_MINIMA_DA_REDE:
-			p._encerrar_rally(1 - time, "toque na rede")
+		# Sem falta de toque na rede (pedido do Victor, 13/11/2026): colado na
+		# rede, o bloqueador só é afastado um pouco antes de pular.
+		p._afastar_da_rede(atleta)
 		p._animar(atleta, "bloqueio")
 
 

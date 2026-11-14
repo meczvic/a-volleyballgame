@@ -25,7 +25,7 @@ Na primeira vez o Godot cria a pasta `.godot/`. Ela é interna e não vai pro Gi
 | Bloqueio | L | 3 (numérico) | Y |
 | Saque flutuante | I | 5 (numérico) | RB |
 | Mergulho | Espaço | 0 (numérico) | B |
-| Largada | J no pulo da cortada | 1 (numérico) no pulo | A no pulo |
+| Largada | toque rápido no K (ou J no pulo) | toque rápido no 2 | toque rápido no X |
 | Pausa | Esc | Esc | Start |
 | Música liga/desliga | M | M | — |
 
@@ -51,7 +51,7 @@ Se os dois escolherem o mesmo time, o Jogador 2 joga com o uniforme reserva.
 2. Um **anel amarelo** no chão mostra onde a bola vai cair, e o jogo passa o controle pro atleta mais perto dele (o atleta controlado tem um anel da cor do time).
 3. **1º toque:** corra até o anel e aperte **Passe**. A bola vai pro levantador, perto da rede.
 4. **2º toque:** com o levantador, aperte **Passe** segurando uma direção pra escolher o atacante. As setas aparecem no chão (`< Ponta`, `^ Meio`, `> Oposto`, `v Fundo`). Sem direção, vai pro meio.
-5. **3º toque:** com o atacante, aperte **Ataque** com a bola alta pra cortar. Segurar esquerda ou direita mira a cortada. **Passe** no 3º toque só devolve a bola de graça.
+5. **3º toque:** com o atacante, aperte **Ataque** com a bola alta pra pular. **Segure** até a batida pra cortar forte (quanto mais segura, mais forte e mais arriscada: no talo a bola pode sair); **solte rápido** pra largar. Segurar esquerda ou direita mira a cortada. **Passe** no 3º toque só devolve a bola de graça.
 6. **Ataque** com a bola alta funciona em qualquer toque (por exemplo, o levantador pode atacar de surpresa).
 7. **Bloqueio:** quando o adversário levanta, os 3 atletas da rede sobem sozinhos e acompanham a bola. Aperte **Bloqueio** pra eles pularem; segurar esquerda ou direita desloca o bloqueio. No alto do pulo e bem na frente da bola, o bloqueio **devolve** a cortada. Cedo ou tarde demais, ou só com a ponta da mão, a bola **raspa no bloqueio** e segue pro seu lado, mais devagar: aí a sua defesa tem que pegar (o toque no bloqueio não conta como toque).
 
@@ -68,7 +68,7 @@ Se os dois escolherem o mesmo time, o Jogador 2 joga com o uniforme reserva.
 
 **Placar e efeitos:** o placar fica em cima, no meio, como numa transmissão: o emblema e o nome de cada time num bloco inclinado, os pontos numa caixa com a borda na cor do time e, no meio, o set atual com uma bolinha por set (pintada na cor de quem ganhou). Uma bola pequena mostra quem saca. Quando sai ponto, um corte de luz dourado atravessa a caixa de quem pontuou, saem faíscas, o número salta e fica amarelo um instante. Embaixo aparece **SET POINT**, **MATCH POINT** ou **PONTO DECISIVO** (quando os dois fecham o set com o próximo ponto); no fim do jogo o meio mostra **FIM** e a caixa do vencedor brilha. Uma faixa escura com a ponta na cor do time e o emblema de quem pontuou atravessa a tela: **PONTO!** (com o motivo, se foi falta), **ACE!** (saque que cai sem ninguém tocar), **BLOQUEIO!**, **SET!** e **JOGO!**. A bola que cai dentro abre uma onda no chão e treme a tela. O bloqueio congela o jogo por um instante, treme a tela e mostra "Bloqueio!" em cima da bola.
 
-**Largada:** depois de apertar Ataque, aperte **Passe** enquanto o atleta está no ar. Em vez de bater, ele empurra a bola devagar **por cima do bloqueio**, e ela cai curta, entre 1 e 3 m da rede. A direção escolhe o lado. Funciona bem quando o bloqueio está fechado e a defesa está lá atrás. Contra uma defesa que espera perto da rede, é bola fácil.
+**Largada:** dê um **toque rápido** no Ataque (ou aperte **Passe** enquanto o atleta está no ar). Em vez de bater, ele empurra a bola devagar **por cima do bloqueio**, e ela cai curta, entre 1 e 3 m da rede. A direção escolhe o lado. Funciona bem quando o bloqueio está fechado e a defesa está lá atrás. Contra uma defesa que espera perto da rede, é bola fácil.
 
 **Leitura do bloqueio:** quando o adversário levanta, os bloqueadores levam um instante (0,4 s) pra ler o levantamento. Depois correm pra onde a bola vai ser atacada. O central vai sempre, e o da ponta só ajuda se a bola vai pro lado dele. No levantamento alto dá tempo de montar o bloqueio. No **levantamento rápido** sobra pouco tempo pra correr e acertar o pulo, então ele é a melhor arma contra um bloqueio forte.
 
@@ -81,7 +81,7 @@ Se os dois escolherem o mesmo time, o Jogador 2 joga com o uniforme reserva.
 - **Bloqueio:** o bloqueio cobre mais rede.
 - **Velocidade:** os atletas correm mais rápido.
 
-Os atletas que você não controla se posicionam sozinhos, e o time gira o **rodízio** quando recupera o saque. A tela é **dividida**: o Jogador 1 vê de trás do time dele na metade esquerda, o Jogador 2 na metade direita. "Cima" é sempre na direção da rede pra cada um. A câmera fica parada atrás do time, mas vira de leve pra acompanhar a bola, como numa transmissão. As mensagens de cada time (saque, recepção, levantamento) aparecem na metade dele; as do ponto, no meio. Pra voltar pra uma câmera só, abra `cenas/partida.tscn`, selecione o nó `Partida` e desmarque **Tela Dividida** no Inspetor (lá também dá pra ajustar a altura, a distância e o foco da câmera, e ligar ou desligar o **Visual Anime**: sombra "chapada" e contorno escuro nos atletas e na bola).
+Os atletas que você não controla se posicionam sozinhos, e o time gira o **rodízio** quando recupera o saque. A tela é **dividida**: o Jogador 1 vê de trás do time dele na metade esquerda, o Jogador 2 na metade direita. "Cima" é sempre na direção da rede pra cada um. A câmera fica parada atrás do time, mas vira de leve pra acompanhar a bola, como numa transmissão. As mensagens de cada time (saque, recepção, levantamento) aparecem na metade dele; as do ponto, no meio. Com uma tela só (1 jogador e online), a câmera se escolhe no menu principal e na pausa: **Perto** (atrás do time, de console), **TV** (alta e longe) ou **Alta** (bem de cima); a escolha fica salva. Pra voltar pra uma câmera só, abra `cenas/partida.tscn`, selecione o nó `Partida` e desmarque **Tela Dividida** no Inspetor (lá também dá pra ajustar a altura, a distância e o foco da câmera, e ligar ou desligar o **Visual Anime**: sombra "chapada" e contorno escuro nos atletas e na bola).
 
 ### Regras do vôlei
 
@@ -93,7 +93,7 @@ O jogo segue as regras oficiais (FIVB). Só o placar é do jogo: sets até 7, co
 - **Saque:** 8 segundos pra sacar (**demorou pra sacar**; os 3 últimos aparecem na tela). Quem sacou não toca no próprio saque. Quem saca primeiro: sorteio no 1º set, o outro time no 2º, sorteio de novo no 3º.
 - **Toques:** até 3 por time (**4 toques**). O mesmo atleta não toca duas vezes seguidas (**dois toques**). O bloqueio não conta como toque, e quem bloqueou pode tocar de novo.
 - **Ataque e bloqueio:** só os 3 da rede bloqueiam. Atleta do fundo só ataca com a bola acima da rede se pular de trás da linha de 3 m (**ataque do fundo**). Não pode bloquear o saque (**bloqueio no saque**) nem atacá-lo com a bola acima da rede, perto dela (**ataque no saque**).
-- **Rede:** pular colado na rede é **toque na rede**. A bola tem que passar entre as antenas, que ficam em cima das linhas laterais (**fora da antena**).
+- **Rede:** não tem falta de toque na rede (quem pula colado nela é afastado um pouco). A bola tem que passar entre as antenas, que ficam em cima das linhas laterais (**fora da antena**).
 - **Quem vai na bola:** o jogo passa o controle pro atleta certo: o 1º toque é de quem estiver mais perto (o levantador evita, pra poder levantar), o 2º é do levantador e o 3º é de quem pode atacar dali (da rede na frente da linha de 3 m, do fundo atrás dela).
 
 ## Pastas

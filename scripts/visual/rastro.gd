@@ -8,7 +8,8 @@ const QUANTIDADE := 18
 const INTERVALO := 0.012
 ## Abaixo dessa velocidade (m/s) o rastro some.
 const VELOCIDADE_MINIMA := 8.0
-const COR := Color("#FFF4D6")
+## Amarelo clarinho, da cor dos gomos da bola.
+const COR := Color("#FFE89A")
 
 ## Nó que o rastro segue (a bola).
 var alvo: Node3D
@@ -92,7 +93,7 @@ func _desenhar() -> void:
 			var fracao := 1.0 - float(i) / QUANTIDADE
 			var tamanho := raio * aumento * (0.35 + 0.65 * fracao)
 			_multimesh.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3.ONE * tamanho), _pontos[i]))
-			_multimesh.set_instance_color(i, Color(cor, 0.8 * fracao))
+			_multimesh.set_instance_color(i, Color(cor, 0.45 * fracao * fracao))
 		else:
 			_multimesh.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3.ZERO), Vector3.ZERO))
 

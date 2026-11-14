@@ -18,9 +18,10 @@ const Ajustes := preload("res://scripts/comum/ajustes.gd")
 const Trajetoria := preload("res://scripts/regras/trajetoria.gd")
 const Qualidade := preload("res://scripts/regras/tempo_do_toque.gd").Qualidade
 
-## Saque forte (força 1): múltiplo da gravidade. Força baixa chega perto do SAQUE_FRACO.
-const SAQUE_FORTE := 3.0
-const SAQUE_FRACO := 2.0
+## Saque viagem em arco (quando não dá pra sair reto, veja SAQUE_VIAGEM_*): múltiplo
+## da gravidade com força 1 (forte) e 0 (fraco). Sempre mais rápido que o flutuante.
+const SAQUE_FORTE := 4.5
+const SAQUE_FRACO := 3.0
 ## Saque flutuante: meio-termo.
 const SAQUE_FLUTUANTE := 2.5
 ## Cortada perfeita, boa, ruim e a super cortada.
@@ -31,6 +32,11 @@ const SUPER_CORTADA := 5.0
 ## Passe (recepção) e levantamento.
 const PASSE := 1.8
 const LEVANTAMENTO := 2.2
+## Saque viagem em linha reta: velocidade da bola (m/s) com força 0 e 1.
+## 19 m/s = 68 km/h; 24 m/s = 86 km/h (mais rápido, o computador quase não
+## recebia). O flutuante fica em uns 62 a 67 km/h, mas balança.
+const SAQUE_VIAGEM_FRACO := 19.0
+const SAQUE_VIAGEM_FORTE := 24.0
 ## Cortada em LINHA RETA: velocidade da bola em m/s (não é múltiplo de nada).
 ## Cortada ruim não tem (sai em arco, fraca): 0.
 const RETA_PERFEITA := 22.0
@@ -62,6 +68,11 @@ static func do_saque(forca: float, flutuante: bool) -> float:
 		return valor("saque_flutuante", SAQUE_FLUTUANTE)
 	return lerpf(valor("saque_fraco", SAQUE_FRACO), valor("saque_forte", SAQUE_FORTE), clampf(forca, 0.0, 1.0))
 
+
+
+## Velocidade (m/s) do saque viagem em linha reta ("forca" de 0 a 1).
+static func do_saque_viagem(forca: float) -> float:
+	return lerpf(valor("saque_viagem_fraco", SAQUE_VIAGEM_FRACO), valor("saque_viagem_forte", SAQUE_VIAGEM_FORTE), clampf(forca, 0.0, 1.0))
 
 ## Velocidade (m/s) da cortada em linha reta, ou 0 se ela sai em arco
 ## (cortada ruim). Se a linha reta bateria na rede, a bola usa o arco de

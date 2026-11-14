@@ -208,8 +208,8 @@ func _teste_toque_na_rede_no_bloqueio() -> void:
 	var atleta := _na_posicao(partida, 0, 3)
 	atleta.position = partida._no_mundo(0, Vector2(0.0, 0.45))
 	partida.bloqueios._bloquear(0)
-	_verificar(_ponto_por(partida, "toque na rede"), "pular colado na rede é toque na rede")
-	_verificar(_pontos(partida) == [0, 1], "o ponto é do outro time")
+	_verificar(partida.estado == partida.Estado.RALLY, "pular colado na rede não é mais falta")
+	_verificar(absf(atleta.position.z) >= partida.DISTANCIA_MINIMA_DA_REDE - 0.001, "o bloqueador é afastado da rede")
 	_fechar(partida)
 
 

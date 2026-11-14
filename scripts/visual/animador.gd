@@ -23,7 +23,7 @@ const ARQUIVOS := {
 	"saque": "res://animacoes/saque_deepmotion.tres",
 	"saque_viagem": "res://animacoes/saque_viagem_deepmotion.tres",
 	"mergulho": "res://animacoes/mergulho.fbx",
-	"mergulho_direita": "res://animacoes/mergulho_direita.fbx",
+	"mergulho_direita": "res://animacoes/mergulho_deepmotion.tres",
 	"espera_defesa": "res://animacoes/espera_defesa.fbx",
 	"comemoracao_palmas": "res://animacoes/comemoracao_palmas.fbx",
 	"comemoracao_torcida": "res://animacoes/comemoracao_torcida.fbx",
@@ -70,27 +70,30 @@ const PARADO_NO_JOGO := "espera"
 ## - manchete (DeepMotion, 13/11/2026): mãos juntas (~0,19 m) de 0,5 a 2,4 s;
 ##   de 1,6 a 2,2 s o atleta afunda na base (quadril de 0,74 a 0,70 m) e o
 ##   contato é em 2,2 s; até 3,0 s os braços seguem e ele começa a levantar.
-## - saque em pé (DeepMotion, vídeo em câmera lenta, por isso 3x): em 5,1 s o
-##   braço direito está armado atrás da cabeça e passa por cima dela (a batida)
-##   em ~5,3 s, logo depois de a partida soltar a bola; até 6,6 s acompanha.
-## - saque viagem (DeepMotion, câmera lenta, 4,4x): sai do chão em 3,6 s, bate
-##   com a mão esquerda no alto em 4,9 s, que a 4,4x cai em 0,3 s (o alto do
-##   pulo do jogo, quando a bola sai), e cai em 6,25 s (0,6 s, o fim do pulo).
+## - saque em pé (DeepMotion, vídeo em câmera lenta, 2x): começa em 4,1 s com a
+##   bola na mão, lança em ~4,4 s e o braço direito passa por cima da cabeça (a
+##   batida) em 5,3 s, que a 2x cai em 0,6 s (BATIDA_DO_FLUTUANTE da partida).
+## - saque viagem (DeepMotion, câmera lenta, 3x): corrida de 1,75 a 3,6 s (0,62 s
+##   no jogo, CORRIDA_DO_SAQUE_VIAGEM), sai do chão em 3,6 s, bate com a mão
+##   esquerda no alto em 4,9 s (1,05 s depois de soltar, metade do pulo) e cai
+##   em 6,25 s. Até 13/11/2026 o jogo mostrava só o pulo, a 4,4x.
 ## - levantamento (toque de verdade, DeepMotion): de 0 a 1,2 s os joelhos
-##   dobrados e as mãos sobem do peito até a testa; o contato é em 1,25 s, quando
-##   as mãos passam da cabeça e as pernas começam a esticar; até 2,1 s braços e
-##   pernas terminam de empurrar a bola (mãos a 1,70 m).
+##   dobrados e as mãos na frente do peito (parecia manchete, por isso o preparo
+##   começa em 0,9 s); as mãos chegam na testa em 1,45 s, o contato; até 2,4 s
+##   braços e pernas terminam de empurrar a bola (mãos a 1,72 m).
 const TRECHOS := {
 	"manchete": [2.2, 3.0],
-	"levantamento": [1.25, 2.3],
+	"levantamento": [1.45, 2.4],
 	"cortada": [1.25, 2.0, 1.23],
 	"bloqueio": [0.55, 1.6],
-	"saque": [5.1, 6.6, 3.0],
-	"saque_viagem": [3.6, 6.25, 4.4],
+	"saque": [4.1, 6.6, 2.0],
+	"saque_viagem": [1.75, 6.25, 3.0],
 	# Mergulho a 2,2x: deita em ~0,45 s e começa a levantar em ~0,8 s, quando o
 	# atleta pode andar de novo (TEMPO_NO_CHAO da partida).
 	"mergulho": [0.5, 2.8, 2.2],
-	"mergulho_direita": [0.5, 2.75, 2.2],
+	# Mergulho pra direita do DeepMotion (13/11/2026, vídeo 12169434 na areia):
+	# base até 0,4 s, passo largo e braço direito esticado, no chão em ~2,2 s.
+	"mergulho_direita": [0.4, 3.0, 2.2],
 	# Nas reações, o começo e o fim são quase parados.
 	"ponto_perdido_frustrado": [0.6, 3.0],
 	"ponto_perdido_desanimado": [0.1, 2.4],
@@ -137,7 +140,10 @@ const GESTO_DA_CORTADA := [
 ## termina exatamente onde o toque começa.
 const PREPARO := {
 	"manchete": [1.6, 2.2],
-	"levantamento": [0.6, 1.25],
+	"levantamento": [0.9, 1.45],
+	# Cortada: a última passada e o braço indo pra trás e subindo (0,2 a 1,0 s),
+	# antes do botão; o toque (TRECHOS) continua do ar, com o braço armado.
+	"cortada": [0.2, 1.0],
 }
 ## O preparo pode tocar mais rápido ou mais devagar pra chegar junto com a bola.
 const PREPARO_VELOCIDADE_MINIMA := 0.6
@@ -152,6 +158,11 @@ const PULAM_NO_JOGO := ["cortada", "bloqueio", "saque_viagem"]
 ## viagem o DeepMotion deixou o corpo flutuando no começo (a câmera mexe), então
 ## mede na hora de sair do chão.
 const QUADRIL_EM_PE := {"saque_viagem": 3.6}
+## Lances em que o quadril fica sempre virado como na hora da batida (segundo da
+## animação): o vídeo do saque viagem foi filmado com a câmera acompanhando o
+## atleta de lado, e a corrida saía uns 75° virada (pedido do Victor, 13/11/2026).
+## O tronco ainda gira sobre o quadril, como numa batida de verdade.
+const GIRO_TRAVADO := {"saque_viagem": 4.9}
 
 ## Velocidade (m/s) em que a corrida toca na velocidade normal.
 const VELOCIDADE_DA_CORRIDA := 4.0
@@ -397,6 +408,8 @@ static func biblioteca() -> AnimationLibrary:
 			continue
 		animacao.loop_mode = Animation.LOOP_LINEAR if nome in EM_LOOP else Animation.LOOP_NONE
 		_no_lugar(animacao, nome in PULAM_NO_JOGO, QUADRIL_EM_PE.get(nome, -1.0))
+		if GIRO_TRAVADO.has(nome):
+			_travar_giro(animacao, GIRO_TRAVADO[nome])
 		if nome == "cortada":
 			_gesto_da_cortada(animacao)
 		_biblioteca.add_animation(nome, animacao)
@@ -483,6 +496,27 @@ static func _carregar(caminho: String) -> Animation:
 
 ## Trava o quadril no lugar no chão (x e z): quem anda é o atleta, não a animação.
 ## Com "sem_subir", trava a altura também, porque o jogo já faz o pulo.
+## Deixa o quadril sempre virado pro mesmo lado que no segundo "referencia"
+## (só o giro em volta do eixo vertical; inclinação e o resto do corpo ficam).
+static func _travar_giro(animacao: Animation, referencia: float) -> void:
+	for trilha in animacao.get_track_count():
+		if animacao.track_get_type(trilha) != Animation.TYPE_ROTATION_3D:
+			continue
+		# Quadril e tronco: sem isso o peito gira pro lado na corrida.
+		if not animacao.track_get_path(trilha).get_concatenated_subnames() in ["Hips", "Spine", "Chest", "UpperChest"]:
+			continue
+		var alvo := _giro_vertical(animacao.rotation_track_interpolate(trilha, referencia))
+		for chave in animacao.track_get_key_count(trilha):
+			var valor: Quaternion = animacao.track_get_key_value(trilha, chave)
+			var sobra := wrapf(_giro_vertical(valor) - alvo, -PI, PI)
+			animacao.track_set_key_value(trilha, chave, (Quaternion(Vector3.UP, -sobra) * valor).normalized())
+
+
+## Para que lado (ângulo em volta do eixo vertical) aponta a frente do quadril.
+static func _giro_vertical(rotacao: Quaternion) -> float:
+	var frente := rotacao * Vector3(0, 0, 1)
+	return atan2(frente.x, frente.z)
+
 static func _no_lugar(animacao: Animation, sem_subir: bool, quadril_em_pe := -1.0) -> void:
 	for trilha in animacao.get_track_count():
 		if animacao.track_get_type(trilha) != Animation.TYPE_POSITION_3D:
@@ -493,7 +527,9 @@ static func _no_lugar(animacao: Animation, sem_subir: bool, quadril_em_pe := -1.
 			continue
 		var inicio: Vector3 = animacao.track_get_key_value(trilha, 0)
 		if quadril_em_pe >= 0.0:
-			inicio = animacao.position_track_interpolate(trilha, quadril_em_pe)
+			# Só a altura vem desse segundo; x e z ficam os do começo (onde o
+			# atleta está), senão o corpo aparece metros à frente do anel.
+			inicio.y = animacao.position_track_interpolate(trilha, quadril_em_pe).y
 		for chave in animacao.track_get_key_count(trilha):
 			var valor: Vector3 = animacao.track_get_key_value(trilha, chave)
 			valor.x = inicio.x

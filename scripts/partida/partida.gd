@@ -29,7 +29,7 @@ extends Node3D
 ## - Só os 3 da rede bloqueiam. Atleta do fundo só ataca com a bola acima da
 ##   rede se estiver atrás da linha de 3 m. Não pode bloquear nem atacar o saque
 ##   (com a bola acima da rede, perto dela).
-## - Pular colado na rede é toque na rede. A bola tem que passar entre as antenas.
+## - Não existe falta de toque na rede: quem está colado nela é afastado. A bola tem que passar entre as antenas.
 ## - Sem líbero: 6 atletas por time.
 ##
 ## Os times e o estádio vêm da seleção de times (autoload Configuracao).
@@ -132,19 +132,44 @@ const VANTAGEM_PRO_PASSE_DO_LEVANTADOR := 2.5
 
 ## Pulo: duração (s) e altura máxima (m).
 const DURACAO_DO_PULO := 0.6
+## Cortada segurada (pedido do Victor, 13/11/2026): apertar o ataque pula.
+## Soltar antes de SOLTAR_PARA_LARGADA s vira largada; segurar mais deixa a
+## cortada mais forte (cheia se segurar até a batida), mais rápida e mais
+## arriscada (a mira erra mais e, quase no talo, a bola pode sair).
+const SOLTAR_PARA_LARGADA := 0.12
+## Erro a mais (m) da cortada com força cheia; sem limite da quadra (pode sair).
+const RISCO_DA_CORTADA_CHEIA := 1.2
 const ALTURA_DO_PULO := 0.95
 ## Na cortada, o atleta sai do chão quando aperta Ataque e bate na bola no
 ## alto do pulo, com a mão. Esse é o tempo do botão até a batida (s).
 const TEMPO_ATE_A_BATIDA := DURACAO_DO_PULO / 2.0
-## Saque viagem: o atleta pula (altura do pulo, em m), a bola fica a esta altura
-## na mão antes do saque e sobe esta altura a mais no lançamento, que a mão
-## alcança no alto do pulo (TEMPO_ATE_A_BATIDA depois de soltar o botão).
+## Saque no tempo do movimento de verdade (auditoria 2, 13/11/2026). Antes a
+## bola saía 0,3 s depois de soltar e a animação passava 4 vezes mais rápida.
+## Viagem: corre CORRIDA_DO_SAQUE_VIAGEM s lançando a bola, pula (pulo de
+## PULO_DO_SAQUE_VIAGEM s e ALTURA_DO_PULO_DO_SAQUE m) e bate no alto do pulo.
+## Flutuante (em pé): lança a bola e bate BATIDA_DO_FLUTUANTE s depois.
+## As alturas são onde a bola está na batida (m). Os tempos batem com a
+## animação (TRECHOS do animador; teste_sincronia_dos_toques confere).
 const ALTURA_DO_PULO_DO_SAQUE := 1.0
+const CORRIDA_DO_SAQUE_VIAGEM := 0.62
+const PULO_DO_SAQUE_VIAGEM := 0.86
+const BATIDA_DO_FLUTUANTE := 0.6
+const ALTURA_DA_BATIDA_DO_VIAGEM := 3.4
+const ALTURA_DA_BATIDA_DO_FLUTUANTE := 2.5
+## Quanto o sacador anda pra frente na corrida do viagem (sem pisar na linha).
+const PASSADA_DO_SAQUE_VIAGEM := 1.2
+## Até quantos metros da linha de fundo o quadril chega na corrida do viagem.
+const MARGEM_DA_LINHA_NO_SAQUE := 0.9
 ## Quanto antes da bola chegar o atleta começa o preparo da manchete ou do
 ## levantamento (s). Só visual.
 const PREPARO_ANTES_DA_BOLA := 0.35
-const ALTURA_DA_BOLA_NO_SAQUE := 2.2
-const LANCAMENTO_DA_BOLA_NO_SAQUE := 1.2
+## Na cortada o preparo (passada e braço armando) começa antes: é o tempo até
+## a hora de apertar o ataque (s).
+const PREPARO_ANTES_DA_CORTADA := 0.55
+## Bola na mão do sacador, antes de lançar (m).
+const ALTURA_DA_BOLA_NO_SAQUE := 1.25
+## Quanto (m) o balanço do flutuante pode mudar o lugar onde a bola cai.
+const BALANCO_DO_FLUTUANTE := 1.4
 ## Se a mão chega a essa distância da bola (m), a bola vai pra mão: nos
 ## últimos IMA_DA_MAO segundos antes da batida ela é puxada até a mão.
 const ALCANCE_DA_MAO := 1.5
@@ -207,7 +232,7 @@ const ESPACO_ENTRE_ATLETAS := 1.2
 ## y = distância da rede. A formação de cada posição do rodízio está em
 ## scripts/regras/formacao.gd.
 ## Onde quem saca fica (atrás da linha de fundo).
-const POSICAO_DO_SACADOR := Vector2(2.5, 10.0)
+const POSICAO_DO_SACADOR := Vector2(2.5, 11.0)
 ## Onde o passe deve chegar: perto da rede, um pouco à direita.
 const PONTO_DO_LEVANTADOR := Vector2(1.0, 1.0)
 ## Giro do personagem .vrm pro time do Jogador 1 olhar pra rede (-z).
@@ -249,6 +274,10 @@ const TAMANHO_DO_AVISO_RUIM := 22
 @export var abertura_da_camera := 37.0
 ## Quanto a câmera segue a bola pro lado (veja camera_da_partida.gd).
 var acompanhamento_da_camera := 0.22
+## Números da câmera de TV (os exportados), guardados pra poder voltar pra ela.
+var _camera_de_tv: Array = []
+## Raio do desenho da bola na câmera escolhida (m).
+var tamanho_da_bola: float = 0.22
 ## Tela dividida: cada jogador vê de trás do próprio time.
 ## Desligado: uma câmera só, do lado do Jogador 1.
 @export var tela_dividida := true
@@ -413,6 +442,7 @@ func _ready() -> void:
 	bola.name = "Bola"
 	bola.usar_visual_anime = visual_anime
 	add_child(bola)
+	bola.mudar_tamanho_do_desenho(tamanho_da_bola)
 	# Os atletas acompanham a bola com a cabeça (nasceram antes dela).
 	for time in 2:
 		for atleta in atletas[time]:
@@ -446,6 +476,8 @@ func _ready() -> void:
 	rastro = Rastro.new()
 	rastro.name = "RastroDaBola"
 	rastro.alvo = bola
+	# Rastro mais fino que a bola, pra não parecer uma fila de bolas brancas.
+	rastro.raio = tamanho_da_bola * 0.7
 	add_child(rastro)
 
 	marcador = MarcadorQueda.new()
@@ -455,6 +487,7 @@ func _ready() -> void:
 	# controle passa pra quem vai nela agora (se ela voltar pro lado de quem
 	# tocou, não é ele de novo: seriam dois toques).
 	bola.tocou_rede.connect(_ao_lancar_bola)
+	bola.balancou.connect(func() -> void: marcador.mostrar_em(bola.ponto_previsto))
 	bola.tocou_rede.connect(func() -> void: sons.tocar("rede"))
 
 	for jogador in [1, 2]:
@@ -656,7 +689,7 @@ func _vigiar_levantamento_segurado(time: int) -> void:
 ## O botão veio cedo (a bola ainda não está ao alcance): guarda o pedido
 ## por TEMPO_DO_PEDIDO e tenta de novo a cada quadro (_atender_pedido).
 func _guardar_pedido(time: int, tipo: String) -> void:
-	pedidos[time] = { "tipo": tipo, "ate": _relogio + TEMPO_DO_PEDIDO }
+	pedidos[time] = { "tipo": tipo, "ate": _relogio + TEMPO_DO_PEDIDO, "apertou_em": _relogio }
 
 
 ## Tenta de novo o botão guardado. Se o tempo acabou e a bola não chegou,
@@ -670,6 +703,9 @@ func _atender_pedido(time: int) -> void:
 	var tipo: String = pedidos[time]["tipo"]
 	var atendido: bool = lances._comecar_cortada(time) if tipo == Lance.BOTAO_ATAQUE else lances._tentar_tocar(time, false)
 	if atendido:
+		# Ataque apertado cedo e já solto: vale o tempo que ficou segurado.
+		if tipo == Lance.BOTAO_ATAQUE and pedidos[time].has("segurou"):
+			lances.soltou_depois_de(time, float(pedidos[time]["segurou"]))
 		pedidos[time] = {}
 	elif _relogio > float(pedidos[time]["ate"]):
 		pedidos[time] = {}
@@ -685,42 +721,94 @@ func _ao_soltar_botao(jogador: int, tipo: String) -> void:
 		return
 	if tipo == Lance.BOTAO_PASSE:
 		_soltar_levantamento(time)
+	if tipo == Lance.BOTAO_ATAQUE and estado == Estado.RALLY:
+		lances._soltar_cortada(time)
+		if cortadas[time].is_empty() and pedidos[time].get("tipo", "") == Lance.BOTAO_ATAQUE:
+			pedidos[time]["segurou"] = _relogio - float(pedidos[time]["apertou_em"])
 	if estado != Estado.SAQUE or time != placar.quem_saca or carga_do_saque < 0.0:
 		return
 	if tipo != (Lance.BOTAO_FLUTUANTE if saque_flutuante else Lance.BOTAO_ATAQUE):
 		return
 	var forca := Mira.forca(carga_do_saque)
 	carga_do_saque = -1.0
-	if saque_flutuante:
-		_sacar(time, true, forca, alvo_do_saque)
-	else:
-		_comecar_saque_viagem(time, forca, alvo_do_saque)
+	_comecar_saque_viagem(time, forca, alvo_do_saque, saque_flutuante)
 
 
-## Saque viagem (botão de ataque): o atleta pula, lança a bola e bate nela no
-## alto do pulo, TEMPO_ATE_A_BATIDA depois (_atualizar_saque_viagem). O
-## flutuante (botão I) continua em pé.
-func _comecar_saque_viagem(time: int, forca: float, alvo: Vector2) -> void:
+## Soltou o botão do saque: começa o movimento (_atualizar_saque_viagem).
+## Viagem (botão de ataque): corre lançando a bola, pula e bate no alto do pulo.
+## Flutuante (botão I): em pé, lança a bola e bate. A bola só sai na batida.
+func _comecar_saque_viagem(time: int, forca: float, alvo: Vector2, flutuante := false) -> void:
 	miras[time].esconder()
 	var sacador: Node3D = controlados[time]
-	saque_viagem = { "time": time, "forca": forca, "alvo": alvo, "tempo": 0.0 }
-	bloqueios._pular(sacador, ALTURA_DO_PULO_DO_SAQUE)
-	_animar(sacador, "saque_viagem")
+	var batida := BATIDA_DO_FLUTUANTE if flutuante else CORRIDA_DO_SAQUE_VIAGEM + PULO_DO_SAQUE_VIAGEM / 2.0
+	# A corrida para antes da linha: o pé da frente vai uns 0,7 m à frente do
+	# quadril na passada (MARGEM_DA_LINHA_NO_SAQUE).
+	var passada := 0.0 if flutuante else clampf(absf(sacador.position.z) - COMPRIMENTO / 2.0 - MARGEM_DA_LINHA_NO_SAQUE, 0.0, PASSADA_DO_SAQUE_VIAGEM)
+	saque_viagem = {
+		"time": time, "forca": forca, "alvo": alvo, "tempo": 0.0, "flutuante": flutuante,
+		"batida": batida, "de": sacador.position, "passada": passada, "pulou": false,
+	}
+	_animar(sacador, "saque" if flutuante else "saque_viagem")
 
 
-## Durante o pulo do saque viagem a bola sobe do lançamento até a mão e, na
-## batida, o saque sai (`_sacar`).
+## Movimento do saque até a batida: a bola sobe da mão num lançamento (parábola
+## de verdade) e chega na altura da batida na hora certa; no viagem o atleta
+## anda pra frente na corrida e pula. Na batida, o saque sai (`_sacar`).
 func _atualizar_saque_viagem(delta: float, sacador: Node3D, frente: float) -> void:
-	saque_viagem["tempo"] += delta
-	var tempo: float = saque_viagem["tempo"]
-	var subida := LANCAMENTO_DA_BOLA_NO_SAQUE * sin(PI * clampf(tempo / DURACAO_DO_PULO, 0.0, 1.0))
-	bola.segurar_em(Vector3(sacador.position.x, ALTURA_DA_BOLA_NO_SAQUE + subida, sacador.position.z + frente))
-	if tempo < TEMPO_ATE_A_BATIDA:
-		return
 	var s := saque_viagem
+	s["tempo"] += delta
+	var tempo: float = s["tempo"]
+	var batida: float = s["batida"]
+	var flutuante: bool = s["flutuante"]
+	if not flutuante:
+		var de: Vector3 = s["de"]
+		var andou: float = float(s["passada"]) * smoothstep(0.0, CORRIDA_DO_SAQUE_VIAGEM, tempo)
+		sacador.position.z = de.z - signf(de.z) * andou
+		if not s["pulou"] and tempo >= CORRIDA_DO_SAQUE_VIAGEM:
+			s["pulou"] = true
+			bloqueios._pular(sacador, ALTURA_DO_PULO_DO_SAQUE, PULO_DO_SAQUE_VIAGEM)
+	var altura_da_batida := ALTURA_DA_BATIDA_DO_FLUTUANTE if flutuante else ALTURA_DA_BATIDA_DO_VIAGEM
+	bola.segurar_em(Vector3(sacador.position.x, altura_do_lancamento(minf(tempo, batida), batida, altura_da_batida), sacador.position.z + frente))
+	if tempo < batida:
+		return
 	saque_viagem = {}
-	_sacar(s["time"], false, s["forca"], s["alvo"], true)
+	_sacar(s["time"], flutuante, s["forca"], s["alvo"], true)
 
+
+## Altura da bola no lançamento do saque, "t" segundos depois de soltar: sai
+## da mão (ALTURA_DA_BOLA_NO_SAQUE) e está em "altura_da_batida" na "batida",
+## caindo com a gravidade normal (sobe mais quanto mais longa a espera).
+static func altura_do_lancamento(t: float, batida: float, altura_da_batida: float) -> float:
+	var g := Trajetoria.GRAVIDADE
+	var subida := (altura_da_batida - ALTURA_DA_BOLA_NO_SAQUE + 0.5 * g * batida * batida) / batida
+	return ALTURA_DA_BOLA_NO_SAQUE + subida * t - 0.5 * g * t * t
+
+
+## Saque viagem: sai do alto do pulo quase em linha reta e bem mais rápido
+## que o flutuante (VelocidadeDaBola.do_saque_viagem, em m/s). Se não dá reto
+## (bola baixa demais pra passar a rede), devolve false e sai em arco.
+func _sacar_reto(time: int, destino: Vector3, forca: float) -> bool:
+	var velocidade := VelocidadeDaBola.do_saque_viagem(forca) * Atributos.modificador(times_em_jogo[time], "velocidade_do_saque")
+	return bola.lancar_reto(destino, velocidade)
+
+
+## Flutuante: dois balanços pro lado no meio do voo (o anel de queda anda junto).
+## O lado e o tamanho são sorteados; a queda muda até BALANCO_DO_FLUTUANTE m.
+func _balancar_o_flutuante() -> void:
+	var voo := Trajetoria.tempo_ate_altura(bola.position, bola.velocidade_atual(), Bola.RAIO, bola.gravidade)
+	if voo <= 0.2:
+		return
+	var quantos := [sorteio.randf_range(-1.0, 1.0) * BALANCO_DO_FLUTUANTE / 2.0, sorteio.randf_range(-1.0, 1.0) * BALANCO_DO_FLUTUANTE / 2.0]
+	# O balanço não joga pra fora uma bola que ia cair dentro: se fosse sair
+	# pela lateral, balança pro outro lado.
+	var x_final: float = bola.ponto_previsto.x + quantos[0] + quantos[1]
+	if absf(bola.ponto_previsto.x) < LARGURA / 2.0 and absf(x_final) > LARGURA / 2.0 - 0.2:
+		quantos = [-quantos[0], -quantos[1]]
+	var desvios := []
+	for k in 2:
+		var fracao: float = [0.45, 0.7][k]
+		desvios.append([voo * fracao, quantos[k] / (voo * (1.0 - fracao))])
+	bola.balancar(desvios)
 
 ## Saque com "forca" (0 a 1) mirando "alvo" (na quadra do outro time).
 ## Mais força: mais baixo e rápido, mas com mais erro (pode sair).
@@ -746,13 +834,16 @@ func _sacar(time: int, flutuante: bool, forca := 0.4, alvo := Mira.ALVO_INICIAL,
 	var ponto := Mira.com_erro(alvo, _erro_do_saque(time, forca), Vector2(sorteio.randf(), sorteio.randf()))
 	var destino := Vector3(ponto.x, 0.0, ponto.y * _lado(1 - time))
 	_peso_do_toque(time, bola.position, forca if not flutuante else forca * 0.5)
-	# Provisório: o flutuante só sai mais baixo. O balanço vem depois.
+	# Viagem: reto e rápido. Flutuante: mais lento, mas balança no ar.
 	# Modo Caos: Super Saque deixa a bola mais rápida; Saque Canhão derruba quem recebe.
 	var gravidade_do_saque := VelocidadeDaBola.gravidade(VelocidadeDaBola.do_saque(forca, flutuante) * Atributos.modificador(times_em_jogo[time], "velocidade_do_saque"))
 	_saque_canhao = Atributos.gastar_carga(times_em_jogo[time], "saque_canhao")
 	if _saque_canhao:
 		interface.mostrar_mensagem("Saque Canhão!", time, false)
-	bola.lancar(destino, Mira.altura_do_saque(forca, flutuante), gravidade_do_saque)
+	if flutuante or not _sacar_reto(time, destino, forca):
+		bola.lancar(destino, Mira.altura_do_saque(forca, flutuante), gravidade_do_saque)
+	if flutuante:
+		_balancar_o_flutuante()
 	ultimo_toque = time
 	_mudar_estado(Estado.RALLY)
 	interface.limpar_mensagens()
@@ -980,14 +1071,16 @@ func _atualizar_anel_de_tempo(time: int) -> void:
 ## os braços, ou sobe as mãos) pra pose de contato ficar pronta junto com a bola.
 ## Uma vez por voo da bola. Só visual: não muda o resultado do toque.
 func _preparar_animacao_do_toque(atleta: Node3D, tipo: String, segundos: float, na_hora: Vector3) -> void:
-	if tipo == Lance.CORTADA or segundos <= 0.0 or segundos > PREPARO_ANTES_DA_BOLA:
+	var antes := PREPARO_ANTES_DA_CORTADA if tipo == Lance.CORTADA else PREPARO_ANTES_DA_BOLA
+	if segundos <= 0.0 or segundos > antes:
 		return
 	if _distancia_no_chao(atleta, na_hora) > ALCANCE or bloqueios._esta_pulando(atleta) or _esta_no_chao(atleta):
 		return
 	if int(atleta.get_meta("preparou_no_voo", -1)) == bola.lancamentos:
 		return
 	var animador = _animador_de(atleta)
-	if animador and animador.preparar_toque("levantamento" if tipo == Lance.LEVANTAMENTO else "manchete", segundos):
+	var lance := "cortada" if tipo == Lance.CORTADA else ("levantamento" if tipo == Lance.LEVANTAMENTO else "manchete")
+	if animador and animador.preparar_toque(lance, segundos):
 		atleta.set_meta("preparou_no_voo", bola.lancamentos)
 
 
@@ -1071,6 +1164,14 @@ func _atualizar_mira(time: int, delta: float) -> void:
 # --- Regras (faltas) ---
 
 ## Falta no toque do atleta controlado do "time"? Devolve o motivo, ou "".
+## Atleta colado na rede volta até DISTANCIA_MINIMA_DA_REDE (do lado dele).
+## Substitui a falta de toque na rede, que o jogador não conseguia ver chegando.
+func _afastar_da_rede(atleta: Node3D) -> void:
+	if absf(atleta.position.z) < DISTANCIA_MINIMA_DA_REDE:
+		var lado := signf(atleta.position.z) if atleta.position.z != 0.0 else 1.0
+		atleta.position.z = lado * DISTANCIA_MINIMA_DA_REDE
+
+
 func _falta_no_toque(time: int, atacando: bool) -> String:
 	var atleta := controlados[time]
 	var indice: int = atletas[time].find(atleta)
@@ -1078,8 +1179,8 @@ func _falta_no_toque(time: int, atacando: bool) -> String:
 		return "dois toques"
 	if not atacando:
 		return ""
-	if absf(atleta.position.z) < DISTANCIA_MINIMA_DA_REDE:
-		return "toque na rede"
+	# Sem falta de toque na rede: colado na rede, o atleta só é afastado.
+	_afastar_da_rede(atleta)
 	# Na cortada, a zona vale de onde o atleta saiu do chão (_comecar_cortada).
 	var saiu_de: Vector3 = atleta.get_meta("saiu_do_chao_em", atleta.position)
 	# Ataque com a bola inteira acima da rede, de dentro da zona de ataque:
@@ -1467,16 +1568,42 @@ func _carregar_escolhas() -> void:
 		dados_das_cartas = Dados.cartas()
 
 
-## Com uma tela só (1 jogador ou online), a câmera é a "perto", de console
-## (dados/ajustes.json, grupo "camera"), pedida pelo Victor em 13/11/2026: a de
-## TV deixava os atletas pequenos. Na tela dividida fica a de TV (não cabe).
+## Câmera escolhida no menu ou na pausa (Configuracao.camera): "perto" (de
+## console, dados/ajustes.json grupo "camera"), "alta" (grupo "camera_alta") ou
+## "tv" (a antiga, os números exportados acima). Na tela dividida fica a de TV
+## (a perto não cabe). Também escolhe o tamanho do desenho da bola.
 func _escolher_camera() -> void:
-	if tela_dividida or Ajustes.texto("camera", "estilo", "perto") != "perto":
+	if _camera_de_tv.is_empty():
+		_camera_de_tv = [distancia_camera, altura_camera, abertura_da_camera, acompanhamento_da_camera]
+	distancia_camera = _camera_de_tv[0]
+	altura_camera = _camera_de_tv[1]
+	abertura_da_camera = _camera_de_tv[2]
+	acompanhamento_da_camera = _camera_de_tv[3]
+	tamanho_da_bola = Bola.RAIO_DO_DESENHO
+	var estilo: String = "tv" if tela_dividida else Configuracao.camera
+	var grupo: String = {"perto": "camera", "alta": "camera_alta"}.get(estilo, "")
+	if grupo == "":
 		return
-	distancia_camera = Ajustes.pegar("camera", "distancia", 17.5)
-	altura_camera = Ajustes.pegar("camera", "altura", 6.5)
-	abertura_da_camera = Ajustes.pegar("camera", "abertura", 52.0)
-	acompanhamento_da_camera = Ajustes.pegar("camera", "acompanhamento_lateral", 0.35)
+	distancia_camera = Ajustes.pegar(grupo, "distancia", distancia_camera)
+	altura_camera = Ajustes.pegar(grupo, "altura", altura_camera)
+	abertura_da_camera = Ajustes.pegar(grupo, "abertura", abertura_da_camera)
+	acompanhamento_da_camera = Ajustes.pegar(grupo, "acompanhamento_lateral", acompanhamento_da_camera)
+	tamanho_da_bola = Ajustes.pegar(grupo, "tamanho_da_bola", tamanho_da_bola)
+
+
+## Troca pra próxima câmera no meio da partida (botão da pausa). Devolve o
+## texto do botão. Na tela dividida não troca.
+func trocar_camera() -> String:
+	if not tela_dividida:
+		Configuracao.proxima_camera()
+		_escolher_camera()
+		for camera in cameras:
+			var lado := _lado(str(camera.name).trim_prefix("Camera").to_int())
+			camera.preparar(Vector3(0.0, altura_camera, distancia_camera * lado), Vector3(0.0, 0.0, foco_da_camera * lado), abertura_da_camera)
+			camera.acompanhamento_lateral = acompanhamento_da_camera
+		bola.mudar_tamanho_do_desenho(tamanho_da_bola)
+		rastro.raio = tamanho_da_bola * 0.7
+	return Configuracao.nome_da_camera()
 
 
 ## O "jogador" (1 ou 2) é jogado pelo computador?

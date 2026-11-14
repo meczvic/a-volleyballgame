@@ -14,9 +14,12 @@ signal tocou_bloqueio
 ## A bola passou pro outro lado: por cima da rede ou por fora dela.
 ## "ponto" é onde ela cruzou a linha da rede (veja a regra das antenas na partida).
 signal cruzou_a_rede(ponto: Vector3)
+## A bola do saque flutuante balançou e vai cair em outro lugar (ponto_previsto).
+signal balancou
 
 const Trajetoria := preload("res://scripts/regras/trajetoria.gd")
 const VisualAnime := preload("res://scripts/visual/visual_anime.gd")
+const SHADER_DA_BOLA := preload("res://shaders/bola.gdshader")
 
 ## Um pouco maior que a bola real (0,105 m) pra enxergar bem de cima.
 const RAIO := 0.18
@@ -59,6 +62,16 @@ var _tempo := 0.0
 var gravidade := Trajetoria.GRAVIDADE
 ## Quantas cortadas saíram em linha reta (lancar_reto), pra medir nos testes.
 var retos := 0
+## Balanços do flutuante que ainda vão acontecer: [[segundos desde o lançamento,
+## mudança na velocidade de lado (m/s)], ...].
+var _balancos: Array = []
+var _desde_o_lancamento := 0.0
+## Giro da bola no voo (só visual), em voltas por segundo. Cada lançamento gira
+## conforme a velocidade; o flutuante quase não gira (sem_giro).
+var _giro := 0.0
+var _eixo_do_giro := Vector3.RIGHT
+## Voltas por segundo por m/s de velocidade.
+const GIRO_POR_VELOCIDADE := 0.12
 var _sombra: MeshInstance3D
 var _visual: MeshInstance3D
 
@@ -71,7 +84,11 @@ func _ready() -> void:
 	visual.mesh = esfera
 	var cor := Color("#F7F3E8")
 	if usar_visual_anime:
-		visual.material_override = VisualAnime.material(cor, 0.015)
+		# Gomos amarelos e azuis (shaders/bola.gdshader), com contorno fino.
+		var gomos := ShaderMaterial.new()
+		gomos.shader = SHADER_DA_BOLA
+		gomos.next_pass = VisualAnime.contorno(0.012)
+		visual.material_override = gomos
 	else:
 		var material := StandardMaterial3D.new()
 		material.albedo_color = cor
@@ -160,6 +177,34 @@ func velocidade_atual() -> Vector3:
 	return _velocidade_inicial + Vector3(0.0, -gravidade * _tempo, 0.0)
 
 
+## Saque flutuante: a bola muda de lado no meio do voo, como no vôlei de
+## verdade (sem giro, o ar empurra a bola). "desvios": [[segundos depois do
+## lançamento, mudança na velocidade de lado (m/s)], ...]. Chame logo depois
+## de lancar.
+func balancar(desvios: Array) -> void:
+	_balancos = desvios.duplicate()
+	# Flutuante: a bola vai sem girar (por isso balança).
+	_giro = 0.05
+
+
+## Tamanho do desenho da bola (raio, m). As regras continuam com RAIO. Na
+## câmera perto a bola fica perto do tamanho real; na de TV, maior.
+func mudar_tamanho_do_desenho(raio: float) -> void:
+	if _visual and _visual.mesh is SphereMesh:
+		_visual.mesh.radius = raio
+		_visual.mesh.height = raio * 2.0
+
+
+## Aplica um balanço: continua do mesmo ponto, com a mesma gravidade, mas
+## indo mais pra um lado. Não conta como lançamento novo (ninguém tocou).
+func _balancar_agora(desvio_x: float) -> void:
+	var v := velocidade_atual()
+	_origem = position
+	_velocidade_inicial = Vector3(v.x + desvio_x, v.y, v.z)
+	_tempo = 0.0
+	ponto_previsto = Trajetoria.ponto_de_queda(_origem, _velocidade_inicial, RAIO, gravidade)
+	balancou.emit()
+
 ## Muda o rumo da bola no meio do voo (rede ou bloqueio).
 func _desviar(ponto: Vector3, nova_velocidade: Vector3) -> void:
 	position = ponto
@@ -173,6 +218,12 @@ func _comecar_voo(de: Vector3, velocidade: Vector3, gravidade_do_voo := Trajetor
 	_origem = de
 	_velocidade_inicial = velocidade
 	_tempo = 0.0
+	_balancos = []
+	_desde_o_lancamento = 0.0
+	var no_chao := Vector3(velocidade.x, 0.0, velocidade.z)
+	if no_chao.length() > 0.1:
+		_eixo_do_giro = Vector3.UP.cross(no_chao.normalized())
+	_giro = velocidade.length() * GIRO_POR_VELOCIDADE
 	em_voo = true
 	ponto_previsto = Trajetoria.ponto_de_queda(_origem, _velocidade_inicial, RAIO, gravidade)
 
@@ -180,12 +231,17 @@ func _comecar_voo(de: Vector3, velocidade: Vector3, gravidade_do_voo := Trajetor
 func _physics_process(delta: float) -> void:
 	if em_voo:
 		_voar(delta)
+		if _visual and _giro > 0.0:
+			_visual.rotate(_eixo_do_giro, _giro * TAU * delta)
 	_sombra.global_position = Vector3(global_position.x, 0.02, global_position.z)
 
 
 func _voar(delta: float) -> void:
 	var antes := position
 	_tempo += delta
+	_desde_o_lancamento += delta
+	if not _balancos.is_empty() and _desde_o_lancamento >= float(_balancos[0][0]):
+		_balancar_agora(float(_balancos.pop_front()[1]))
 	var agora := Trajetoria.posicao_em(_origem, _velocidade_inicial, _tempo, gravidade)
 
 	# Cruzou a linha da rede neste quadro?

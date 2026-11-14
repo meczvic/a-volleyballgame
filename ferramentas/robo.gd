@@ -36,6 +36,8 @@ var _closeups := 0
 var _ultimo_print := -1
 var _gravar := ""
 var _carga := [-1.0, -1.0]
+## Até quando o robô segura o ataque na cortada (relógio do robô).
+var _ataque_ate := [-1.0, -1.0]
 var _duracao_da_carga := 0.4
 var _apertados := {}
 var _desejados := {}
@@ -162,6 +164,9 @@ func _jogar_time(time: int, delta: float) -> void:
 	if estado == partida.Estado.SAQUE:
 		if time != partida.placar.quem_saca:
 			return
+		# Já soltou: o atleta está no movimento do saque (corrida, lançamento).
+		if not partida.saque_viagem.is_empty():
+			return
 		# Segura Ataque por um tempo variável e solta: saque com força variada.
 		if _carga[time] < 0.0:
 			if partida.tempo_no_saque > 0.6:
@@ -179,6 +184,9 @@ func _jogar_time(time: int, delta: float) -> void:
 	if estado != partida.Estado.RALLY:
 		_carga[time] = -1.0
 		return
+	# Cortada segurada: continua apertando até a hora sorteada (pouco = largada).
+	if _relogio < _ataque_ate[time]:
+		_segurar(p + "ataque")
 	var bola = partida.bola
 	if not bola.em_voo or not partida.cortadas[time].is_empty() or _dormindo[time]:
 		return
@@ -235,6 +243,8 @@ func _jogar_time(time: int, delta: float) -> void:
 			if _errou(time):
 				return
 			_apertar(p + "ataque")
+			# Segura um tempo sorteado: às vezes larga (solta logo), quase sempre corta.
+			_ataque_ate[time] = _relogio + (0.05 if _sorteio.randf() < 0.12 else _sorteio.randf_range(0.2, 0.5))
 			_lances["cortadas"] += 1
 			_toques_no_rally += 1
 			# Mira variada.
@@ -357,7 +367,12 @@ func _aplicar_teclas() -> void:
 func _capturar_closeup() -> void:
 	var atleta: Node3D = partida.controlados[0]
 	var bola = partida.bola
-	if not bola.em_voo or atleta.position.distance_to(bola.position) > 3.0:
+	# ROBO_FILME=1: recorta sempre (um quadro a cada 3), pra ver o saque e a corrida.
+	var filme := OS.has_environment("ROBO_FILME")
+	if filme:
+		if Engine.get_physics_frames() % 3 != 0:
+			return
+	elif not bola.em_voo or atleta.position.distance_to(bola.position) > 3.0:
 		return
 	var camera: Camera3D = partida.cameras[0]
 	var viewport := camera.get_viewport()

@@ -1,19 +1,29 @@
 {
 	"musica": { "ligada": true, "volume_db": -14.0 },
 	"camera": {
-		"_comentario": "Câmera de 1 jogador (13/11/2026, estilo console): atrás do próprio time, mais perto e mais baixa que a de TV. Distância e altura em metros (a distância é da rede; a linha de fundo fica a 9 m), abertura vertical em graus. estilo \"tv\" volta pra câmera antiga (alta e longe). A tela dividida usa sempre a de TV.",
-		"estilo": "perto",
+		"_comentario": "Câmera \"perto\" (13/11/2026, estilo console): atrás do próprio time, mais perto e mais baixa que a de TV. Distância e altura em metros (a distância é da rede; a linha de fundo fica a 9 m), abertura vertical em graus, tamanho_da_bola = raio do desenho da bola (m). Escolhida no menu e na pausa (Perto, TV, Alta); a tela dividida usa sempre a de TV.",
+		"tamanho_da_bola": 0.15,
 		"distancia": 17.5,
 		"altura": 6.5,
 		"abertura": 52.0,
 		"acompanhamento_lateral": 0.35
 	},
+	"camera_alta": {
+		"_comentario": "Câmera \"alta\": atrás do time e bem de cima, pra ver as duas quadras inteiras.",
+		"distancia": 19.0,
+		"altura": 15.0,
+		"abertura": 46.0,
+		"acompanhamento_lateral": 0.15,
+		"tamanho_da_bola": 0.2
+	},
 	"_comentario": "Números de equilíbrio das Etapas 3 e 4 (ataques, defesa e energia). O jogo lê este arquivo; se faltar uma chave, usa o valor que está no código (scripts/regras/jeitos_de_atacar.gd, jeitos_de_defender.gd e energia.gd, com a explicação de cada número). Os nomes aqui são os mesmos do código, em minúsculas. Os ganhos de energia por toque (passe, levantamento e cortada, perfeito e bom) ficam na tabela do código.",
 	"velocidade": {
 		"_comentario": "Múltiplos da gravidade normal (1,0 = 9,8 m/s²): maior = bola mais rápida e reta.",
-		"saque_fraco": 2.0,
-		"saque_forte": 3.0,
+		"saque_fraco": 3.0,
+		"saque_forte": 4.5,
 		"saque_flutuante": 2.5,
+		"saque_viagem_fraco": 19.0,
+		"saque_viagem_forte": 24.0,
 		"cortada_perfeita": 3.5,
 		"cortada_boa": 3.0,
 		"cortada_ruim": 2.0,

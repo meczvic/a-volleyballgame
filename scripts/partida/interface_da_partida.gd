@@ -153,10 +153,10 @@ func montar(tela_dividida: bool, nomes: Array, cores: Array, ids: Array, modo_ca
 	# Comandos de cada jogador embaixo da metade dele (ou só do J1, sem tela dividida).
 	# Curtos: somem no primeiro saque (o resto fica por conta do jogo ensinar).
 	var ajudas_teclado := [
-		"Teclado: WASD move · J passe (segure no levantamento = mais alto) · K saque/cortada · I flutuante · L bloqueio · Espaço mergulho",
-		"Teclado: setas movem · 1 passe (segure = mais alto) · 2 saque/cortada · 5 flutuante · 3 bloqueio · 0 mergulho",
+		"Teclado: WASD move · J passe (segure no levantamento = mais alto) · K saque/cortada (toque rápido = largada) · I flutuante · L bloqueio · Espaço mergulho",
+		"Teclado: setas movem · 1 passe (segure = mais alto) · 2 saque/cortada (rápido = largada) · 5 flutuante · 3 bloqueio · 0 mergulho",
 	]
-	var ajuda_do_controle := "Controle: A passe (segure no levantamento = mais alto) · X saque/cortada · RB flutuante · Y bloqueio · B mergulho"
+	var ajuda_do_controle := "Controle: A passe (segure no levantamento = mais alto) · X saque/cortada (toque rápido = largada) · RB flutuante · Y bloqueio · B mergulho"
 	var controles_ligados := Input.get_connected_joypads().size()
 	for jogador in (2 if tela_dividida else 1):
 		var ajuda := _rotulo_da_interface(16, false)

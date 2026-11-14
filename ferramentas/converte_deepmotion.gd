@@ -19,6 +19,10 @@ const CONVERSOES := {
 	# câmera lenta) e saque viagem (6217265, 1 a 8,1 s), convertidos em 13/11/2026.
 	"res://animacoes/deepmotion/manchete.fbx": "res://animacoes/manchete_deepmotion.tres",
 	"res://animacoes/deepmotion/saque.fbx": "res://animacoes/saque_deepmotion.tres",
+	# Cortada com corrida (Pexels 6216857, 6 a 9 s) e mergulho (12169434, 4 a 8 s,
+	# na areia), convertidos em 13/11/2026 (auditoria 2).
+	"res://animacoes/deepmotion/cortada_corrida.fbx": "res://animacoes/cortada_corrida_deepmotion.tres",
+	"res://animacoes/deepmotion/mergulho.fbx": "res://animacoes/mergulho_deepmotion.tres",
 	"res://animacoes/deepmotion/saque_viagem.fbx": "res://animacoes/saque_viagem_deepmotion.tres",
 }
 ## A meia volta só vale pra vídeo filmado de COSTAS pro atleta (a cortada do
@@ -28,6 +32,7 @@ const SEM_MEIA_VOLTA := [
 	"res://animacoes/deepmotion/levantamento.fbx",
 	"res://animacoes/deepmotion/manchete.fbx",
 	"res://animacoes/deepmotion/saque_viagem.fbx",
+	"res://animacoes/deepmotion/mergulho.fbx",
 	# O saque em pé (filmado de lado) saía com o peito pra trás: leva a meia volta.
 ]
 
