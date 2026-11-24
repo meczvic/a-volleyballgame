@@ -484,10 +484,14 @@ static func _teto(c) -> void:
 	for k in vaos:
 		var lz := -z + VAO * (k + 0.5)
 		for lx in [-5.5, 5.5]:
-			Pecas.cilindro(c, 0.012, 1.4, Vector3(lx, ALTURA - 0.75, lz), viga, 4)
+			# Pendurada na altura da câmera alta: só aparece nas visões livres
+			# (as câmeras de jogo não desenham, senão tapa o canto da tela).
+			var fio := Pecas.cilindro(c, 0.012, 1.4, Vector3(lx, ALTURA - 0.75, lz), viga, 4)
 			var copa := Pecas.cilindro(c, 0.42, 0.28, Vector3(lx, ALTURA - 1.55, lz), cupula, 12)
 			copa.mesh.top_radius = 0.12
-			Pecas.esfera(c, 0.2, Vector3(lx, ALTURA - 1.72, lz), lampada)
+			var bulbo := Pecas.esfera(c, 0.2, Vector3(lx, ALTURA - 1.72, lz), lampada)
+			for peca in [fio, copa, bulbo]:
+				peca.layers = 1 << (c.CAMADA_SO_NA_VISAO_LIVRE - 1)
 
 
 ## Reflexo das janelas e das paredes no piso encerado: uma captura só, no começo.

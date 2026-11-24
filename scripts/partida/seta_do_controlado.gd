@@ -13,8 +13,8 @@ const ALTURA_PADRAO := 1.8
 const LARGURA := 0.5
 const ALTURA := 0.42
 ## Pulo na troca de atleta: quanto cresce e quanto dura (s).
-const CRESCIMENTO_NA_TROCA := 1.9
-const DURACAO_DA_TROCA := 0.35
+const CRESCIMENTO_NA_TROCA := 2.2
+const DURACAO_DA_TROCA := 0.8
 ## Balanço pra cima e pra baixo, pra chamar atenção sem atrapalhar.
 const BALANCO := 0.06
 const VELOCIDADE_DO_BALANCO := 5.0
