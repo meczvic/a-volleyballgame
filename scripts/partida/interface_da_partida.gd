@@ -220,7 +220,7 @@ func esconder_caixa_do_meio() -> void:
 ## Depois do primeiro saque os comandos e o lembrete da pausa ficam discretos
 ## (meio transparentes), mas continuam na tela: um amigo que testou o jogo
 ## sentiu falta de ver os controles no meio da partida.
-const TRANSPARENCIA_DA_AJUDA := 0.55
+const TRANSPARENCIA_DA_AJUDA := 0.9
 
 
 func esconder_ajuda() -> void:
