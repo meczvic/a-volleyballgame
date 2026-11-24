@@ -27,6 +27,9 @@ const SHADER_REDE := preload("res://shaders/rede.gdshader")
 
 ## Camada de desenho do fundo atrás de cada time: [atrás do time 0 (+z), atrás do time 1 (-z)].
 const CAMADA_ATRAS_DO_TIME := [13, 14]
+## Camada do que só aparece nas visões livres (prévia, capturas): as câmeras de
+## jogo não desenham. Hoje: as luminárias penduradas do ginásio japonês.
+const CAMADA_SO_NA_VISAO_LIVRE := 15
 ## A partir daqui (distância da rede, em m) um objeto conta como "fundo atrás do time".
 const COMECO_DO_FUNDO := 14.6
 
@@ -309,6 +312,8 @@ func _separar_os_fundos() -> void:
 		if no is Light3D:
 			continue
 		var visual := no as VisualInstance3D
+		if visual.layers != 1:
+			continue
 		var caixa := visual.global_transform * visual.get_aabb()
 		var z := caixa.get_center().z
 		if absf(z) < COMECO_DO_FUNDO:

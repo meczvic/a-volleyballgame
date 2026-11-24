@@ -200,6 +200,7 @@ func _adicionar_camera(onde: Node, time: int) -> void:
 	camera.current = true
 	# O fundo atrás do próprio time fica entre a câmera e a quadra: não desenha.
 	camera.set_cull_mask_value(Cenario.CAMADA_ATRAS_DO_TIME[0 if lado > 0.0 else 1], false)
+	camera.set_cull_mask_value(Cenario.CAMADA_SO_NA_VISAO_LIVRE, false)
 	if p.tela_dividida:
 		# Esconde o anel de tempo do outro jogador.
 		camera.set_cull_mask_value(p.CAMADA_DO_ANEL_DE_TEMPO[1 - time], false)

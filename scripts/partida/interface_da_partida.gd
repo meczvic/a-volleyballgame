@@ -217,7 +217,12 @@ func esconder_caixa_do_meio() -> void:
 	caixa_da_mensagem.visible = false
 
 
-## Some com os textos de comandos e o lembrete da pausa (só valem no começo).
+## Depois do primeiro saque os comandos e o lembrete da pausa ficam discretos
+## (meio transparentes), mas continuam na tela: um amigo que testou o jogo
+## sentiu falta de ver os controles no meio da partida.
+const TRANSPARENCIA_DA_AJUDA := 0.55
+
+
 func esconder_ajuda() -> void:
 	if _ajuda_escondida:
 		return
@@ -229,8 +234,7 @@ func esconder_ajuda() -> void:
 		if not is_instance_valid(alvo):
 			continue
 		var tween := create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
-		tween.tween_property(alvo, "modulate:a", 0.0, 0.8)
-		tween.tween_callback(alvo.hide)
+		tween.tween_property(alvo, "modulate:a", TRANSPARENCIA_DA_AJUDA, 0.8)
 
 
 ## Some com o lembrete da pausa de uma vez (fim de jogo).
